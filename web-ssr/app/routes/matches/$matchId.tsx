@@ -1,8 +1,8 @@
 import { json, LoaderArgs } from '@remix-run/node'; // change this import to whatever runtime you are using
-import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import invariant from 'tiny-invariant';
-import { Form, useLoaderData, useSubmit } from '@remix-run/react';
+import { Form, useLoaderData } from '@remix-run/react';
 import { getMatch, initSupabase } from '~/lib/supabase.server';
+import { useUser } from '@supabase/auth-helpers-react';
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   const response = initSupabase(request);
@@ -21,12 +21,12 @@ export const loader = async ({ request, params }: LoaderArgs) => {
 
 export default function Index() {
   const { match } = useLoaderData<typeof loader>();
-  const submit = useSubmit();
-  console.log(match);
+  const user = useUser();
 
-  const joinMatch = () => {
-    submit(null, { method: 'post', action: `./join` });
-  };
+  console.log(user);
+
+  const playerCount = match.players.length;
+  const hasJoined = match.players.some((player) => player.id === user?.id);
 
   const startMatch = () => {};
 
@@ -34,17 +34,27 @@ export default function Index() {
     <div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.4' }}>
       <h1>Match {match.id}</h1>
       <p>{match.status}</p>
-      <h2>Players:</h2>
+      <h2>
+        Players({playerCount}/{match.size}):
+      </h2>
       <ul>
-        {match.players.map((player, i) => (
-          <li key={i}>{player.name}</li>
+        {match.players?.map((player, i) => (
+          <li key={i}>{player.username}</li>
         ))}
       </ul>
-      <Form method="post" action="./join">
-        <button type="submit" className="filled-button">
-          Join match
-        </button>
-      </Form>
+      {hasJoined ? (
+        <Form method="post" action="./leave">
+          <button type="submit" className="filled-button">
+            Leave match
+          </button>
+        </Form>
+      ) : (
+        <Form method="post" action="./join">
+          <button type="submit" className="filled-button">
+            Join match
+          </button>
+        </Form>
+      )}
       <button className="filled-button" onClick={startMatch}>
         Start match
       </button>

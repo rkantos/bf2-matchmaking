@@ -8,7 +8,8 @@
     "dev": "concurrently \"npm:dev-*\"",
     "dev-remix": "remix dev",
     "dev-tailwind": "tailwindcss -w -i ./styles/main.css -o app/styles/app.css",
-    "start": "remix-serve build"
+    "start": "remix-serve build",
+    "generate-types": "supabase gen types typescript --project-id lprcjdlrakeamyeuydcr > app/lib/databse.types.ts"
   },
   "dependencies": {
     "@remix-run/node": "^1.7.5",
