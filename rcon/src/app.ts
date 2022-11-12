@@ -16,11 +16,11 @@ app.get('/', async (req, res) => {
     port: parseInt(process.env.RCON_PORT),
     password: process.env.RCON_PASSWORD,
   });
-  if (cmd) {
+  if (cmd && cmd === 'bf2cc si') {
     const data = await client.send(cmd.toString());
     res.send(data);
   } else {
-    res.send('No command defined.');
+    res.send('No valid command defined.');
   }
 });
 
