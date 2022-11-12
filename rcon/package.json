@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon",
     "build": "rimraf ./build && tsc",
-    "start": "npm run build && node build/index.js",
+    "start": "npm run build && node build/app.js",
     "deploy": "supabase functions deploy bf2-rcon"
   },
   "keywords": [],
