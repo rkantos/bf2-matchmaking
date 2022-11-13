@@ -44,13 +44,6 @@ export default function Index() {
   const user = useUser();
   const { session, matches } = useLoaderData<typeof loader>();
 
-  const createMatch = async () => {
-    const res = await supabase.from('matches').insert([{}]).select();
-    console.log(res);
-  };
-
-  console.log('node: ', authRedirect);
-
   if (!user) {
     return (
       <Auth
@@ -64,11 +57,11 @@ export default function Index() {
     );
   }
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.4' }}>
+    <div>
       <h1>BF2 Matchmaking</h1>
-      <button className="filled-button" onClick={createMatch}>
-        Create match
-      </button>
+      <Link className="filled-button mt-4" to="/matches">
+        Go to matches
+      </Link>
       <ul>
         {matches?.filter(isNotDeleted).map((match) => (
           <li key={match.id}>

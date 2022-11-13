@@ -4,10 +4,10 @@
 
 @layer components {
   .outline-button {
-    @apply bg-transparent hover:bg-emerald-500 text-emerald-800 font-semibold hover:text-white py-2 px-4 border border-emerald-500 hover:border-transparent rounded;
+    @apply inline-block bg-transparent hover:bg-emerald-500 text-emerald-800 font-semibold hover:text-white py-2 px-4 border border-emerald-500 hover:border-transparent rounded;
   }
   .filled-button {
-    @apply bg-emerald-800 hover:bg-emerald-500 text-white font-semibold hover:text-white py-2 px-4 border border-emerald-800 rounded;
+    @apply inline-block bg-emerald-800 hover:bg-emerald-500 text-white font-semibold hover:text-white py-2 px-4 border border-emerald-800 rounded;
   }
   .filled-button:disabled {
     @apply bg-gray-500 hover:bg-gray-300 text-gray-800;
