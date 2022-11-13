@@ -23,41 +23,58 @@ export default function Index() {
   const { match } = useLoaderData<typeof loader>();
   const user = useUser();
 
-  console.log(user);
-
   const playerCount = match.players.length;
   const hasJoined = match.players.some((player) => player.id === user?.id);
 
-  const startMatch = () => {};
-
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.4' }}>
+    <article>
       <h1>Match {match.id}</h1>
       <p>{match.status}</p>
-      <h2>
-        Players({playerCount}/{match.size}):
-      </h2>
-      <ul>
-        {match.players?.map((player, i) => (
-          <li key={i}>{player.username}</li>
-        ))}
-      </ul>
+      <section>
+        <h2>
+          Players({playerCount}/{match.size}):
+        </h2>
+        <ul>
+          {match.players?.map((player, i) => (
+            <li key={i}>{player.username}</li>
+          ))}
+        </ul>
+      </section>
+      <section>
+        <h2>Maps:</h2>
+        <ul>
+          {match.maps.map((map) => (
+            <li key={map.id}>{map.name}</li>
+          ))}
+        </ul>
+      </section>
       {hasJoined ? (
         <Form method="post" action="./leave">
-          <button type="submit" className="filled-button">
+          <button type="submit" className="filled-button" disabled={match.status !== 'open'}>
             Leave match
           </button>
         </Form>
       ) : (
         <Form method="post" action="./join">
-          <button type="submit" className="filled-button">
+          <button type="submit" className="filled-button" disabled={playerCount >= match.size}>
             Join match
           </button>
         </Form>
       )}
-      <button className="filled-button" onClick={startMatch}>
-        Start match
-      </button>
-    </div>
+      {match.status === 'open' && (
+        <Form method="post" action="./start">
+          <button type="submit" className="filled-button" disabled={playerCount < match.size}>
+            Start match
+          </button>
+        </Form>
+      )}
+      {match.status === 'started' && (
+        <Form method="post" action="./close">
+          <button type="submit" className="filled-button">
+            Close match
+          </button>
+        </Form>
+      )}
+    </article>
   );
 }

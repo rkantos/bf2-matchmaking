@@ -1,9 +1,19 @@
-import { ActionFunction, LoaderFunction, json, LoaderArgs } from '@remix-run/node'; // change this import to whatever runtime you are using
-import { Auth, ThemeSupa } from '@supabase/auth-ui-react';
-import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
+import { ActionArgs, json, LoaderArgs, redirect } from '@remix-run/node'; // change this import to whatever runtime you are using
 import invariant from 'tiny-invariant';
 import { createServerClient } from '@supabase/auth-helpers-remix';
-import { Link, useLoaderData } from '@remix-run/react';
+import { Form, Link, useLoaderData } from '@remix-run/react';
+import { createMatch, initSupabase } from '~/lib/supabase.server';
+import { isNotDeleted } from '~/utils/match-utils';
+
+export const action = async ({ request }: ActionArgs) => {
+  const formData = await request.formData();
+  const size = formData.get('size');
+  invariant(size, 'No size included');
+  initSupabase(request);
+  const result = await createMatch(size.toString());
+  invariant(result.data, 'Failed to create match');
+  return redirect(`/matches/${result.data.id}`);
+};
 
 export const loader = async ({ request }: LoaderArgs) => {
   const response = new Response();
@@ -25,16 +35,31 @@ export default function Index() {
   const { matches } = useLoaderData<typeof loader>();
 
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif', lineHeight: '1.4' }}>
-      <ul>
-        {matches?.map((match) => (
-          <li key={match.id}>
-            <Link
-              to={`/matches/${match.id}`}
-            >{`${match.id} - ${match.status} - ${match.created_at}`}</Link>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <article>
+      <section>
+        <h2>Create new match</h2>
+        <Form method="post" reloadDocument>
+          <label>
+            Size:
+            <input className="text-field" name="size" />
+          </label>
+          <button type="submit" className="filled-button">
+            Create
+          </button>
+        </Form>
+      </section>
+      <section>
+        <h2>Matches:</h2>
+        <ul>
+          {matches?.filter(isNotDeleted).map((match) => (
+            <li key={match.id}>
+              <Link
+                to={`/matches/${match.id}`}
+              >{`${match.id} - ${match.status} - ${match.created_at}`}</Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </article>
   );
 }

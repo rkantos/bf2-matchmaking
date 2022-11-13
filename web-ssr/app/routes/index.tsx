@@ -4,6 +4,7 @@ import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import invariant from 'tiny-invariant';
 import { createServerClient } from '@supabase/auth-helpers-remix';
 import { Link, useLoaderData } from '@remix-run/react';
+import { isNotDeleted } from '~/utils/match-utils';
 
 export const loader = async ({ request }: LoaderArgs) => {
   const response = new Response();
@@ -69,7 +70,7 @@ export default function Index() {
         Create match
       </button>
       <ul>
-        {matches?.map((match) => (
+        {matches?.filter(isNotDeleted).map((match) => (
           <li key={match.id}>
             <Link
               to={`/matches/${match.id}`}

@@ -3,9 +3,9 @@ import { PostgrestSingleResponse } from '@supabase/supabase-js';
 import invariant from 'tiny-invariant';
 import { Database } from './databse.types';
 
-type Player = Database['public']['Tables']['players']['Row'];
-type Map = Database['public']['Tables']['maps']['Row'];
-type Match = Database['public']['Tables']['matches']['Row'];
+export type Player = Database['public']['Tables']['players']['Row'];
+export type Map = Database['public']['Tables']['maps']['Row'];
+export type Match = Database['public']['Tables']['matches']['Row'];
 
 let supabase: SupabaseClient | undefined;
 export const initSupabase = (request: Request) => {
@@ -19,18 +19,28 @@ export const initSupabase = (request: Request) => {
   return response;
 };
 
-const getClient = () => {
+const getClient = <T = any>() => {
   invariant(supabase, 'Supabase client is not initiated.');
-  return supabase;
+  return supabase as SupabaseClient<T>;
 };
 
 export const getSession = () => getClient().auth.getSession();
+
+export const createMatch = (size: string) =>
+  getClient<Database>()
+    .from('matches')
+    .insert([{ size: parseInt(size) }])
+    .select()
+    .single();
 
 export const getMatch = (
   matchId: string | undefined
 ): PromiseLike<
   PostgrestSingleResponse<Match & { maps: Array<Map> } & { players: Array<Player> }>
 > => getClient().from('matches').select('*, maps(*), players(*)').eq('id', matchId).single();
+
+export const updateMatch = (matchId: string | undefined, values: Partial<Match>) =>
+  getClient<Database>().from('matches').update(values).eq('id', matchId);
 
 export const joinMatch = (matchId: string, userId: string) =>
   getClient()
@@ -43,3 +53,8 @@ export const leaveMatch = (matchId: string, userId: string) =>
     .delete()
     .eq('match_id', parseInt(matchId))
     .eq('player_id', userId);
+
+export const addMapsToMatch = (matchId: string, ...maps: Array<number>) =>
+  getClient<Database>()
+    .from('match_maps')
+    .insert(maps.map((mapId) => ({ match_id: parseInt(matchId), map_id: mapId })));
