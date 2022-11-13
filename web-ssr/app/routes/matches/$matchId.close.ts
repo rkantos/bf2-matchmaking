@@ -1,5 +1,5 @@
 import { ActionFunction, json, LoaderFunction, redirect } from '@remix-run/node';
-import { addMapsToMatch, initSupabase, updateMatch } from '~/lib/supabase.server';
+import { createMatchMaps, initSupabase, updateMatch } from '~/lib/supabase.server';
 
 export const loader: LoaderFunction = ({ request, params }) => {
   return redirect(`/matches/${params['matchId']}`);

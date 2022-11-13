@@ -7,7 +7,11 @@ import { useUser } from '@supabase/auth-helpers-react';
 export const loader = async ({ request, params }: LoaderArgs) => {
   const response = initSupabase(request);
 
-  const { data: match, error } = await getMatch(params['matchId']);
+  const { data: match, error, status } = await getMatch(params['matchId']);
+
+  if (error) {
+    console.log(error);
+  }
 
   invariant(match, 'Match not found');
 
@@ -35,8 +39,11 @@ export default function Index() {
           Players({playerCount}/{match.size}):
         </h2>
         <ul>
-          {match.players?.map((player, i) => (
-            <li key={i}>{player.username}</li>
+          {match.players?.map((player) => (
+            <li key={player.id}>
+              {player.username}, team:{' '}
+              {match.teams.find(({ player_id }) => player_id === player.id)?.team}
+            </li>
           ))}
         </ul>
       </section>

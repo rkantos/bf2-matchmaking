@@ -48,16 +48,19 @@ export interface Database {
           created_at: string | null
           match_id: number
           player_id: string
+          team: string | null
         }
         Insert: {
           created_at?: string | null
           match_id: number
           player_id: string
+          team?: string | null
         }
         Update: {
           created_at?: string | null
           match_id?: number
           player_id?: string
+          team?: string | null
         }
       }
       matches: {

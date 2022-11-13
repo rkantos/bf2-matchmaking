@@ -6,6 +6,7 @@ import { Database } from './databse.types';
 export type Player = Database['public']['Tables']['players']['Row'];
 export type Map = Database['public']['Tables']['maps']['Row'];
 export type Match = Database['public']['Tables']['matches']['Row'];
+export type MatchPlayer = Database['public']['Tables']['match_players']['Row'];
 
 let supabase: SupabaseClient | undefined;
 export const initSupabase = (request: Request) => {
@@ -36,25 +37,45 @@ export const createMatch = (size: string) =>
 export const getMatch = (
   matchId: string | undefined
 ): PromiseLike<
-  PostgrestSingleResponse<Match & { maps: Array<Map> } & { players: Array<Player> }>
-> => getClient().from('matches').select('*, maps(*), players(*)').eq('id', matchId).single();
+  PostgrestSingleResponse<
+    Match & { maps: Array<Map> } & { players: Array<Player> } & {
+      teams: Array<{ player_id: string; team: string }>;
+    }
+  >
+> =>
+  getClient()
+    .from('matches')
+    .select('*, maps(*), players(*), teams:match_players(player_id, team)')
+    .eq('id', matchId)
+    .single();
 
 export const updateMatch = (matchId: string | undefined, values: Partial<Match>) =>
   getClient<Database>().from('matches').update(values).eq('id', matchId);
 
-export const joinMatch = (matchId: string, userId: string) =>
+export const createMatchPlayer = (matchId: string, playerId: string) =>
   getClient()
     .from('match_players')
-    .insert([{ match_id: parseInt(matchId), player_id: userId }]);
+    .insert([{ match_id: parseInt(matchId), player_id: playerId }]);
 
-export const leaveMatch = (matchId: string, userId: string) =>
+export const deleteMatchPlayer = (matchId: string, playerId: string) =>
   getClient()
     .from('match_players')
     .delete()
     .eq('match_id', parseInt(matchId))
-    .eq('player_id', userId);
+    .eq('player_id', playerId);
 
-export const addMapsToMatch = (matchId: string, ...maps: Array<number>) =>
+export const updateMatchPlayer = (
+  matchId: number,
+  playerId: string,
+  values: Partial<MatchPlayer>
+) =>
+  getClient<Database>()
+    .from('match_players')
+    .update(values)
+    .eq('match_id', matchId)
+    .eq('player_id', playerId);
+
+export const createMatchMaps = (matchId: string, ...maps: Array<number>) =>
   getClient<Database>()
     .from('match_maps')
     .insert(maps.map((mapId) => ({ match_id: parseInt(matchId), map_id: mapId })));

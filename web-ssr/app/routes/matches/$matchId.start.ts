@@ -1,5 +1,13 @@
 import { ActionFunction, json, LoaderFunction, redirect } from '@remix-run/node';
-import { addMapsToMatch, initSupabase, updateMatch } from '~/lib/supabase.server';
+import invariant from 'tiny-invariant';
+import {
+  createMatchMaps,
+  getMatch,
+  initSupabase,
+  updateMatch,
+  updateMatchPlayer,
+} from '~/lib/supabase.server';
+import { assignMatchPlayerTeams } from '~/utils/match-utils';
 
 const getMaps = () => {
   const mapIds = new Set<number>();
@@ -16,7 +24,14 @@ export const loader: LoaderFunction = ({ request, params }) => {
 export const action: ActionFunction = async ({ request, params }) => {
   try {
     initSupabase(request);
-    const addResult = await addMapsToMatch(params['matchId']!, ...getMaps());
+    const { data: match } = await getMatch(params['matchId']);
+    invariant(match, 'No match found');
+    const addResult = await createMatchMaps(params['matchId']!, ...getMaps());
+    await Promise.all(
+      assignMatchPlayerTeams(match.players).map(({ playerId, team }) =>
+        updateMatchPlayer(match.id, playerId, { team })
+      )
+    );
     const startResult = await updateMatch(params['matchId'], { status: 'started' });
 
     if (addResult.error) {
