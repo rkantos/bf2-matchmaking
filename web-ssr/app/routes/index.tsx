@@ -33,8 +33,6 @@ export const loader = async ({ request }: LoaderArgs) => {
   );
 };
 
-const node_env = process.env.NODE_ENV;
-
 const authRedirect =
   process.env.NODE_ENV === 'production'
     ? 'https://bf2-matchmaking.netlify.app/'
