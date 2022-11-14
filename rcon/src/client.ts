@@ -9,7 +9,7 @@ interface Options {
 }
 
 interface Client {
-  send: (message: string) => Promise<string | ServerInfo>;
+  send: (message: string) => Promise<string>;
 }
 
 export const createClient = ({ host, port, password }: Options) => {
@@ -49,14 +49,7 @@ export const createClient = ({ host, port, password }: Options) => {
               client.write(message + '\n');
               client.once('data', (response) => {
                 console.log('Received response');
-                switch (message) {
-                  case 'bf2cc si': {
-                    resolve(mapServerInfo(response.toString()));
-                  }
-                  default: {
-                    resolve(response.toString());
-                  }
-                }
+                resolve(response.toString());
               });
             }),
         });

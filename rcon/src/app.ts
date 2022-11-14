@@ -1,9 +1,13 @@
 import express from 'express';
+import bodyParser from 'body-parser';
 import invariant from 'tiny-invariant';
 import { createClient } from './client';
+import { mapServerInfo } from './mappers';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 app.get('/', async (req, res) => {
   const { cmd } = req.query;
@@ -18,12 +22,37 @@ app.get('/', async (req, res) => {
   });
   if (cmd && cmd === 'bf2cc si') {
     const data = await client.send(cmd.toString());
-    res.send(data);
+    res.send(mapServerInfo(data));
   } else {
     res.send('No valid command defined.');
   }
 });
 
+app.post('/run', async (req, res) => {
+  const { host, port, password, cmd } = req.body;
+
+  const client = await createClient({
+    host,
+    port,
+    password,
+  });
+  const data = await client.send(cmd);
+  res.send(data);
+});
+
+app.post('/si', async (req, res) => {
+  const { host, port, password } = req.body;
+
+  const client = await createClient({
+    host,
+    port,
+    password,
+  });
+  const data = await client.send('bf2cc si');
+  res.send(mapServerInfo(data));
+});
+
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
 });
