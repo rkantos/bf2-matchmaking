@@ -12,25 +12,33 @@ app.use(bodyParser.json());
 app.post('/run', async (req, res) => {
   const { host, port, password, cmd } = req.body;
 
-  const client = await createClient({
-    host,
-    port,
-    password,
-  });
-  const data = await client.send(cmd);
-  res.send(data);
+  if (host && port) {
+    const client = await createClient({
+      host,
+      port,
+      password,
+    });
+    const data = await client.send(cmd);
+    res.send(data);
+  } else {
+    res.status(400).send('Missing host or port.');
+  }
 });
 
 app.post('/si', async (req, res) => {
   const { host, port, password } = req.body;
 
-  const client = await createClient({
-    host,
-    port,
-    password,
-  });
-  const data = await client.send('bf2cc si');
-  res.send(mapServerInfo(data));
+  if (host && port) {
+    const client = await createClient({
+      host,
+      port,
+      password,
+    });
+    const data = await client.send('bf2cc si');
+    res.send(mapServerInfo(data));
+  } else {
+    res.status(400).send('Missing host or port.');
+  }
 });
 
 app.get('/', async (req, res) => {
