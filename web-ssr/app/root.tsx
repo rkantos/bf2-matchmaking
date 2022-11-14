@@ -11,6 +11,7 @@ import {
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
 import { createBrowserClient, createServerClient } from '@supabase/auth-helpers-remix';
 import { useState } from 'react';
+import Header from './components/Header';
 import styles from './styles/app.css';
 
 export const links: LinksFunction = () => {
@@ -71,7 +72,10 @@ export default function App() {
       </head>
       <body>
         <SessionContextProvider supabaseClient={supabaseClient} initialSession={initialSession}>
-          <Outlet />
+          <Header />
+          <main className="mx-4 w-full md:w-3/4 md:mx-auto">
+            <Outlet />
+          </main>
         </SessionContextProvider>
         <ScrollRestoration />
         <Scripts />

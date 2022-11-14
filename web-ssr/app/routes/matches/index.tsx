@@ -3,7 +3,7 @@ import invariant from 'tiny-invariant';
 import { createServerClient } from '@supabase/auth-helpers-remix';
 import { Form, Link, useLoaderData } from '@remix-run/react';
 import { createMatch, initSupabase } from '~/lib/supabase.server';
-import { isNotDeleted } from '~/utils/match-utils';
+import { isOpen, isStarted } from '~/utils/match-utils';
 
 export const action = async ({ request }: ActionArgs) => {
   const formData = await request.formData();
@@ -36,24 +36,39 @@ export default function Index() {
 
   return (
     <article>
-      <section>
-        <h2>Create new match</h2>
-        <Form method="post" reloadDocument>
+      <h1 className="text-2xl">Matches</h1>
+      <section className="border p-4 rounded mb-4">
+        <h2 className="text-xl">Create new match</h2>
+        <Form className="flex flex-col" method="post" reloadDocument>
           <label>
             Size:
-            <input className="text-field" name="size" />
+            <input className="text-field my-2" name="size" />
           </label>
-          <button type="submit" className="filled-button">
+          <button type="submit" className="filled-button max-w-sm">
             Create
           </button>
         </Form>
       </section>
       <section>
-        <h2>Matches:</h2>
-        <ul>
-          {matches?.filter(isNotDeleted).map((match) => (
+        <h2 className="text-2xl">Open matches:</h2>
+        <ul className="flex flex-col">
+          {matches?.filter(isOpen).map((match) => (
             <li key={match.id}>
               <Link
+                className="block border p-2 rounded mb-2"
+                to={`/matches/${match.id}`}
+              >{`${match.id} - ${match.status} - ${match.created_at}`}</Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section>
+        <h2 className="text-2xl">Previous matches:</h2>
+        <ul className="flex flex-col">
+          {matches?.filter(isStarted).map((match) => (
+            <li key={match.id}>
+              <Link
+                className="block border p-2 rounded mb-2"
                 to={`/matches/${match.id}`}
               >{`${match.id} - ${match.status} - ${match.created_at}`}</Link>
             </li>

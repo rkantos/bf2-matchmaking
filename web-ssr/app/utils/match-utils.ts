@@ -1,6 +1,8 @@
 import { Match, Player } from '~/lib/supabase.server';
 
 export const isNotDeleted = (match: Match) => match.status !== 'deleted';
+export const isOpen = (match: Match) => match.status === 'open';
+export const isStarted = (match: Match) => match.status === 'started' || match.status === 'closed';
 
 const shuffleArray = <T = unknown>(array: Array<T>) => {
   const clonedArray = [...array];

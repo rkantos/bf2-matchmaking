@@ -1,5 +1,5 @@
 import { json, LoaderArgs } from '@remix-run/node'; // change this import to whatever runtime you are using
-import { Auth, ThemeSupa } from '@supabase/auth-ui-react';
+import { Auth, ThemeSupa, ThemeMinimal } from '@supabase/auth-ui-react';
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import invariant from 'tiny-invariant';
 import { createServerClient } from '@supabase/auth-helpers-remix';
@@ -36,8 +36,8 @@ export const loader = async ({ request }: LoaderArgs) => {
 
 const authRedirect =
   process.env.NODE_ENV === 'production'
-    ? 'https://bf2-matchmaking.netlify.app/'
-    : 'http://localhost:3000/';
+    ? 'https://bf2-matchmaking.netlify.app/matches/'
+    : 'http://localhost:3000/matches/';
 
 export default function Index() {
   const supabase = useSupabaseClient();
@@ -46,14 +46,17 @@ export default function Index() {
 
   if (!user) {
     return (
-      <Auth
-        redirectTo={authRedirect}
-        appearance={{ theme: ThemeSupa }}
-        supabaseClient={supabase}
-        providers={['discord']}
-        socialLayout="horizontal"
-        onlyThirdPartyProviders={true}
-      />
+      <div className="max-w-[200px] m-auto text-center">
+        <p>Login</p>
+        <Auth
+          redirectTo={authRedirect}
+          appearance={{ theme: ThemeSupa }}
+          supabaseClient={supabase}
+          providers={['discord']}
+          socialLayout="horizontal"
+          onlyThirdPartyProviders={true}
+        />
+      </div>
     );
   }
   return (
