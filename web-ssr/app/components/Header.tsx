@@ -8,8 +8,6 @@ const Header: FC = () => {
   const user = useUser();
   const navigate = useNavigate();
 
-  console.log(user);
-
   return (
     <header className="flex items-center justify-between h-20 m-auto px-4 border-b">
       <h2 className="text-2xl bold justify-self-start">BF2 Matchmaking</h2>

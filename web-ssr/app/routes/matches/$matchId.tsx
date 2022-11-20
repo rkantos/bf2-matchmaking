@@ -1,8 +1,9 @@
 import { json, LoaderArgs } from '@remix-run/node'; // change this import to whatever runtime you are using
 import invariant from 'tiny-invariant';
-import { Form, useLoaderData } from '@remix-run/react';
+import { Form, useLoaderData, useNavigate } from '@remix-run/react';
 import { getMatch, initSupabase, Player } from '~/lib/supabase.server';
-import { useUser } from '@supabase/auth-helpers-react';
+import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
+import { useEffect, useState } from 'react';
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   const response = initSupabase(request);
@@ -25,13 +26,28 @@ export const loader = async ({ request, params }: LoaderArgs) => {
 
 export default function Index() {
   const { match } = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
   const user = useUser();
+  const supabase = useSupabaseClient();
 
   const playerCount = match.players.length;
   const hasJoined = match.players.some((player) => player.id === user?.id);
 
   const isTeam = (team: string) => (player: Player) =>
     match.teams.some(({ player_id, team: t }) => player_id === player.id && t === team);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:match_players')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'match_players' }, () =>
+        navigate('.', { replace: true })
+      )
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'match_players' }, () =>
+        navigate('.', { replace: true })
+      )
+      .subscribe();
+    () => channel.unsubscribe();
+  }, [supabase]);
 
   return (
     <article className="max-w-3xl m-auto mt-4">
@@ -44,7 +60,7 @@ export default function Index() {
               Players({playerCount}/{match.size}):
             </h2>
             <ul>
-              {match.players?.map((player) => (
+              {match.players.map((player) => (
                 <li key={player.id}>
                   {`${player.username}, team: ${
                     match.teams.find(({ player_id }) => player_id === player.id)?.team
