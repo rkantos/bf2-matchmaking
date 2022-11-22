@@ -4,6 +4,7 @@ import { Form, useLoaderData, useNavigate } from '@remix-run/react';
 import { getMatch, initSupabase, Player } from '~/lib/supabase.server';
 import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
 import { useEffect, useState } from 'react';
+import Picking from '~/components/match/Picking';
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   const response = initSupabase(request);
@@ -49,12 +50,17 @@ export default function Index() {
     () => channel.unsubscribe();
   }, [supabase]);
 
+  if (match.status === 'picking') {
+    return <Picking />;
+  }
+
   return (
     <article className="max-w-3xl m-auto mt-4">
       <div className="flex justify-between mb-4">
         <div>
           <h1 className="text-2xl">Match {match.id}</h1>
           <p className="mb-4">Status: {match.status}</p>
+          <p className="mb-4">Pick mode: {match.pick}</p>
           <section>
             <h2 className="text-xl">
               Players({playerCount}/{match.size}):
@@ -116,6 +122,13 @@ export default function Index() {
           <Form method="post" action="./start">
             <button type="submit" className="filled-button" disabled={playerCount < match.size}>
               Start match
+            </button>
+          </Form>
+        )}
+        {match.status === 'open' && (
+          <Form method="post" action="./pick">
+            <button type="submit" className="filled-button" disabled={playerCount < match.size}>
+              Start picking
             </button>
           </Form>
         )}

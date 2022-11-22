@@ -49,18 +49,21 @@ export interface Database {
           match_id: number
           player_id: string
           team: string | null
+          captain: boolean
         }
         Insert: {
           created_at?: string | null
           match_id: number
           player_id: string
           team?: string | null
+          captain?: boolean
         }
         Update: {
           created_at?: string | null
           match_id?: number
           player_id?: string
           team?: string | null
+          captain?: boolean
         }
       }
       matches: {
@@ -69,18 +72,21 @@ export interface Database {
           created_at: string | null
           status: string
           size: number
+          pick: string
         }
         Insert: {
           id?: number
           created_at?: string | null
           status?: string
           size?: number
+          pick?: string
         }
         Update: {
           id?: number
           created_at?: string | null
           status?: string
           size?: number
+          pick?: string
         }
       }
       players: {

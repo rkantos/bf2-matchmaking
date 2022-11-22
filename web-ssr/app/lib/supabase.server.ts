@@ -7,6 +7,9 @@ export type Player = Database['public']['Tables']['players']['Row'];
 export type Map = Database['public']['Tables']['maps']['Row'];
 export type Match = Database['public']['Tables']['matches']['Row'];
 export type MatchPlayer = Database['public']['Tables']['match_players']['Row'];
+export type JoinedMatch = Match & { maps: Array<Map> } & { players: Array<Player> } & {
+  teams: Array<{ player_id: string; team: string | null; captain: boolean }>;
+};
 
 let supabase: SupabaseClient | undefined;
 export const initSupabase = (request: Request) => {
@@ -27,25 +30,19 @@ const getClient = <T = any>() => {
 
 export const getSession = () => getClient().auth.getSession();
 
-export const createMatch = (size: string) =>
-  getClient<Database>()
-    .from('matches')
-    .insert([{ size: parseInt(size) }])
-    .select()
-    .single();
+interface CreateMatchOptions {
+  size: number;
+  pick: string;
+}
+export const createMatch = (options: CreateMatchOptions) =>
+  getClient<Database>().from('matches').insert([options]).select().single();
 
 export const getMatch = (
   matchId: string | undefined
-): PromiseLike<
-  PostgrestSingleResponse<
-    Match & { maps: Array<Map> } & { players: Array<Player> } & {
-      teams: Array<{ player_id: string; team: string }>;
-    }
-  >
-> =>
+): PromiseLike<PostgrestSingleResponse<JoinedMatch>> =>
   getClient()
     .from('matches')
-    .select('*, maps(*), players(*), teams:match_players(player_id, team)')
+    .select('*, maps(*), players(*), teams:match_players(player_id, team, captain)')
     .eq('id', matchId)
     .single();
 

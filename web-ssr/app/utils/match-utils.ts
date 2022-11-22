@@ -1,10 +1,10 @@
-import { Match, Player } from '~/lib/supabase.server';
+import { JoinedMatch, Match, Player } from '~/lib/supabase.server';
 
 export const isNotDeleted = (match: Match) => match.status !== 'deleted';
 export const isOpen = (match: Match) => match.status === 'open';
 export const isStarted = (match: Match) => match.status === 'started' || match.status === 'closed';
 
-const shuffleArray = <T = unknown>(array: Array<T>) => {
+export const shuffleArray = <T = unknown>(array: Array<T>) => {
   const clonedArray = [...array];
   for (let i = clonedArray.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -18,3 +18,6 @@ export const assignMatchPlayerTeams = (players: Array<Player>) =>
     playerId: player.id,
     team: i % 2 === 1 ? 'a' : 'b',
   }));
+
+export const isAssignedTeam = (match: JoinedMatch, playerId: string) =>
+  match.teams.some(({ player_id, team }) => player_id === playerId && team !== null);

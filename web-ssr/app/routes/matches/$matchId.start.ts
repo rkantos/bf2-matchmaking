@@ -27,11 +27,13 @@ export const action: ActionFunction = async ({ request, params }) => {
     const { data: match } = await getMatch(params['matchId']);
     invariant(match, 'No match found');
     const addResult = await createMatchMaps(params['matchId']!, ...getMaps());
-    await Promise.all(
-      assignMatchPlayerTeams(match.players).map(({ playerId, team }) =>
-        updateMatchPlayer(match.id, playerId, { team })
-      )
-    );
+    if (match.pick === 'random') {
+      await Promise.all(
+        assignMatchPlayerTeams(match.players).map(({ playerId, team }) =>
+          updateMatchPlayer(match.id, playerId, { team })
+        )
+      );
+    }
     const startResult = await updateMatch(params['matchId'], { status: 'started' });
 
     if (addResult.error) {

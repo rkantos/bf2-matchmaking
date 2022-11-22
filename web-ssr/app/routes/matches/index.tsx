@@ -7,10 +7,12 @@ import { isOpen, isStarted } from '~/utils/match-utils';
 
 export const action = async ({ request }: ActionArgs) => {
   const formData = await request.formData();
-  const size = formData.get('size');
+  const size = parseInt(formData.get('size')?.toString() || '');
+  const pick = formData.get('pick')?.toString();
   invariant(size, 'No size included');
+  invariant(pick, 'No pick included');
   initSupabase(request);
-  const result = await createMatch(size.toString());
+  const result = await createMatch({ pick, size });
   invariant(result.data, 'Failed to create match');
   return redirect(`/matches/${result.data.id}`);
 };
@@ -40,10 +42,21 @@ export default function Index() {
       <section className="border p-4 rounded mb-4">
         <h2 className="text-xl">Create new match</h2>
         <Form className="flex flex-col" method="post" reloadDocument>
-          <label>
-            Size:
-            <input className="text-field my-2" name="size" />
-          </label>
+          <div className="flex gap-4 my-2">
+            <label>
+              Size:
+              <input className="text-field" name="size" />
+            </label>
+            <label>
+              Pick:
+              <select className="dropdown" name="pick">
+                <option value="captain" selected>
+                  Captain mode
+                </option>
+                <option value="random">Random pick</option>
+              </select>
+            </label>
+          </div>
           <button type="submit" className="filled-button max-w-sm">
             Create
           </button>
