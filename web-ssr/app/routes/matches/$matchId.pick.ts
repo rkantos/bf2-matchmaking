@@ -21,17 +21,13 @@ export const action: ActionFunction = async ({ request, params }) => {
     const { data: match } = await getMatch(params['matchId']);
     invariant(match, 'No match found');
 
-    const shuffledPlayers = shuffleArray(match.players).filter(
+    const shuffledPlayers = match.players; /*shuffleArray(match.players).filter(
       ({ id }) => id !== '45e66c7c-fce5-485c-9edd-a3dd84a0cb17'
-    );
+    );*/
     if (shuffledPlayers.length < 2) {
       throw new Error('To few players for captian mode.');
     }
-    await updateMatchPlayer(match.id, '45e66c7c-fce5-485c-9edd-a3dd84a0cb17', {
-      team: 'a',
-      captain: true,
-    });
-    //await updateMatchPlayer(match.id, shuffledPlayers[0].id, { team: 'a', captain: true });
+    await updateMatchPlayer(match.id, shuffledPlayers[0].id, { team: 'a', captain: true });
     await updateMatchPlayer(match.id, shuffledPlayers[1].id, { team: 'b', captain: true });
 
     const result = await updateMatch(params['matchId'], { status: 'picking' });

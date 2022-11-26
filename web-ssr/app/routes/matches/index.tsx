@@ -49,10 +49,8 @@ export default function Index() {
             </label>
             <label>
               Pick:
-              <select className="dropdown" name="pick">
-                <option value="captain" selected>
-                  Captain mode
-                </option>
+              <select className="dropdown" name="pick" defaultValue="captain">
+                <option value="captain">Captain mode</option>
                 <option value="random">Random pick</option>
               </select>
             </label>

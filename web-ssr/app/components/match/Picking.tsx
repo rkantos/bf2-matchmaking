@@ -42,15 +42,18 @@ export default function Picking() {
     );
 
   return (
-    <article className="max-w-3xl m-auto mt-4">
+    <article className="max-w-3xl mt-4 flex justify-between">
       <section>
         <h2>Player pool:</h2>
         <ul>
           {playerPool.map((player) => (
             <li key={player.id}>
-              <p>{player.username}</p>
+              <span>{player.username}</span>
               {team && canPick && (
-                <button className="filled-button" onClick={assignPlayer(player.id, team)}>
+                <button
+                  className="inline-block underline ml-2"
+                  onClick={assignPlayer(player.id, team)}
+                >
                   Pick
                 </button>
               )}
@@ -60,21 +63,23 @@ export default function Picking() {
       </section>
       <section>
         <h2 className="text-xl">Teams:</h2>
-        <div className="mb-2">
-          <h3 className="text-lg">Team A</h3>
-          <ul>
-            {match.players.filter(isTeam('a')).map((player) => (
-              <li key={player.id}>{player.username}</li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <h3 className="text-lg">Team B</h3>
-          <ul>
-            {match.players.filter(isTeam('b')).map((player) => (
-              <li key={player.id}>{player.username}</li>
-            ))}
-          </ul>
+        <div className="flex gap-8">
+          <div className="mb-2">
+            <h3 className="text-lg">Team A</h3>
+            <ul>
+              {match.players.filter(isTeam('a')).map((player) => (
+                <li key={player.id}>{player.username}</li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-lg">Team B</h3>
+            <ul>
+              {match.players.filter(isTeam('b')).map((player) => (
+                <li key={player.id}>{player.username}</li>
+              ))}
+            </ul>
+          </div>
         </div>
       </section>
     </article>
