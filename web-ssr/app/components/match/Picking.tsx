@@ -28,9 +28,9 @@ export default function Picking() {
   useEffect(() => {
     const channel = supabase
       .channel('public:match_players')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'match_players' }, () =>
-        navigate('.', { replace: true })
-      )
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'match_players' }, () => {
+        navigate('.', { replace: true });
+      })
       .subscribe();
     () => channel.unsubscribe();
   }, [supabase]);

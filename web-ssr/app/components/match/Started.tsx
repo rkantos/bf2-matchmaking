@@ -16,7 +16,7 @@ export default function Started() {
           <h3 className="text-lg">Team A</h3>
           <ul>
             {match.players.filter(isTeam('a')).map((player) => (
-              <li>{player.username}</li>
+              <li key={player.id}>{player.username}</li>
             ))}
           </ul>
         </div>
@@ -24,7 +24,7 @@ export default function Started() {
           <h3 className="text-lg">Team B</h3>
           <ul>
             {match.players.filter(isTeam('b')).map((player) => (
-              <li>{player.username}</li>
+              <li key={player.id}>{player.username}</li>
             ))}
           </ul>
         </div>
@@ -32,8 +32,8 @@ export default function Started() {
       <div>
         <h2 className="text-xl">Maps:</h2>
         <ul>
-          {match.maps.map(({ name }) => (
-            <li>{name}</li>
+          {match.maps.map(({ name, id }) => (
+            <li key={id}>{name}</li>
           ))}
         </ul>
       </div>
