@@ -9,7 +9,7 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
-      discord_channel: {
+      discord_channels: {
         Row: {
           id: number
           created_at: string | null

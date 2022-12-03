@@ -9,10 +9,7 @@ export function getResult(p1, p2) {
       lose: p2,
       verb: RPSChoices[p1.objectName][p2.objectName],
     };
-  } else if (
-    RPSChoices[p2.objectName] &&
-    RPSChoices[p2.objectName][p1.objectName]
-  ) {
+  } else if (RPSChoices[p2.objectName] && RPSChoices[p2.objectName][p1.objectName]) {
     // o2 wins
     gameResult = {
       win: p2,

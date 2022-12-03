@@ -12,7 +12,7 @@ export const action = async ({ request }: ActionArgs) => {
   invariant(size, 'No size included');
   invariant(pick, 'No pick included');
   initSupabase(request);
-  const result = await createMatch({ pick, size });
+  const result = await createMatch({ pick, size, channel: 1 });
   invariant(result.data, 'Failed to create match');
   return redirect(`/matches/${result.data.id}`);
 };

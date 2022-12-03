@@ -9,11 +9,8 @@ import {
 } from 'discord-interactions';
 import { VerifyDiscordRequest, getRandomEmoji, DiscordRequest } from './utils.js';
 import { getShuffledOptions, getResult } from './game.js';
-import {
-  CHALLENGE_COMMAND,
-  TEST_COMMAND,
-  HasGuildCommands,
-} from './commands.js';
+import { CHALLENGE_COMMAND, TEST_COMMAND, HasGuildCommands } from './commands.js';
+import { subscribeMatches } from './libs/supabase/supabase.js';
 
 // Create an express app
 const app = express();
@@ -21,6 +18,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 // Parse request body and verifies incoming requests using discord-interactions package
 app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
+
+subscribeMatches((payload) => {
+  console.log('new match', payload);
+});
 
 // Store for in-progress games. In production, you'd want to use a DB
 const activeGames = {};
@@ -179,8 +180,5 @@ app.listen(PORT, () => {
   console.log('Listening on port', PORT);
 
   // Check if guild commands from commands.js are installed (if not, install them)
-  HasGuildCommands(process.env.APP_ID, process.env.GUILD_ID, [
-    TEST_COMMAND,
-    CHALLENGE_COMMAND,
-  ]);
+  HasGuildCommands(process.env.APP_ID, process.env.GUILD_ID, [TEST_COMMAND, CHALLENGE_COMMAND]);
 });

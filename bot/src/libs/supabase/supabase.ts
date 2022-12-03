@@ -1,7 +1,11 @@
-import { createServerClient, SupabaseClient } from '@supabase/auth-helpers-remix';
-import { PostgrestSingleResponse } from '@supabase/supabase-js';
+import {
+  PostgrestSingleResponse,
+  createClient,
+  SupabaseClient,
+  RealtimePostgresInsertPayload,
+} from '@supabase/supabase-js';
 import invariant from 'tiny-invariant';
-import { Database } from './databse.types';
+import { Database } from './database.types';
 
 export type Player = Database['public']['Tables']['players']['Row'];
 export type Map = Database['public']['Tables']['maps']['Row'];
@@ -11,29 +15,41 @@ export type JoinedMatch = Match & { maps: Array<Map> } & { players: Array<Player
   teams: Array<{ player_id: string; team: string | null; captain: boolean }>;
 };
 
-let supabase: SupabaseClient | undefined;
+let supabase: SupabaseClient<Database> | undefined;
 export const initSupabase = (request: Request) => {
   invariant(process.env.SUPABASE_URL, 'SUPABASE_URL not defined.');
   invariant(process.env.SUPABASE_ANON_KEY, 'SUPABASE_ANON_KEY not defined.');
   const response = new Response();
-  supabase = createServerClient<Database>(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
-    request,
-    response,
-  });
+  supabase = createClient<Database>(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
   return response;
 };
 
-const getClient = <T = any>() => {
-  invariant(supabase, 'Supabase client is not initiated.');
-  return supabase as SupabaseClient<T>;
+const getClient = () => {
+  if (!supabase) {
+    invariant(process.env.SUPABASE_URL, 'SUPABASE_URL not defined.');
+    invariant(process.env.SUPABASE_ANON_KEY, 'SUPABASE_ANON_KEY not defined.');
+    supabase = createClient<Database>(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+  }
+  return supabase;
 };
 
+export const subscribeMatches = (
+  callback: (payload: RealtimePostgresInsertPayload<Match>) => void
+) =>
+  getClient()
+    .channel('public:matches')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'matches' }, callback)
+    .subscribe();
+
+export const getChannel = (channelId: number | null) =>
+  getClient().from('discord_channels').select('*').eq('id', channelId).single();
+
+/*
 export const getSession = () => getClient().auth.getSession();
 
 interface CreateMatchOptions {
   size: number;
   pick: string;
-  channel: number;
 }
 export const createMatch = (options: CreateMatchOptions) =>
   getClient<Database>().from('matches').insert([options]).select().single();
@@ -77,3 +93,4 @@ export const createMatchMaps = (matchId: string, ...maps: Array<number>) =>
   getClient<Database>()
     .from('match_maps')
     .insert(maps.map((mapId) => ({ match_id: parseInt(matchId), map_id: mapId })));
+*/

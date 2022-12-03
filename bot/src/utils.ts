@@ -1,9 +1,9 @@
 import 'dotenv/config';
-import fetch from 'node-fetch';
 import { verifyKey } from 'discord-interactions';
+import fetch from 'cross-fetch';
 
-export function VerifyDiscordRequest(clientKey) {
-  return function (req, res, buf, encoding) {
+export function VerifyDiscordRequest(clientKey: string) {
+  return function (req: any, res: any, buf: any, encoding: any) {
     const signature = req.get('X-Signature-Ed25519');
     const timestamp = req.get('X-Signature-Timestamp');
 
@@ -15,19 +15,27 @@ export function VerifyDiscordRequest(clientKey) {
   };
 }
 
-export async function DiscordRequest(endpoint, options) {
+type Options = {
+  body: unknown;
+} & Omit<RequestInit, 'body'>;
+export async function DiscordRequest(endpoint: string, options: Options) {
   // append endpoint to root API URL
   const url = 'https://discord.com/api/v10/' + endpoint;
+  console.log('Making request to: ', url);
   // Stringify payloads
-  if (options.body) options.body = JSON.stringify(options.body);
+  if (options.body) {
+    options.body = JSON.stringify(options.body);
+    console.log('with body: ', options.body);
+  }
+
   // Use node-fetch to make requests
   const res = await fetch(url, {
     headers: {
       Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
       'Content-Type': 'application/json; charset=UTF-8',
-      'User-Agent': 'DiscordBot (https://github.com/discord/discord-example-app, 1.0.0)',
+      'User-Agent': 'DiscordBot (https://github.com/espehel/bf2-matchmaking, 1.0.0)',
     },
-    ...options
+    ...(options as RequestInit),
   });
   // throw API errors
   if (!res.ok) {
@@ -41,10 +49,25 @@ export async function DiscordRequest(endpoint, options) {
 
 // Simple method that returns a random emoji from list
 export function getRandomEmoji() {
-  const emojiList = ['😭','😄','😌','🤓','😎','😤','🤖','😶‍🌫️','🌏','📸','💿','👋','🌊','✨'];
+  const emojiList = [
+    '😭',
+    '😄',
+    '😌',
+    '🤓',
+    '😎',
+    '😤',
+    '🤖',
+    '😶‍🌫️',
+    '🌏',
+    '📸',
+    '💿',
+    '👋',
+    '🌊',
+    '✨',
+  ];
   return emojiList[Math.floor(Math.random() * emojiList.length)];
 }
 
-export function capitalize(str) {
+export function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
