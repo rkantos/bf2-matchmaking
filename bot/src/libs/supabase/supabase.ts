@@ -1,39 +1,35 @@
 import {
-  PostgrestSingleResponse,
   createClient,
-  SupabaseClient,
   RealtimePostgresInsertPayload,
+  RealtimePostgresDeletePayload,
+  PostgrestSingleResponse,
+  RealtimePostgresUpdatePayload,
+  RealtimePostgresChangesPayload,
+  SupabaseClient,
 } from '@supabase/supabase-js';
 import invariant from 'tiny-invariant';
 import { Database } from './database.types';
+import { APIUser } from 'discord-api-types/v10';
 
 export type Player = Database['public']['Tables']['players']['Row'];
+export type InsertPlayer = Database['public']['Tables']['players']['Insert'];
 export type Map = Database['public']['Tables']['maps']['Row'];
 export type Match = Database['public']['Tables']['matches']['Row'];
 export type MatchPlayer = Database['public']['Tables']['match_players']['Row'];
-export type JoinedMatch = Match & { maps: Array<Map> } & { players: Array<Player> } & {
-  teams: Array<{ player_id: string; team: string | null; captain: boolean }>;
-};
+export type DiscordChannel = Database['public']['Tables']['discord_channels']['Row'];
+export type JoinedMatch = Match & { players: Array<Player> } & { channel: DiscordChannel };
 
 let supabase: SupabaseClient<Database> | undefined;
-export const initSupabase = (request: Request) => {
-  invariant(process.env.SUPABASE_URL, 'SUPABASE_URL not defined.');
-  invariant(process.env.SUPABASE_ANON_KEY, 'SUPABASE_ANON_KEY not defined.');
-  const response = new Response();
-  supabase = createClient<Database>(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-  return response;
-};
-
 const getClient = () => {
   if (!supabase) {
     invariant(process.env.SUPABASE_URL, 'SUPABASE_URL not defined.');
-    invariant(process.env.SUPABASE_ANON_KEY, 'SUPABASE_ANON_KEY not defined.');
-    supabase = createClient<Database>(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+    invariant(process.env.SUPABASE_SERVICE_KEY, 'SUPABASE_SERVICE_KEY not defined.');
+    supabase = createClient<Database>(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
   }
   return supabase;
 };
 
-export const subscribeMatches = (
+export const onMatchesInsert = (
   callback: (payload: RealtimePostgresInsertPayload<Match>) => void
 ) =>
   getClient()
@@ -41,10 +37,78 @@ export const subscribeMatches = (
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'matches' }, callback)
     .subscribe();
 
+export const onMatchPlayersChange = (
+  callback: (payload: RealtimePostgresChangesPayload<MatchPlayer>) => void
+) =>
+  getClient()
+    .channel('public:match_players')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'match_players' }, callback)
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'match_players' }, callback)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'match_players' }, callback)
+    .subscribe();
+
 export const getChannel = (channelId: number | null) =>
   getClient().from('discord_channels').select('*').eq('id', channelId).single();
 
+export const getChannels = () => getClient().from('discord_channels').select('*');
+
+export const getPlayer = (playerId: number | undefined) =>
+  getClient().from('players').select('*').eq('id', playerId).single();
+
+export const createPlayer = (player: InsertPlayer) =>
+  getClient().from('players').insert([player]).select().single();
+
+export const createMatchPlayer = (match_id: number, player_id: number) =>
+  getClient().from('match_players').insert([{ match_id, player_id }]).select('*');
+
+export const deleteMatchPlayer = (matchId: number, playerId: number) =>
+  getClient().from('match_players').delete().eq('match_id', matchId).eq('player_id', playerId);
+
+export const updateMatchPlayer = (
+  matchId: number,
+  playerId: number,
+  values: Partial<MatchPlayer>
+) =>
+  getClient()
+    .from('match_players')
+    .update(values)
+    .eq('match_id', matchId)
+    .eq('player_id', playerId);
+
+export const getOpenMatchByChannel = (channelId: string) =>
+  getClient()
+    .from('matches')
+    .select<'*, players(*), channel!inner(*)', JoinedMatch>('*, players(*), channel!inner(*)')
+    .eq('channel.channel_id', channelId)
+    .eq('status', 'open')
+    .single();
+
+export const getOrCreatePlayer = async ({ id, username, discriminator, avatar }: APIUser) => {
+  const res = await getPlayer(parseInt(id));
+  return res.data
+    ? res
+    : await createPlayer({
+        id: parseInt(id),
+        username: `${username}#${discriminator}`,
+        full_name: username,
+        avatar_url: avatar || '',
+      });
+};
+
+export const getMatch = (matchId: number | undefined) =>
+  getClient()
+    .from('matches')
+    .select<'*, players(*), channel(*)', JoinedMatch>('*, players(*), channel(*)')
+    .eq('id', matchId)
+    .single();
+
+export const updateMatch = (matchId: number, values: Partial<Match>) =>
+  getClient().from('matches').update(values).eq('id', matchId);
 /*
+export type JoinedMatch = Match & { maps: Array<Map> } & { players: Array<Player> } & {
+  teams: Array<{ player_id: string; team: string | null; captain: boolean }>;
+};
+
 export const getSession = () => getClient().auth.getSession();
 
 interface CreateMatchOptions {
@@ -65,11 +129,6 @@ export const getMatch = (
 
 export const updateMatch = (matchId: string | undefined, values: Partial<Match>) =>
   getClient<Database>().from('matches').update(values).eq('id', matchId);
-
-export const createMatchPlayer = (matchId: string, playerId: string) =>
-  getClient()
-    .from('match_players')
-    .insert([{ match_id: parseInt(matchId), player_id: playerId }]);
 
 export const deleteMatchPlayer = (matchId: string, playerId: string) =>
   getClient()

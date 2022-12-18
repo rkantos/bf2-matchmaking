@@ -15,18 +15,24 @@ export interface Database {
           created_at: string | null
           name: string
           uri: string
+          channel_id: string
+          server_id: string
         }
         Insert: {
           id?: number
           created_at?: string | null
           name: string
           uri: string
+          channel_id: string
+          server_id: string
         }
         Update: {
           id?: number
           created_at?: string | null
           name?: string
           uri?: string
+          channel_id?: string
+          server_id?: string
         }
       }
       maps: {
@@ -64,6 +70,29 @@ export interface Database {
         }
       }
       match_players: {
+        Row: {
+          player_id: number
+          match_id: number
+          updated_at: string
+          team: string | null
+          captain: boolean
+        }
+        Insert: {
+          player_id: number
+          match_id: number
+          updated_at?: string
+          team?: string | null
+          captain?: boolean
+        }
+        Update: {
+          player_id?: number
+          match_id?: number
+          updated_at?: string
+          team?: string | null
+          captain?: boolean
+        }
+      }
+      match_players_duplicate: {
         Row: {
           created_at: string | null
           match_id: number
@@ -114,11 +143,38 @@ export interface Database {
       }
       players: {
         Row: {
+          id: number
+          updated_at: string
+          username: string
+          full_name: string
+          avatar_url: string
+          user_id: string | null
+        }
+        Insert: {
+          id: number
+          updated_at?: string
+          username: string
+          full_name: string
+          avatar_url: string
+          user_id?: string | null
+        }
+        Update: {
+          id?: number
+          updated_at?: string
+          username?: string
+          full_name?: string
+          avatar_url?: string
+          user_id?: string | null
+        }
+      }
+      players_duplicate: {
+        Row: {
           id: string
           updated_at: string | null
           username: string | null
           full_name: string | null
           avatar_url: string | null
+          user_id: string
         }
         Insert: {
           id: string
@@ -126,6 +182,7 @@ export interface Database {
           username?: string | null
           full_name?: string | null
           avatar_url?: string | null
+          user_id: string
         }
         Update: {
           id?: string
@@ -133,6 +190,7 @@ export interface Database {
           username?: string | null
           full_name?: string | null
           avatar_url?: string | null
+          user_id?: string
         }
       }
     }

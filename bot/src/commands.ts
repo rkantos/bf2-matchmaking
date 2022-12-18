@@ -1,20 +1,28 @@
-import { getRPSChoices } from './game';
-import { capitalize, DiscordRequest } from './utils';
+import { DiscordRequest } from './utils';
+import { APIApplicationCommand } from 'discord-api-types/v10';
 
-export async function HasGuildCommands(appId, guildId, commands) {
+export async function HasGuildCommands(
+  appId: string,
+  guildId: string,
+  commands: Array<Partial<APIApplicationCommand>>
+) {
   if (guildId === '' || appId === '') return;
 
   commands.forEach((c) => HasGuildCommand(appId, guildId, c));
 }
 
 // Checks for a command
-async function HasGuildCommand(appId, guildId, command) {
+async function HasGuildCommand(
+  appId: string,
+  guildId: string,
+  command: Partial<APIApplicationCommand>
+) {
   // API endpoint to get and post guild commands
   const endpoint = `applications/${appId}/guilds/${guildId}/commands`;
 
   try {
     const res = await DiscordRequest(endpoint, { method: 'GET' });
-    const data = await res.json();
+    const data = (await res.json()) as Array<Partial<APIApplicationCommand>>;
 
     if (data) {
       const installedNames = data.map((c) => c['name']);
@@ -32,7 +40,11 @@ async function HasGuildCommand(appId, guildId, command) {
 }
 
 // Installs a command
-export async function InstallGuildCommand(appId, guildId, command) {
+export async function InstallGuildCommand(
+  appId: string,
+  guildId: string,
+  command: Partial<APIApplicationCommand>
+) {
   // API endpoint to get and post guild commands
   const endpoint = `applications/${appId}/guilds/${guildId}/commands`;
   // install command
@@ -43,40 +55,33 @@ export async function InstallGuildCommand(appId, guildId, command) {
   }
 }
 
-// Get the game choices from game.js
-function createCommandChoices() {
-  const choices = getRPSChoices();
-  const commandChoices = [];
-
-  for (let choice of choices) {
-    commandChoices.push({
-      name: capitalize(choice),
-      value: choice.toLowerCase(),
-    });
-  }
-
-  return commandChoices;
-}
-
-// Simple test command
-export const TEST_COMMAND = {
-  name: 'test',
-  description: 'Basic guild command',
+export const JOIN_COMMAND: Partial<APIApplicationCommand> = {
+  name: 'join',
+  description: 'Join a match',
   type: 1,
 };
 
-// Command containing options
-export const CHALLENGE_COMMAND = {
-  name: 'challenge',
-  description: 'Challenge to a match of rock paper scissors',
+export const LEAVE_COMMAND: Partial<APIApplicationCommand> = {
+  name: 'leave',
+  description: 'Leave a match',
+  type: 1,
+};
+
+export const INFO_COMMAND: Partial<APIApplicationCommand> = {
+  name: 'info',
+  description: 'Get info for channels open match.',
+  type: 1,
+};
+
+export const PICK_COMMAND: Partial<APIApplicationCommand> = {
+  name: 'pick',
+  description: 'Leave a match',
+  type: 1,
   options: [
     {
-      type: 3,
-      name: 'object',
-      description: 'Pick your object',
-      required: true,
-      choices: createCommandChoices(),
+      name: 'player',
+      description: 'User to be picked',
+      type: 1,
     },
   ],
-  type: 1,
 };

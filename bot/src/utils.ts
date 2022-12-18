@@ -1,6 +1,12 @@
 import 'dotenv/config';
 import { verifyKey } from 'discord-interactions';
 import fetch from 'cross-fetch';
+import { PostgrestResponse, PostgrestSingleResponse } from '@supabase/supabase-js';
+import {
+  APIApplicationCommandInteractionDataOption,
+  APIInteractionDataOptionBase,
+  ApplicationCommandOptionType,
+} from 'discord-api-types/v10';
 
 export function VerifyDiscordRequest(clientKey: string) {
   return function (req: any, res: any, buf: any, encoding: any) {
@@ -15,8 +21,22 @@ export function VerifyDiscordRequest(clientKey: string) {
   };
 }
 
+export const verifyResult = <T>({ data, error }: PostgrestResponse<T>) => {
+  if (error) {
+    throw error;
+  }
+  return data;
+};
+
+export const verifySingleResult = <T>({ data, error }: PostgrestSingleResponse<T>) => {
+  if (error) {
+    throw error;
+  }
+  return data;
+};
+
 type Options = {
-  body: unknown;
+  body?: unknown;
 } & Omit<RequestInit, 'body'>;
 export async function DiscordRequest(endpoint: string, options: Options) {
   // append endpoint to root API URL
@@ -71,3 +91,13 @@ export function getRandomEmoji() {
 export function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
+
+export const getOption = (
+  key: string,
+  options: APIApplicationCommandInteractionDataOption[] = []
+) => {
+  const option = options.find((option) => option.name === key) as
+    | APIInteractionDataOptionBase<ApplicationCommandOptionType.Channel, string>
+    | undefined;
+  return option?.value;
+};
