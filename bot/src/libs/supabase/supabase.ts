@@ -1,15 +1,13 @@
 import {
   createClient,
   RealtimePostgresInsertPayload,
-  RealtimePostgresDeletePayload,
-  PostgrestSingleResponse,
-  RealtimePostgresUpdatePayload,
   RealtimePostgresChangesPayload,
   SupabaseClient,
 } from '@supabase/supabase-js';
 import invariant from 'tiny-invariant';
 import { Database } from './database.types';
 import { APIUser } from 'discord-api-types/v10';
+import { verifySingleResult } from '../../utils';
 
 export type Player = Database['public']['Tables']['players']['Row'];
 export type InsertPlayer = Database['public']['Tables']['players']['Insert'];
@@ -52,21 +50,21 @@ export const getChannel = (channelId: number | null) =>
 
 export const getChannels = () => getClient().from('discord_channels').select('*');
 
-export const getPlayer = (playerId: number | undefined) =>
+export const getPlayer = (playerId: string | undefined) =>
   getClient().from('players').select('*').eq('id', playerId).single();
 
 export const createPlayer = (player: InsertPlayer) =>
   getClient().from('players').insert([player]).select().single();
 
-export const createMatchPlayer = (match_id: number, player_id: number) =>
+export const createMatchPlayer = (match_id: number, player_id: string) =>
   getClient().from('match_players').insert([{ match_id, player_id }]).select('*');
 
-export const deleteMatchPlayer = (matchId: number, playerId: number) =>
+export const deleteMatchPlayer = (matchId: number, playerId: string) =>
   getClient().from('match_players').delete().eq('match_id', matchId).eq('player_id', playerId);
 
 export const updateMatchPlayer = (
   matchId: number,
-  playerId: number,
+  playerId: string,
   values: Partial<MatchPlayer>
 ) =>
   getClient()
@@ -82,18 +80,6 @@ export const getOpenMatchByChannel = (channelId: string) =>
     .eq('channel.channel_id', channelId)
     .eq('status', 'open')
     .single();
-
-export const getOrCreatePlayer = async ({ id, username, discriminator, avatar }: APIUser) => {
-  const res = await getPlayer(parseInt(id));
-  return res.data
-    ? res
-    : await createPlayer({
-        id: parseInt(id),
-        username: `${username}#${discriminator}`,
-        full_name: username,
-        avatar_url: avatar || '',
-      });
-};
 
 export const getMatch = (matchId: number | undefined) =>
   getClient()

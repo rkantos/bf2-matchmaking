@@ -71,21 +71,21 @@ export interface Database {
       }
       match_players: {
         Row: {
-          player_id: number
+          player_id: string
           match_id: number
           updated_at: string
           team: string | null
           captain: boolean
         }
         Insert: {
-          player_id: number
+          player_id: string
           match_id: number
           updated_at?: string
           team?: string | null
           captain?: boolean
         }
         Update: {
-          player_id?: number
+          player_id?: string
           match_id?: number
           updated_at?: string
           team?: string | null
@@ -143,7 +143,7 @@ export interface Database {
       }
       players: {
         Row: {
-          id: number
+          id: string
           updated_at: string
           username: string
           full_name: string
@@ -151,7 +151,7 @@ export interface Database {
           user_id: string | null
         }
         Insert: {
-          id: number
+          id: string
           updated_at?: string
           username: string
           full_name: string
@@ -159,7 +159,7 @@ export interface Database {
           user_id?: string | null
         }
         Update: {
-          id?: number
+          id?: string
           updated_at?: string
           username?: string
           full_name?: string

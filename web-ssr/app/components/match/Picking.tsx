@@ -1,10 +1,15 @@
 import { useLoaderData, useNavigate, useSubmit } from '@remix-run/react';
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
-import { useEffect } from 'react';
+import { FC, useEffect } from 'react';
 import { Player } from '~/lib/supabase.server';
 import { loader } from '~/routes/matches/$matchId';
 
-export default function Picking() {
+interface Props {
+  currentPicker?: Player;
+  currentTeam: string;
+}
+
+export const Picking: FC<Props> = ({ currentPicker, currentTeam }) => {
   const { match } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const submit = useSubmit();
@@ -16,14 +21,7 @@ export default function Picking() {
 
   const playerPool = match.players.filter(isTeam(null));
 
-  const team = match.teams.find(({ player_id }) => user && player_id === user.id)?.team;
-
-  const isTeamCaptain = (team: string | null) => {
-    const player = match.teams.find(({ player_id }) => user && player_id === user.id);
-    return Boolean(player?.captain && player.team === team);
-  };
-
-  const canPick = playerPool.length % 2 === 0 ? isTeamCaptain('a') : isTeamCaptain('b');
+  const canPick = Boolean(currentPicker && user && currentPicker.user_id === user.id);
 
   useEffect(() => {
     const channel = supabase
@@ -35,9 +33,9 @@ export default function Picking() {
     () => channel.unsubscribe();
   }, [supabase]);
 
-  const assignPlayer = (playerId: string, team: string) => () =>
+  const assignPlayer = (playerId: string) => () =>
     submit(
-      { playerId, team },
+      { playerId, team: currentTeam },
       { method: 'post', action: `/matches/${match.id}/assign`, replace: true }
     );
 
@@ -49,11 +47,8 @@ export default function Picking() {
           {playerPool.map((player) => (
             <li key={player.id}>
               <span>{player.username}</span>
-              {team && canPick && (
-                <button
-                  className="inline-block underline ml-2"
-                  onClick={assignPlayer(player.id, team)}
-                >
+              {canPick && (
+                <button className="inline-block underline ml-2" onClick={assignPlayer(player.id)}>
                   Pick
                 </button>
               )}
@@ -84,4 +79,6 @@ export default function Picking() {
       </section>
     </article>
   );
-}
+};
+
+export default Picking;

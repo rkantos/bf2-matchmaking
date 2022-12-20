@@ -1,11 +1,12 @@
 import { APIUser } from 'discord-api-types/v10';
+import { info } from '../libs/logging';
 import {
   createMatchPlayer,
+  createPlayer,
   deleteMatchPlayer,
   getChannel,
   getMatch,
   getOpenMatchByChannel,
-  getOrCreatePlayer,
   getPlayer,
   JoinedMatch,
   Match,
@@ -15,6 +16,20 @@ import {
 } from '../libs/supabase/supabase';
 import { verifyResult, verifySingleResult } from '../utils';
 
+export const getOrCreatePlayer = async ({ id, username, discriminator, avatar }: APIUser) => {
+  const { error, data } = await getPlayer(id);
+  if (error) {
+    info('service/match', `Inserting Player <${username}> with id ${id}`);
+    return createPlayer({
+      id,
+      username: `${username}#${discriminator}`,
+      full_name: username,
+      avatar_url: avatar || '',
+    }).then(verifySingleResult);
+  }
+  return data;
+};
+
 export const getMatchPlayerNamesByChannel = async (channelId: string) => {
   const match = await getOpenMatchByChannel(channelId).then(verifySingleResult);
   return match.players.map(({ full_name }) => full_name);
@@ -22,7 +37,7 @@ export const getMatchPlayerNamesByChannel = async (channelId: string) => {
 
 export const addPlayer = async (channelId: string, user: APIUser) => {
   const match = await getOpenMatchByChannel(channelId).then(verifySingleResult);
-  const player = await getOrCreatePlayer(user).then(verifySingleResult);
+  const player = await getOrCreatePlayer(user);
   await createMatchPlayer(match.id, player.id).then(verifyResult);
 
   if (match.players.length + 1 === match.size) {
@@ -33,7 +48,7 @@ export const addPlayer = async (channelId: string, user: APIUser) => {
 
 export const removePlayer = async (channelId: string, user: APIUser) => {
   const match = await getOpenMatchByChannel(channelId).then(verifySingleResult);
-  const player = await getOrCreatePlayer(user).then(verifySingleResult);
+  const player = await getOrCreatePlayer(user);
   await deleteMatchPlayer(match.id, player.id).then(verifyResult);
 };
 

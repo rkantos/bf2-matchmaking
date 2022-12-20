@@ -10,7 +10,7 @@ interface Props {
 
 const MatchActions: FC<Props> = ({ match, user }) => {
   const playerCount = match.players.length;
-  const hasJoined = match.players.some((player) => player.id === user?.id);
+  const hasJoined = match.players.some((player) => player.user_id === user.id);
   const hasUnpickedPlayers = match.teams.some(({ team }) => team === null);
 
   return (

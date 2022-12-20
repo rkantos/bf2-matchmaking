@@ -50,17 +50,11 @@ export const getMatch = (
 export const updateMatch = (matchId: string | undefined, values: Partial<Match>) =>
   getClient<Database>().from('matches').update(values).eq('id', matchId);
 
-export const createMatchPlayer = (matchId: string, playerId: string) =>
-  getClient()
-    .from('match_players')
-    .insert([{ match_id: parseInt(matchId), player_id: playerId }]);
+export const createMatchPlayer = (match_id: string, player_id: string) =>
+  getClient().from('match_players').insert([{ match_id, player_id }]);
 
 export const deleteMatchPlayer = (matchId: string, playerId: string) =>
-  getClient()
-    .from('match_players')
-    .delete()
-    .eq('match_id', parseInt(matchId))
-    .eq('player_id', playerId);
+  getClient().from('match_players').delete().eq('match_id', matchId).eq('player_id', playerId);
 
 export const updateMatchPlayer = (
   matchId: number,
@@ -77,3 +71,6 @@ export const createMatchMaps = (matchId: string, ...maps: Array<number>) =>
   getClient<Database>()
     .from('match_maps')
     .insert(maps.map((mapId) => ({ match_id: parseInt(matchId), map_id: mapId })));
+
+export const getPlayerByUserId = (userId: string) =>
+  getClient<Database>().from('players').select('*').eq('user_id', userId).single();

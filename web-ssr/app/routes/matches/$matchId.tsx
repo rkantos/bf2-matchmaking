@@ -1,9 +1,9 @@
 import { json, LoaderArgs } from '@remix-run/node'; // change this import to whatever runtime you are using
 import invariant from 'tiny-invariant';
-import { Form, useLoaderData, useNavigate } from '@remix-run/react';
-import { getMatch, initSupabase, Player } from '~/lib/supabase.server';
+import { useLoaderData, useNavigate } from '@remix-run/react';
+import { getMatch, initSupabase } from '~/lib/supabase.server';
 import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Picking from '~/components/match/Picking';
 import Open from '~/components/match/Open';
 import Started from '~/components/match/Started';
@@ -11,12 +11,7 @@ import MatchActions from '~/components/match/MatchActions';
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   const response = initSupabase(request);
-
-  const { data: match, error, status } = await getMatch(params['matchId']);
-
-  if (error) {
-    console.log(error);
-  }
+  const { data: match } = await getMatch(params['matchId']);
 
   invariant(match, 'Match not found');
 
@@ -33,6 +28,16 @@ export default function Index() {
   const navigate = useNavigate();
   const user = useUser();
   const supabase = useSupabaseClient();
+
+  const getTeamCaptain = (team: string) => {
+    const playerId = match.teams.find(
+      (player) => player.captain && player.team === team
+    )?.player_id;
+    return match.players.find(({ id }) => id === playerId);
+  };
+  const playerPool = match.teams.filter(({ team }) => team === null);
+  const currentTeam = playerPool.length % 2 === 0 ? 'a' : 'b';
+  const currentPicker = getTeamCaptain(currentTeam);
 
   useEffect(() => {
     const channel = supabase
@@ -64,9 +69,12 @@ export default function Index() {
           <h1 className="text-2xl">Match {match.id}</h1>
           <span className="mr-4">Status: {match.status}</span>
           <span>Pick mode: {match.pick}</span>
+          {currentPicker && <span className="ml-4">Picking: {currentPicker.username}</span>}
         </div>
         {match.status === 'open' && <Open />}
-        {match.status === 'picking' && <Picking />}
+        {match.status === 'picking' && (
+          <Picking currentPicker={currentPicker} currentTeam={currentTeam} />
+        )}
         {match.status === 'started' && <Started />}
         {match.status === 'closed' && <Started />}
       </div>

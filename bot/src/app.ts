@@ -7,7 +7,6 @@ import {
   deleteMatchPlayer,
   getMatch,
   getOpenMatchByChannel,
-  getOrCreatePlayer,
 } from './libs/supabase/supabase';
 import invariant from 'tiny-invariant';
 import {
@@ -20,7 +19,7 @@ import {
 import { APIInteraction, InteractionType, ApplicationCommandType } from 'discord-api-types/v10';
 import { initDiscordGateway } from './discord-gateway';
 import { subscribeMatches, subscribeMatchPlayers } from './supabase-subscriptions';
-import { startMatchDraft } from './services/match';
+import { getOrCreatePlayer, startMatchDraft } from './services/match';
 
 // Create an express app
 const app = express();
@@ -61,7 +60,7 @@ app.post('/interactions', async function (req, res) {
       try {
         const match = await getOpenMatchByChannel(channel_id).then(verifySingleResult);
         invariant(member, 'Could not get user data from request.');
-        const player = await getOrCreatePlayer(member.user).then(verifySingleResult);
+        const player = await getOrCreatePlayer(member.user);
 
         await createMatchPlayer(match.id, player.id).then(verifyResult);
 
@@ -93,7 +92,7 @@ app.post('/interactions', async function (req, res) {
       try {
         const match = await getOpenMatchByChannel(channel_id).then(verifySingleResult);
         invariant(member, 'Could not get user data from request.');
-        const player = await getOrCreatePlayer(member.user).then(verifySingleResult);
+        const player = await getOrCreatePlayer(member.user);
 
         await deleteMatchPlayer(match.id, player.id).then(verifyResult);
 
@@ -142,7 +141,7 @@ app.post('/interactions', async function (req, res) {
       try {
         const match = await getOpenMatchByChannel(channel_id).then(verifySingleResult);
         invariant(member, 'Could not get user data from request.');
-        const captain = await getOrCreatePlayer(member.user).then(verifySingleResult);
+        const captain = await getOrCreatePlayer(member.user);
         const pickedPlayer = getOption('player', options);
 
         /*const team = captain;
