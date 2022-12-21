@@ -1,5 +1,5 @@
 import { APIUser } from 'discord-api-types/v10';
-import { info } from '../libs/logging';
+import { error, info } from '../libs/logging';
 import {
   createMatchPlayer,
   createPlayer,
@@ -15,6 +15,7 @@ import {
   updateMatchPlayer,
 } from '../libs/supabase/supabase';
 import { verifyResult, verifySingleResult } from '../utils';
+import { getTeamPlayers, isAssignedTeam } from '../utils/match-utils';
 
 export const getOrCreatePlayer = async ({ id, username, discriminator, avatar }: APIUser) => {
   const { error, data } = await getPlayer(id);
@@ -30,9 +31,15 @@ export const getOrCreatePlayer = async ({ id, username, discriminator, avatar }:
   return data;
 };
 
-export const getMatchPlayerNamesByChannel = async (channelId: string) => {
+export const getMatchInfoByChannel = async (channelId: string) => {
   const match = await getOpenMatchByChannel(channelId).then(verifySingleResult);
-  return match.players.map(({ full_name }) => full_name);
+  return {
+    embed: {
+      title: `Match ${match.id}`,
+      fields: getMatchFields(match),
+      url: `https://bf2-matchmaking.netlify.app/matches/${match.id}`,
+    },
+  };
 };
 
 export const addPlayer = async (channelId: string, user: APIUser) => {
@@ -68,7 +75,36 @@ export const startMatchDraft = async (match: JoinedMatch) => {
   return await updateMatch(match.id, { status: 'picking' }).then(verifyResult);
 };
 
-export const getNewMatchEmbed = async (match: Match) => {
+export const pickMatchPlayer = async (
+  channelId: string,
+  captainId: string,
+  playerId: string
+): Promise<string | undefined> => {
+  const match = await getOpenMatchByChannel(channelId).then(verifySingleResult);
+  const playerPool = match.teams.filter(({ team }) => team === null);
+  const currentTeam = playerPool.length % 2 === 0 ? 'a' : 'b';
+  const canPick = match.teams.some(
+    ({ captain, player_id, team }) => captain && player_id === captainId && team === currentTeam
+  );
+  if (!canPick) {
+    return 'Not allowed to pick';
+  }
+  const inPlayerpool = playerPool.some((player) => player.player_id === playerId);
+  if (!inPlayerpool) {
+    return 'Player not in match';
+  }
+  if (isAssignedTeam(match, playerId)) {
+    return 'Player already picked';
+  }
+  const { error: err, data } = await updateMatchPlayer(match.id, playerId, { team: currentTeam });
+
+  if (err) {
+    error('pickMatchPlayer', err.message);
+    return 'Something went wrong while picking';
+  }
+};
+
+export const getNewMatchInfo = async (match: Match) => {
   const channel = await getChannel(match.channel).then(verifySingleResult);
   return {
     channelId: channel.channel_id,
@@ -80,20 +116,50 @@ export const getNewMatchEmbed = async (match: Match) => {
   };
 };
 
-export const getMatchEmbed = async (matchId: number | undefined) => {
-  const { id, size, players, channel } = await getMatch(matchId).then(verifySingleResult);
-  const count = players.length;
-  const description = count
-    ? `${count}/${size} | ${players.map((player) => player.full_name).join(', ')}`
-    : 'No players';
+export const getMatchInfo = async (matchId: number | undefined) => {
+  const match = await getMatch(matchId).then(verifySingleResult);
   return {
-    channelId: channel.channel_id,
+    channelId: match.channel.channel_id,
     embed: {
-      title: `Match ${id}`,
-      description,
-      url: `https://bf2-matchmaking.netlify.app/matches/${id}`,
+      title: `Match ${match.id}`,
+      fields: getMatchFields(match),
+      url: `https://bf2-matchmaking.netlify.app/matches/${match.id}`,
     },
   };
+};
+
+export const getMatchFields = (match: JoinedMatch) => {
+  const count = match.players.length;
+  if (match.status === 'picking') {
+    return [
+      {
+        name: 'Pool',
+        value: getTeamPlayers(match, null)
+          .map((player) => player.full_name)
+          .join(', '),
+      },
+      {
+        name: 'Team A',
+        value: getTeamPlayers(match, 'a')
+          .map((player) => player.full_name)
+          .join(', '),
+      },
+      {
+        name: 'Team B',
+        value: getTeamPlayers(match, 'b')
+          .map((player) => player.full_name)
+          .join(', '),
+      },
+    ];
+  }
+  return [
+    {
+      name: 'Players',
+      value: `${count}/${match.size} | ${match.players
+        .map((player) => player.full_name)
+        .join(', ')}`,
+    },
+  ];
 };
 
 export const getMatchJoinMessage = async ({ player_id }: MatchPlayer) => {

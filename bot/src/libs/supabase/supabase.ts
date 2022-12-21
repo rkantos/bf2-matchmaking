@@ -15,7 +15,9 @@ export type Map = Database['public']['Tables']['maps']['Row'];
 export type Match = Database['public']['Tables']['matches']['Row'];
 export type MatchPlayer = Database['public']['Tables']['match_players']['Row'];
 export type DiscordChannel = Database['public']['Tables']['discord_channels']['Row'];
-export type JoinedMatch = Match & { players: Array<Player> } & { channel: DiscordChannel };
+export type JoinedMatch = Match & { players: Array<Player> } & { channel: DiscordChannel } & {
+  teams: Array<{ player_id: string; team: string | null; captain: boolean }>;
+};
 
 let supabase: SupabaseClient<Database> | undefined;
 const getClient = () => {
@@ -76,15 +78,21 @@ export const updateMatchPlayer = (
 export const getOpenMatchByChannel = (channelId: string) =>
   getClient()
     .from('matches')
-    .select<'*, players(*), channel!inner(*)', JoinedMatch>('*, players(*), channel!inner(*)')
+    .select<
+      '*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)',
+      JoinedMatch
+    >('*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)')
     .eq('channel.channel_id', channelId)
-    .eq('status', 'open')
+    .or('status.eq.open,status.eq.picking')
     .single();
 
 export const getMatch = (matchId: number | undefined) =>
   getClient()
     .from('matches')
-    .select<'*, players(*), channel(*)', JoinedMatch>('*, players(*), channel(*)')
+    .select<
+      '*, players(*), channel(*), teams:match_players(player_id, team, captain)',
+      JoinedMatch
+    >('*, players(*), channel(*), teams:match_players(player_id, team, captain)')
     .eq('id', matchId)
     .single();
 

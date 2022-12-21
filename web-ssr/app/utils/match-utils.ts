@@ -21,3 +21,8 @@ export const assignMatchPlayerTeams = (players: Array<Player>) =>
 
 export const isAssignedTeam = (match: JoinedMatch, playerId: string) =>
   match.teams.some(({ player_id, team }) => player_id === playerId && team !== null);
+
+export const getTeamCaptain = (match: JoinedMatch, team: string) => {
+  const playerId = match.teams.find((player) => player.captain && player.team === team)?.player_id;
+  return match.players.find(({ id }) => id === playerId);
+};

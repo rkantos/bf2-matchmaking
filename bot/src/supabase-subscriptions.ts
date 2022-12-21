@@ -2,11 +2,11 @@ import { REALTIME_POSTGRES_CHANGES_LISTEN_EVENT } from '@supabase/supabase-js';
 import { error } from './libs/logging';
 import { onMatchesInsert, onMatchPlayersChange } from './libs/supabase/supabase';
 import {
-  getMatchEmbed,
+  getMatchInfo,
   getMatchJoinMessage,
   getMatchLeaveMessage,
   getMatchPickMessage,
-  getNewMatchEmbed,
+  getNewMatchInfo,
 } from './services/match';
 import { DiscordRequest } from './utils';
 
@@ -15,18 +15,18 @@ export const subscribeMatchPlayers = async () => {
     try {
       switch (payload.eventType) {
         case REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.INSERT:
-          const { embed, channelId } = await getMatchEmbed(payload.new.match_id);
+          const { embed, channelId } = await getMatchInfo(payload.new.match_id);
           const content = await getMatchJoinMessage(payload.new);
           await sendChannelMessage(channelId, content, embed);
           break;
         case REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.DELETE: {
-          const { embed, channelId } = await getMatchEmbed(payload.old.match_id);
+          const { embed, channelId } = await getMatchInfo(payload.old.match_id);
           const content = await getMatchLeaveMessage(payload.old);
           await sendChannelMessage(channelId, content, embed);
           break;
         }
         case REALTIME_POSTGRES_CHANGES_LISTEN_EVENT.UPDATE: {
-          const { embed, channelId } = await getMatchEmbed(payload.old.match_id);
+          const { embed, channelId } = await getMatchInfo(payload.old.match_id);
           const content = await getMatchPickMessage(payload.new);
           await sendChannelMessage(channelId, content, embed);
           break;
@@ -47,8 +47,8 @@ export const subscribeMatchPlayers = async () => {
 export const subscribeMatches = () =>
   onMatchesInsert(async (payload) => {
     try {
-      const { channelId, embed } = await getNewMatchEmbed(payload.new);
-      sendChannelMessage(channelId, 'New match created', embed);
+      const { channelId, embed } = await getNewMatchInfo(payload.new);
+      await sendChannelMessage(channelId, 'New match created', embed);
     } catch (e) {
       if (e instanceof Error) {
         error('discord-gateway', e.message);

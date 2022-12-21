@@ -4,7 +4,8 @@ import { error, info } from './libs/logging';
 import { getChannelMap } from './services/channel';
 import {
   addPlayer,
-  getMatchPlayerNamesByChannel,
+  getMatchInfoByChannel,
+  pickMatchPlayer,
   removePlayer,
   startMatchDraft,
 } from './services/match';
@@ -31,13 +32,9 @@ export const initDiscordGateway = () => {
       return;
     }
     try {
-      switch (msg.content) {
-        case '!who':
-          return onWho(msg);
-        case '--':
-          return onLeave(msg);
-        case '++':
-          onJoin(msg);
+      const result = await parseMessage(msg);
+      if (result) {
+        gateway.createMessage(msg.channel.id, result);
       }
     } catch (e) {
       if (e instanceof Error) {
@@ -50,11 +47,24 @@ export const initDiscordGateway = () => {
     }
   });
 
+  const parseMessage = (msg: Message<PossiblyUncachedTextableChannel>) => {
+    switch (msg.content.split(' ')[0]) {
+      case '!who':
+        return onWho(msg);
+      case '--':
+        return onLeave(msg);
+      case '++':
+        return onJoin(msg);
+      case '!pick':
+        return onPick(msg);
+      default:
+        return Promise.resolve();
+    }
+  };
+
   const onWho = async (msg: Message<PossiblyUncachedTextableChannel>) => {
     info('discord-gateway', `Received command <${msg.content}> for channel <${msg.channel.id}>`);
-    const players = await getMatchPlayerNamesByChannel(msg.channel.id);
-    const message = players.length ? `[${players.join(', ')}]` : 'No players';
-    gateway.createMessage(msg.channel.id, message);
+    return getMatchInfoByChannel(msg.channel.id);
   };
 
   const onLeave = async (msg: Message<PossiblyUncachedTextableChannel>) => {
@@ -69,6 +79,16 @@ export const initDiscordGateway = () => {
     if (match.players.length === match.size && match.pick === 'captain') {
       await startMatchDraft(match);
     }
+  };
+  const onPick = async (
+    msg: Message<PossiblyUncachedTextableChannel>
+  ): Promise<string | undefined> => {
+    info('discord-gateway', `Received command <${msg.content}> for channel <${msg.channel.id}>`);
+    const playerId = msg.mentions[0]?.id || msg.content.split(' ')[1];
+    if (!playerId) {
+      return 'No player mentioned';
+    }
+    return await pickMatchPlayer(msg.channel.id, msg.author.id, playerId);
   };
 
   gateway.connect();

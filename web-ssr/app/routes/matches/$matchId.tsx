@@ -8,6 +8,7 @@ import Picking from '~/components/match/Picking';
 import Open from '~/components/match/Open';
 import Started from '~/components/match/Started';
 import MatchActions from '~/components/match/MatchActions';
+import { getTeamCaptain } from '~/utils/match-utils';
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   const response = initSupabase(request);
@@ -29,15 +30,9 @@ export default function Index() {
   const user = useUser();
   const supabase = useSupabaseClient();
 
-  const getTeamCaptain = (team: string) => {
-    const playerId = match.teams.find(
-      (player) => player.captain && player.team === team
-    )?.player_id;
-    return match.players.find(({ id }) => id === playerId);
-  };
   const playerPool = match.teams.filter(({ team }) => team === null);
   const currentTeam = playerPool.length % 2 === 0 ? 'a' : 'b';
-  const currentPicker = getTeamCaptain(currentTeam);
+  const currentPicker = getTeamCaptain(match, currentTeam);
 
   useEffect(() => {
     const channel = supabase
@@ -46,6 +41,9 @@ export default function Index() {
         navigate('.', { replace: true });
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'match_players' }, () => {
+        navigate('.', { replace: true });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'match_players' }, () => {
         navigate('.', { replace: true });
       })
       .subscribe();
