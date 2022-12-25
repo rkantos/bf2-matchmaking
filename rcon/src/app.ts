@@ -60,6 +60,19 @@ app.get('/', async (req, res) => {
   }
 });
 
+/**
+ * Get rounds from one time to another
+ * server can note info every second into a round variable with the current time.
+ * When time is lower than pervious a new round has started, and we now store info in a new variable
+ * We then can fetch all rounds between match start and now(), and in frontend select the wanted rounds.
+ */
+
+app.get('/rounds', async (req, res) => {
+  const { from, to, host, port, password } = req.query;
+  console.log(`${from}, ${to}, ${host}, ${port}, ${password}`);
+  return res.status(501).send('Endpoint is not ready yet.');
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);

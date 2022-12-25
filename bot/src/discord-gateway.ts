@@ -7,6 +7,7 @@ import {
   getMatchInfoByChannel,
   pickMatchPlayer,
   removePlayer,
+  startMatch,
   startMatchDraft,
 } from './services/match';
 
@@ -88,7 +89,15 @@ export const initDiscordGateway = () => {
     if (!playerId) {
       return 'No player mentioned';
     }
-    return await pickMatchPlayer(msg.channel.id, msg.author.id, playerId);
+    const { error, match } = await pickMatchPlayer(msg.channel.id, msg.author.id, playerId);
+
+    if (error) {
+      return error;
+    }
+
+    if (match?.teams.every((player) => player.team !== null)) {
+      startMatch(match.id);
+    }
   };
 
   gateway.connect();

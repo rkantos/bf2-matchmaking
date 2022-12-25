@@ -79,7 +79,7 @@ export const pickMatchPlayer = async (
   channelId: string,
   captainId: string,
   playerId: string
-): Promise<string | undefined> => {
+): Promise<{ error?: string; match?: JoinedMatch }> => {
   const match = await getOpenMatchByChannel(channelId).then(verifySingleResult);
   const playerPool = match.teams.filter(({ team }) => team === null);
   const currentTeam = playerPool.length % 2 === 0 ? 'a' : 'b';
@@ -87,21 +87,30 @@ export const pickMatchPlayer = async (
     ({ captain, player_id, team }) => captain && player_id === captainId && team === currentTeam
   );
   if (!canPick) {
-    return 'Not allowed to pick';
+    return { error: 'Not allowed to pick' };
   }
   const inPlayerpool = playerPool.some((player) => player.player_id === playerId);
   if (!inPlayerpool) {
-    return 'Player not in match';
+    return { error: 'Player not in match' };
   }
   if (isAssignedTeam(match, playerId)) {
-    return 'Player already picked';
+    return { error: 'Player already picked' };
   }
   const { error: err, data } = await updateMatchPlayer(match.id, playerId, { team: currentTeam });
 
   if (err) {
     error('pickMatchPlayer', err.message);
-    return 'Something went wrong while picking';
+    return { error: 'Something went wrong while picking' };
   }
+  if (playerPool.length === 1) {
+    const updatedMatch = await getMatch(match.id).then(verifySingleResult);
+    return { match: updatedMatch };
+  }
+  return { match };
+};
+
+export const startMatch = (matchId: number) => {
+  updateMatch(matchId, { status: 'started' }).then(verifyResult);
 };
 
 export const getNewMatchInfo = async (match: Match) => {
@@ -129,37 +138,43 @@ export const getMatchInfo = async (matchId: number | undefined) => {
 };
 
 export const getMatchFields = (match: JoinedMatch) => {
-  const count = match.players.length;
-  if (match.status === 'picking') {
-    return [
-      {
-        name: 'Pool',
-        value: getTeamPlayers(match, null)
-          .map((player) => player.full_name)
-          .join(', '),
-      },
-      {
-        name: 'Team A',
-        value: getTeamPlayers(match, 'a')
-          .map((player) => player.full_name)
-          .join(', '),
-      },
-      {
-        name: 'Team B',
-        value: getTeamPlayers(match, 'b')
-          .map((player) => player.full_name)
-          .join(', '),
-      },
-    ];
+  const fields = [];
+  if (match.status === 'picking' && getTeamPlayers(match, null).length) {
+    fields.push({
+      name: 'Pool',
+      value: getTeamPlayers(match, null)
+        .map((player) => player.full_name)
+        .join(', '),
+    });
   }
-  return [
-    {
+  if (match.status === 'picking') {
+    fields.push(
+      ...[
+        {
+          name: 'Team A',
+          value: getTeamPlayers(match, 'a')
+            .map((player) => player.full_name)
+            .join(', '),
+        },
+        {
+          name: 'Team B',
+          value: getTeamPlayers(match, 'b')
+            .map((player) => player.full_name)
+            .join(', '),
+        },
+      ]
+    );
+  }
+  if (match.status === 'open') {
+    const count = match.players.length;
+    fields.push({
       name: 'Players',
       value: `${count}/${match.size} | ${match.players
         .map((player) => player.full_name)
         .join(', ')}`,
-    },
-  ];
+    });
+  }
+  return fields;
 };
 
 export const getMatchJoinMessage = async ({ player_id }: MatchPlayer) => {
