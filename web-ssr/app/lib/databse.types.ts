@@ -92,29 +92,6 @@ export interface Database {
           captain?: boolean
         }
       }
-      match_players_duplicate: {
-        Row: {
-          created_at: string | null
-          match_id: number
-          player_id: string
-          team: string | null
-          captain: boolean
-        }
-        Insert: {
-          created_at?: string | null
-          match_id: number
-          player_id: string
-          team?: string | null
-          captain?: boolean
-        }
-        Update: {
-          created_at?: string | null
-          match_id?: number
-          player_id?: string
-          team?: string | null
-          captain?: boolean
-        }
-      }
       matches: {
         Row: {
           id: number
@@ -123,6 +100,7 @@ export interface Database {
           size: number
           pick: string
           channel: number | null
+          map_draft: string
         }
         Insert: {
           id?: number
@@ -131,6 +109,7 @@ export interface Database {
           size?: number
           pick?: string
           channel?: number | null
+          map_draft?: string
         }
         Update: {
           id?: number
@@ -139,6 +118,7 @@ export interface Database {
           size?: number
           pick?: string
           channel?: number | null
+          map_draft?: string
         }
       }
       players: {
@@ -167,30 +147,36 @@ export interface Database {
           user_id?: string | null
         }
       }
-      players_duplicate: {
+      rounds: {
         Row: {
-          id: string
-          updated_at: string | null
-          username: string | null
-          full_name: string | null
-          avatar_url: string | null
-          user_id: string
+          id: number
+          created_at: string
+          team1_name: string
+          team1_tickets: string
+          team2_name: string
+          team2_tickets: string
+          server: string
+          map: number
         }
         Insert: {
-          id: string
-          updated_at?: string | null
-          username?: string | null
-          full_name?: string | null
-          avatar_url?: string | null
-          user_id: string
+          id?: number
+          created_at?: string
+          team1_name: string
+          team1_tickets: string
+          team2_name: string
+          team2_tickets: string
+          server: string
+          map: number
         }
         Update: {
-          id?: string
-          updated_at?: string | null
-          username?: string | null
-          full_name?: string | null
-          avatar_url?: string | null
-          user_id?: string
+          id?: number
+          created_at?: string
+          team1_name?: string
+          team1_tickets?: string
+          team2_name?: string
+          team2_tickets?: string
+          server?: string
+          map?: number
         }
       }
     }

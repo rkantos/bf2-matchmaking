@@ -1,5 +1,5 @@
 import { createServerClient, SupabaseClient } from '@supabase/auth-helpers-remix';
-import { PostgrestSingleResponse } from '@supabase/supabase-js';
+import { PostgrestResponse, PostgrestSingleResponse } from '@supabase/supabase-js';
 import invariant from 'tiny-invariant';
 import { Database } from './databse.types';
 
@@ -7,9 +7,11 @@ export type Player = Database['public']['Tables']['players']['Row'];
 export type Map = Database['public']['Tables']['maps']['Row'];
 export type Match = Database['public']['Tables']['matches']['Row'];
 export type MatchPlayer = Database['public']['Tables']['match_players']['Row'];
+export type Round = Database['public']['Tables']['rounds']['Row'];
 export type JoinedMatch = Match & { maps: Array<Map> } & { players: Array<Player> } & {
   teams: Array<{ player_id: string; team: string | null; captain: boolean }>;
 };
+export type JoinedRound = Round & { map: Map };
 
 let supabase: SupabaseClient | undefined;
 export const initSupabase = (request: Request) => {
@@ -74,3 +76,6 @@ export const createMatchMaps = (matchId: string, ...maps: Array<number>) =>
 
 export const getPlayerByUserId = (userId: string) =>
   getClient<Database>().from('players').select('*').eq('user_id', userId).single();
+
+export const getRounds = (): PromiseLike<PostgrestResponse<JoinedRound>> =>
+  getClient().from('rounds').select('*, map(*)');

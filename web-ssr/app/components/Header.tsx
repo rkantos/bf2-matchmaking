@@ -26,6 +26,14 @@ const Header: FC = () => {
               Matches
             </NavLink>
           </li>
+          <li>
+            <NavLink
+              to="/rounds"
+              className={({ isActive }) => (isActive ? 'underline' : undefined)}
+            >
+              Rounds
+            </NavLink>
+          </li>
           {user && (
             <li>
               <button
