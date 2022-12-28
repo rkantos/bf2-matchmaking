@@ -1,5 +1,6 @@
 {
   "include": ["**/*.ts"],
+  "exclude": ["node_modules"],
   "compilerOptions": {
     "target": "es5",
     "module": "commonjs",
@@ -11,6 +12,7 @@
     "noImplicitAny": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "useUnknownInCatchVariables": true
+    "useUnknownInCatchVariables": true,
+    "skipLibCheck": true
   }
 }
