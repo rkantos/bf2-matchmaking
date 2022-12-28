@@ -1,6 +1,6 @@
 import net from 'net';
 import crypto from 'crypto';
-import { mapServerInfo, ServerInfo } from './mappers';
+import { info } from './logging';
 
 interface Options {
   host: string;
@@ -18,17 +18,17 @@ export const createClient = ({ host, port, password }: Options) => {
       host,
       port,
     });
-    console.log('Initialized');
+    info('client', 'Initialized');
 
     client.on('connect', () => {
-      console.log('Connected');
+      info('client', 'Connected');
     });
 
     client.on('data', (data) => {
       const sent = data.toString();
       if (sent.indexOf('### Digest seed: ') != -1) {
         const seed = sent.replace('### Digest seed: ', '').trim();
-        console.log('seed: ' + seed);
+        info('client', `seed: ${seed}`);
         client.write(
           'login ' +
             crypto
@@ -40,15 +40,15 @@ export const createClient = ({ host, port, password }: Options) => {
       }
 
       if (sent.indexOf('Authentication successful') != -1) {
-        console.log('Authorized');
+        info('client', 'Authenticated');
         resolve({
           send: (message: string) =>
             new Promise((resolve, reject) => {
-              console.log('Sending message');
+              info('client', `sending message: ${message}`);
 
               client.write(message + '\n');
               client.once('data', (response) => {
-                console.log('Received response');
+                info('client', 'Received response');
                 resolve(response.toString());
               });
             }),
