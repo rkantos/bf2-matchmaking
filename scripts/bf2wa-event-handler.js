@@ -1,10 +1,4 @@
 const net = require('net');
-require('dotenv').config();
-
-verify(process.env.RCON_PORT, 'process.env.RCON_PORT is not defined.');
-verify(process.env.RCON_PASSWORD, 'process.env.RCON_PASSWORD is not defined.');
-verify(process.env.BF2_SERVER_IP, 'process.env.BF2_SERVER_IP is not defined.');
-verify(fetch, 'Fetch not defined, use node 18 or newer.');
 
 const eventPort = 8080;
 
@@ -32,7 +26,7 @@ const eventHandler = net.createServer((socket) => {
     console.log('wa disconnected');
   });
   socket.on('error', (err) => {
-    console.log(`Error: ${err}`);
+    console.log(`Event handler error: ${err}`);
   });
 
   const handleGameStateEndGame = async (data) => {
@@ -74,14 +68,17 @@ const eventHandler = net.createServer((socket) => {
 });
 
 eventHandler.listen(eventPort, () => {
-  console.log(`Server listening on localhost:${eventPort}.`);
+  console.log(`Event handler listening on localhost:${eventPort}.`);
   initWebAdmin();
 });
 
 const initWebAdmin = () => {
+  console.log(`connecting to localhost:${process.env.RCON_PORT}`);
+
   const waClient = net.createConnection({ port: process.env.RCON_PORT, host: 'localhost' }, () => {
     console.log('connected to rcon');
   });
+
   waClient.on('data', (chunk) => {
     const data = chunk.toString();
     if (data.includes('### Digest seed: ')) {
@@ -93,8 +90,13 @@ const initWebAdmin = () => {
     }
     waClient.end();
   });
+
   waClient.on('end', () => {
     console.log('disconnected from rcon');
+  });
+
+  waClient.on('error', (err) => {
+    console.log(`WA client error: ${err}`);
   });
 
   const handleLogin = (data) => {
@@ -111,8 +113,9 @@ const initWebAdmin = () => {
   };
 
   const handleWaConnection = () => {
-    console.log('setting up wa connection');
-    waClient.write(`wa connect localhost ${eventPort} \n`);
+    const rconCmd = `wa connect localhost ${eventPort} \n`;
+    console.log(`setting up wa connection with command "${rconCmd}"`);
+    waClient.write(rconCmd);
     waClient.once('data', (response) => {
       console.log(response.toString());
     });
@@ -124,3 +127,7 @@ const verify = (variable, message) => {
     throw new Error(message);
   }
 };
+verify(process.env.RCON_PORT, 'process.env.RCON_PORT is not defined.');
+verify(process.env.RCON_PASSWORD, 'process.env.RCON_PASSWORD is not defined.');
+verify(process.env.BF2_SERVER_IP, 'process.env.BF2_SERVER_IP is not defined.');
+verify(fetch, 'Fetch not defined, use node 18 or newer.');

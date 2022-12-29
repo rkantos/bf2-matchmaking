@@ -119,7 +119,7 @@ app.post('/rounds', async (req, res) => {
     return res.status(502).send(roundsError.message);
   }
 
-  return res.status(200).send(`Inserted round ${round.id}`);
+  return res.status(200).send(`Round ${round.id} created.`);
 });
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 4500;
