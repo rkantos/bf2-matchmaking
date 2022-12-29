@@ -1,29 +1,18 @@
-// Include Nodejs' net module.
-const Net = require('net');
-// The port on which the server is listening.
-const port = 8080;
+const net = require('net');
+require('dotenv').config();
 
-// Use net.createServer() in your code. This is just for illustration purpose.
-// Create a new TCP server.
-const server = new Net.Server();
-// The server listens to a socket for a client to make a connection request.
-// Think of a socket as an end point.
-server.listen(port, function () {
-  console.log(`Server listening for connection requests on socket localhost:${port}.`);
-});
+verify(process.env.RCON_PORT, 'process.env.RCON_PORT is not defined.');
+verify(process.env.RCON_PASSWORD, 'process.env.RCON_PASSWORD is not defined.');
+verify(process.env.BF2_SERVER_IP, 'process.env.BF2_SERVER_IP is not defined.');
+verify(fetch, 'Fetch not defined, use node 18 or newer.');
 
-// When a client requests a connection with the server, the server creates a new
-// socket dedicated to that client.
-server.on('connection', function (socket) {
+const eventPort = 8080;
+
+const eventHandler = net.createServer((socket) => {
+  console.log('wa connected');
   let serverInfo;
-  console.log('A new connection has been established.');
 
-  // Now that a TCP connection has been established, the server can send data to
-  // the client by writing to its socket.
-  socket.write('Hello, client.');
-
-  // The server can also receive data from the client by reading from its socket.
-  socket.on('data', function (chunk) {
+  socket.on('data', (chunk) => {
     const data = chunk.toString().split('\t');
     const eventType = data[0];
     try {
@@ -33,55 +22,105 @@ server.on('connection', function (socket) {
         case 'serverInfo':
           return handleServerInfo(data);
         default:
-          console.log(`Data received from client: ${chunk.toString()}.`);
+          console.log(`wa: ${chunk.toString()}.`);
       }
     } catch (e) {
       console.error(e);
     }
   });
-
-  // When the client requests to end the TCP connection with the server, the server
-  // ends the connection.
-  socket.on('end', function () {
-    console.log('Closing connection with the client');
+  socket.on('end', () => {
+    console.log('wa disconnected');
   });
-
-  // Don't forget to catch error, for your own sake.
-  socket.on('error', function (err) {
+  socket.on('error', (err) => {
     console.log(`Error: ${err}`);
   });
+
+  const handleGameStateEndGame = async (data) => {
+    console.log(`handling ${data[0]}`);
+    const event = {
+      type: data[0],
+      team1: {
+        name: data[1],
+        tickets: data[2],
+      },
+      team2: {
+        name: data[3],
+        tickets: data[4],
+      },
+      map: data[5],
+    };
+    const res = await fetch('https://bf2-rcon-api-production.up.railway.app/rounds', {
+      method: 'POST',
+      body: JSON.stringify({ event, serverInfo }),
+      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+    });
+    const textRes = await res.text();
+    console.log(`POST /rounds, Status: ${res.status}, Message: ${textRes}`);
+  };
+
+  const handleServerInfo = (data) => {
+    console.log(`handling ${data[0]}`);
+    const event = {
+      type: data[0],
+      serverName: data[1],
+      mapList: data[2],
+      gamePort: data[3],
+      queryPort: data[4],
+      maxPlayers: data[5],
+      ip: process.env.BF2_SERVER_IP,
+    };
+    serverInfo = event;
+  };
 });
 
-const handleGameStateEndGame = async (data) => {
-  const event = {
-    type: data[0],
-    team1: {
-      name: data[1],
-      tickets: data[2],
-    },
-    team2: {
-      name: data[3],
-      tickets: data[4],
-    },
-    map: data[5],
-  };
-  const res = await fetch('https://bf2-rcon-api-production.up.railway.app/rounds', {
-    method: 'POST',
-    body: JSON.stringify({ event, serverInfo }),
-    headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+eventHandler.listen(eventPort, () => {
+  console.log(`Server listening on localhost:${eventPort}.`);
+  initWebAdmin();
+});
+
+const initWebAdmin = () => {
+  const waClient = net.createConnection({ port: process.env.RCON_PORT, host: 'localhost' }, () => {
+    console.log('connected to rcon');
   });
-  const textRes = await res.text();
-  console.log(`POST /rounds, Status: ${res.status}, Message: ${textRes}`);
+  waClient.on('data', (chunk) => {
+    const data = chunk.toString();
+    if (data.includes('### Digest seed: ')) {
+      handleLogin(data);
+    }
+    if (data.includes('Authentication successful')) {
+      console.log('authenticated');
+      handleWaConnection();
+    }
+    waClient.end();
+  });
+  waClient.on('end', () => {
+    console.log('disconnected from rcon');
+  });
+
+  const handleLogin = (data) => {
+    const seed = data.replace('### Digest seed: ', '').trim();
+    console.log(`authenticating with seed ${seed}`);
+    waClient.write(
+      'login ' +
+        crypto
+          .createHash('md5')
+          .update(seed + process.env.RCON_PASSWORD)
+          .digest('hex') +
+        '\n'
+    );
+  };
+
+  const handleWaConnection = () => {
+    console.log('setting up wa connection');
+    waClient.write(`wa connect localhost ${eventPort} \n`);
+    waClient.once('data', (response) => {
+      console.log(response.toString());
+    });
+  };
 };
 
-const handleServerInfo = (data) => {
-  const event = {
-    type: data[0],
-    serverName: data[1],
-    mapList: data[2],
-    gamePort: data[3],
-    queryPort: data[4],
-    maxPlayers: data[5],
-  };
-  serverInfo = event;
+const verify = (variable, message) => {
+  if (!variable) {
+    throw new Error(message);
+  }
 };

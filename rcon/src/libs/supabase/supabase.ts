@@ -19,3 +19,6 @@ export const createRound = (round: Round['Insert']) =>
 
 export const searchMap = (map: string) =>
   getClient().from('maps').select().textSearch('name', `'${map}'`);
+
+export const upsertServer = (ip: string, name: string) =>
+  getClient().from('servers').upsert({ ip, name }).select().single();

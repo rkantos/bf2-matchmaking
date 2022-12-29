@@ -5,7 +5,7 @@ import invariant from 'tiny-invariant';
 import { createClient } from './client';
 import { mapServerInfo } from './mappers';
 import { info, error } from './logging';
-import { createRound, searchMap } from './libs/supabase/supabase';
+import { createRound, searchMap, upsertServer } from './libs/supabase/supabase';
 
 const app = express();
 
@@ -92,22 +92,31 @@ app.get('/rounds', async (req, res) => {
 
 app.post('/rounds', async (req, res) => {
   const { event, serverInfo } = req.body;
-  const { data: map, error: mapError } = await searchMap(event.map).single();
-  if (mapError) {
-    error('/rounds', mapError.message);
+  const { data: server, error: serversError } = await upsertServer(
+    serverInfo.ip,
+    serverInfo.serverName
+  );
+  if (serversError) {
+    error('POST /rounds', serversError.message);
+    return res.status(502).send(serversError.message);
+  }
+  const { data: map, error: mapsError } = await searchMap(event.map).single();
+  if (mapsError) {
+    error('POST /rounds', mapsError.message);
     return res.status(400).send('Invalid map name.');
   }
-  const { data: round, error: roundError } = await createRound({
+  const { data: round, error: roundsError } = await createRound({
     team1_name: event.team1.name,
     team1_tickets: event.team1.tickets,
     team2_name: event.team2.name,
     team2_tickets: event.team2.tickets,
     map: map.id,
-    server: serverInfo.serverName,
+    server: server.ip,
   });
 
-  if (roundError) {
-    return res.status(502).send(roundError.message);
+  if (roundsError) {
+    error('POST /rounds', roundsError.message);
+    return res.status(502).send(roundsError.message);
   }
 
   return res.status(200).send(`Inserted round ${round.id}`);

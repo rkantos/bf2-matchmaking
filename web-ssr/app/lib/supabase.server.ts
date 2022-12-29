@@ -8,10 +8,11 @@ export type Map = Database['public']['Tables']['maps']['Row'];
 export type Match = Database['public']['Tables']['matches']['Row'];
 export type MatchPlayer = Database['public']['Tables']['match_players']['Row'];
 export type Round = Database['public']['Tables']['rounds']['Row'];
+export type Server = Database['public']['Tables']['servers']['Row'];
 export type JoinedMatch = Match & { maps: Array<Map> } & { players: Array<Player> } & {
   teams: Array<{ player_id: string; team: string | null; captain: boolean }>;
 };
-export type JoinedRound = Round & { map: Map };
+export type JoinedRound = Round & { map: Map } & { server: Server };
 
 let supabase: SupabaseClient | undefined;
 export const initSupabase = (request: Request) => {
@@ -78,4 +79,4 @@ export const getPlayerByUserId = (userId: string) =>
   getClient<Database>().from('players').select('*').eq('user_id', userId).single();
 
 export const getRounds = (): PromiseLike<PostgrestResponse<JoinedRound>> =>
-  getClient().from('rounds').select('*, map(*)');
+  getClient().from('rounds').select('*, map(*), server(*)');

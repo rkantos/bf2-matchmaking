@@ -129,6 +129,7 @@ export interface Database {
           full_name: string
           avatar_url: string
           user_id: string | null
+          created_at: string
         }
         Insert: {
           id: string
@@ -137,6 +138,7 @@ export interface Database {
           full_name: string
           avatar_url: string
           user_id?: string | null
+          created_at?: string
         }
         Update: {
           id?: string
@@ -145,6 +147,7 @@ export interface Database {
           full_name?: string
           avatar_url?: string
           user_id?: string | null
+          created_at?: string
         }
       }
       rounds: {
@@ -177,6 +180,23 @@ export interface Database {
           team2_tickets?: string
           server?: string
           map?: number
+        }
+      }
+      servers: {
+        Row: {
+          ip: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          ip: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          ip?: string
+          name?: string
+          updated_at?: string
         }
       }
     }
