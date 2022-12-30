@@ -26,6 +26,7 @@ const eventHandler = net.createServer((socket) => {
   });
   socket.on('end', () => {
     console.log('wa disconnected');
+    handleDisconnect(5000);
   });
   socket.on('error', (err) => {
     console.log(`Event handler error: ${err}`);
@@ -68,6 +69,18 @@ const eventHandler = net.createServer((socket) => {
     serverInfo = event;
   };
 });
+
+const handleDisconnect = (timeout) => {
+  initWebAdmin();
+  setTimeout(() => {
+    eventHandler.getConnections((err, count) => {
+      if (count === 0) {
+        console.log(`retrying connection in ${timeout / 1000} seconds...`);
+        handleDisconnect(timeout * 1.5);
+      }
+    });
+  }, timeout);
+};
 
 eventHandler.listen(eventPort, () => {
   console.log(`Event handler listening on port ${eventPort}.`);
