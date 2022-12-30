@@ -1,6 +1,8 @@
 const net = require('net');
+const crypto = require('crypto');
 
 const eventPort = 8080;
+const LOCALHOST = '127.0.0.1';
 
 const eventHandler = net.createServer((socket) => {
   console.log('wa connected');
@@ -68,14 +70,14 @@ const eventHandler = net.createServer((socket) => {
 });
 
 eventHandler.listen(eventPort, () => {
-  console.log(`Event handler listening on localhost:${eventPort}.`);
+  console.log(`Event handler listening on port ${eventPort}.`);
   initWebAdmin();
 });
 
 const initWebAdmin = () => {
-  console.log(`connecting to localhost:${process.env.RCON_PORT}`);
+  console.log(`connecting to ${LOCALHOST}:${process.env.RCON_PORT}`);
 
-  const waClient = net.createConnection({ port: process.env.RCON_PORT, host: 'localhost' }, () => {
+  const waClient = net.createConnection({ port: process.env.RCON_PORT, host: LOCALHOST }, () => {
     console.log('connected to rcon');
   });
 
@@ -88,7 +90,6 @@ const initWebAdmin = () => {
       console.log('authenticated');
       handleWaConnection();
     }
-    waClient.end();
   });
 
   waClient.on('end', () => {
@@ -100,7 +101,7 @@ const initWebAdmin = () => {
   });
 
   const handleLogin = (data) => {
-    const seed = data.replace('### Digest seed: ', '').trim();
+    const seed = data.split('### Digest seed: ').at(-1).trim();
     console.log(`authenticating with seed ${seed}`);
     waClient.write(
       'login ' +
@@ -113,11 +114,11 @@ const initWebAdmin = () => {
   };
 
   const handleWaConnection = () => {
-    const rconCmd = `wa connect localhost ${eventPort} \n`;
+    const rconCmd = `wa connect ${LOCALHOST} ${eventPort} \n`;
     console.log(`setting up wa connection with command "${rconCmd}"`);
     waClient.write(rconCmd);
     waClient.once('data', (response) => {
-      console.log(response.toString());
+      console.log(`response from wa: ${response.toString()}`);
     });
   };
 };
