@@ -7,6 +7,7 @@ const LOCALHOST = '127.0.0.1';
 const eventHandler = net.createServer((socket) => {
   console.log('wa connected');
   let serverInfo;
+  let isForcefullyEndingRound = false;
 
   socket.on('data', (chunk) => {
     const data = chunk.toString().split('\t');
@@ -17,6 +18,8 @@ const eventHandler = net.createServer((socket) => {
           return handleGameStateEndGame(data);
         case 'serverInfo':
           return handleServerInfo(data);
+        case 'chatServer':
+          return handleChatServer(data);
         default:
           console.log(`wa: ${chunk.toString()}.`);
       }
@@ -34,6 +37,12 @@ const eventHandler = net.createServer((socket) => {
 
   const handleGameStateEndGame = async (data) => {
     console.log(`handling ${data[0]}`);
+
+    if (isForcefullyEndingRound) {
+      console.log('Forcefully ended round detected.');
+      isForcefullyEndingRound = false;
+      return;
+    }
     const event = {
       type: data[0],
       team1: {
@@ -67,6 +76,14 @@ const eventHandler = net.createServer((socket) => {
       ip: process.env.BF2_SERVER_IP,
     };
     serverInfo = event;
+  };
+
+  const handleChatServer = (data) => {
+    const [type, channel, flags, text] = data;
+    console.log(`${channel}: ${text} [flags: ${flags}]`);
+    if (channel === 'ServerMessage' && text.includes('Changing Map to:')) {
+      isForcefullyEndingRound = true;
+    }
   };
 });
 
