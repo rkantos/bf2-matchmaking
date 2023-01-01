@@ -3,7 +3,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import invariant from 'tiny-invariant';
 import { createClient } from './client';
-import { mapServerInfo } from './mappers';
+import { mapListPlayers, mapServerInfo } from './mappers';
 import { info, error } from './logging';
 import { createRound, searchMap, upsertServer } from './libs/supabase/supabase';
 
@@ -55,6 +55,22 @@ app.post('/waconnect', async (req, res) => {
     });
     const data = await client.send('wa connect localhost 8080');
     res.send(data);
+  } else {
+    res.status(400).send('Missing host or port.');
+  }
+});
+
+app.post('/pl', async (req, res) => {
+  const { host, port, password } = req.body;
+
+  if (host && port) {
+    const client = await createClient({
+      host,
+      port,
+      password,
+    });
+    const data = await client.send('bf2cc pl');
+    res.send(mapListPlayers(data));
   } else {
     res.status(400).send('Missing host or port.');
   }
