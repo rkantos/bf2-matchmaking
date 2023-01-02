@@ -1,4 +1,5 @@
 const http = require('http');
+const crypto = require('crypto');
 const { execFile, exec } = require('child_process');
 const path = require('path');
 
@@ -11,22 +12,32 @@ const getBlockExec = () =>
   `firewall-cmd --zone=public --add-rich-rule=' rule priority=2 family=ipv4 port port="16567" protocol="udp" reject'`;
 const getUnblockExec = () => `firewall-cmd --reload`;
 
-const httpHandler = (req, res) => {
+const hash = crypto.createHash('sha512');
+const HASHED_KEY =
+  'CDaLUXjI8DHQi2Dk9hn5Aqe1HcSRU8npql+c6DvRrGGPzHgC9HO4jwGhlAC2MLuN3+Tx1FofxOCfZzibpo3ucA==';
+const isAuthorized = (apiKey) => {
+  return typeof apiKey === 'string'
+    ? crypto.timingSafeEqual(hash.copy().update(apiKey).digest(), Buffer.from(HASHED_KEY, 'base64'))
+    : false;
+};
+
+const httpHandler = (req, res, body) => {
   const { method, url, headers } = req;
-  if (method === 'POST' && url === '/restart') {
+  if (!isAuthorized(body.apiKey)) {
+    console.log('401');
+    res.statusCode = 401;
+  } else if (method === 'POST' && url === '/restart') {
     console.log('restarting...');
     execFile(restartBf2Path, printExec);
   } else if (method === 'POST' && url === '/lock') {
     console.log('locking...');
     exec(getBlockExec(), printExec);
   } else if (method === 'POST' && url === '/whitelist') {
-    parseBody(req, (data) => {
-      data.whitelist.forEach((ip) => {
-        if (ip.match(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/)) {
-          console.log(`whitelisting ip ${ip}...`);
-          exec(getWhitelistExec(ip), printExec);
-        }
-      });
+    body.whitelist.forEach((ip) => {
+      if (ip.match(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/)) {
+        console.log(`whitelisting ip ${ip}...`);
+        exec(getWhitelistExec(ip), printExec);
+      }
     });
   } else if (method === 'POST' && url === '/unlock') {
     console.log('unlocking...');
@@ -35,11 +46,10 @@ const httpHandler = (req, res) => {
     console.log('404');
     res.statusCode = 404;
   }
-  res.writeHead(200);
   res.end();
 };
 
-const parseBody = (req, cb) => {
+const parseBody = (cb) => (req, res) => {
   let chunks = [];
   req.on('data', (chunk) => {
     chunks.push(chunk);
@@ -47,7 +57,13 @@ const parseBody = (req, cb) => {
 
   req.on('end', () => {
     const buffer = Buffer.concat(chunks).toString();
-    cb(JSON.parse(buffer));
+    let body;
+    try {
+      body = JSON.parse(buffer);
+    } catch (e) {
+      body = {};
+    }
+    cb(req, res, body);
   });
 };
 
@@ -60,7 +76,7 @@ const printExec = (err, stdout, stderr) => {
   }
 };
 
-const server = http.createServer(httpHandler);
+const server = http.createServer(parseBody(httpHandler));
 server.listen(PORT, process.env.BF2_SERVER_IP, () => {
   console.log(`Listening on port http://${process.env.BF2_SERVER_IP}:${PORT}`);
 });
