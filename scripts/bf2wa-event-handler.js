@@ -3,6 +3,7 @@ const crypto = require('crypto');
 
 const eventPort = 8080;
 const LOCALHOST = '127.0.0.1';
+let client;
 
 const eventHandler = net.createServer((socket) => {
   console.log('wa connected');
@@ -55,9 +56,13 @@ const eventHandler = net.createServer((socket) => {
       },
       map: data[5],
     };
+
+    const si = await client?.send('bf2cc si');
+    const pl = await client?.send('bf2cc pl');
+
     const res = await fetch('https://bf2-rcon-api-production.up.railway.app/rounds', {
       method: 'POST',
-      body: JSON.stringify({ event, serverInfo }),
+      body: JSON.stringify({ event, serverInfo, si, pl }),
       headers: { 'Content-Type': 'application/json; charset=UTF-8' },
     });
     const textRes = await res.text();
@@ -88,7 +93,7 @@ const eventHandler = net.createServer((socket) => {
 });
 
 const handleDisconnect = (timeout) => {
-  initWebAdmin();
+  client = initWebAdmin();
   setTimeout(() => {
     eventHandler.getConnections((err, count) => {
       if (count === 0) {
@@ -101,7 +106,7 @@ const handleDisconnect = (timeout) => {
 
 eventHandler.listen(eventPort, () => {
   console.log(`Event handler listening on port ${eventPort}.`);
-  initWebAdmin();
+  client = initWebAdmin();
 });
 
 const initWebAdmin = () => {
@@ -150,6 +155,18 @@ const initWebAdmin = () => {
     waClient.once('data', (response) => {
       console.log(`response from wa: ${response.toString()}`);
     });
+  };
+
+  return {
+    send: (message) =>
+      new Promise((resolve, reject) => {
+        console.log(`sending message: ${message}`);
+        client.write(message + '\n');
+        client.once('data', (response) => {
+          console.log('response received');
+          resolve(response.toString());
+        });
+      }),
   };
 };
 

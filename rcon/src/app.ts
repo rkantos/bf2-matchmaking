@@ -107,20 +107,30 @@ app.get('/rounds', async (req, res) => {
 });
 
 app.post('/rounds', async (req, res) => {
-  const { event, serverInfo } = req.body;
+  const { event, serverInfo, si, pl } = req.body;
+  const bf2ccSi = mapServerInfo(si);
+  const bf2ccPl = mapListPlayers(pl);
+
+  if (bf2ccSi && bf2ccSi.connectedPlayers === '0') {
+    return res.status(202).send('Empty server, no round created.');
+  }
+
   const { data: server, error: serversError } = await upsertServer(
     serverInfo.ip,
     serverInfo.serverName
   );
+
   if (serversError) {
     error('POST /rounds', serversError.message);
     return res.status(502).send(serversError.message);
   }
+
   const { data: map, error: mapsError } = await searchMap(event.map).single();
   if (mapsError) {
     error('POST /rounds', mapsError.message);
     return res.status(400).send('Invalid map name.');
   }
+
   const { data: round, error: roundsError } = await createRound({
     team1_name: event.team1.name,
     team1_tickets: event.team1.tickets,
@@ -128,6 +138,8 @@ app.post('/rounds', async (req, res) => {
     team2_tickets: event.team2.tickets,
     map: map.id,
     server: server.ip,
+    si: JSON.stringify(bf2ccSi),
+    pl: JSON.stringify(bf2ccPl),
   });
 
   if (roundsError) {
@@ -135,7 +147,7 @@ app.post('/rounds', async (req, res) => {
     return res.status(502).send(roundsError.message);
   }
 
-  return res.status(200).send(`Round ${round.id} created.`);
+  return res.status(201).send(`Round ${round.id} created.`);
 });
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 4500;
