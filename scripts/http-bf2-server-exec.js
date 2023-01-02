@@ -7,10 +7,10 @@ const PORT = 1025;
 
 const restartBf2Path = path.resolve(__dirname, './restart-bf2.sh');
 const getWhitelistExec = (ip) =>
-  `firewall-cmd --zone=public --add-rich-rule='  rule priority=1 family="ipv4" source address="${ip}/32" port protocol="udp" port="16567" accept'`;
+  `firewall-cmd --zone=public --add-rich-rule='  rule priority=-1 family="ipv4" source address="${ip}/32" port protocol="udp" port="16567" accept'`;
 const getBlockExec = () =>
-  `firewall-cmd --zone=public --add-rich-rule=' rule priority=2 family=ipv4 port port="16567" protocol="udp" reject'`;
-const getUnblockExec = () => `firewall-cmd --reload`;
+  `sudo /usr/bin/firewall-cmd --zone=public --add-rich-rule=' rule priority=0 family=ipv4 port port="16567" protocol="udp" reject'`;
+const getUnblockExec = () => `sudo /usr/bin/firewall-cmd --reload`;
 
 const hash = crypto.createHash('sha512');
 const HASHED_KEY =

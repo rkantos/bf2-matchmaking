@@ -161,8 +161,8 @@ const initWebAdmin = () => {
     send: (message) =>
       new Promise((resolve, reject) => {
         console.log(`sending message: ${message}`);
-        client.write(message + '\n');
-        client.once('data', (response) => {
+        waClient.write(message + '\n');
+        waClient.once('data', (response) => {
           console.log('response received');
           resolve(response.toString());
         });
