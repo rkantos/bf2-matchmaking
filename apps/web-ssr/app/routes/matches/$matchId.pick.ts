@@ -2,6 +2,7 @@ import { ActionFunction, json, LoaderFunction, redirect } from '@remix-run/node'
 import invariant from 'tiny-invariant';
 import { getMatch, initSupabase, updateMatch, updateMatchPlayer } from '~/lib/supabase.server';
 import { assignMatchPlayerTeams, shuffleArray } from '~/utils/match-utils';
+import { remixClient } from '@bf2-matchmaking/supabase';
 
 const getMaps = () => {
   const mapIds = new Set<number>();
@@ -17,8 +18,9 @@ export const loader: LoaderFunction = ({ request, params }) => {
 
 export const action: ActionFunction = async ({ request, params }) => {
   try {
-    initSupabase(request);
-    const { data: match } = await getMatch(params['matchId']);
+    const client = remixClient(request);
+    const matchId = params['matchId'] ? parseInt(params['matchId']) : undefined;
+    const { data: match } = await client.getMatch(matchId);
     invariant(match, 'No match found');
 
     const shuffledPlayers = match.players; /*shuffleArray(match.players).filter(
@@ -27,10 +29,10 @@ export const action: ActionFunction = async ({ request, params }) => {
     if (shuffledPlayers.length < 2) {
       throw new Error('To few players for captian mode.');
     }
-    await updateMatchPlayer(match.id, shuffledPlayers[0].id, { team: 'a', captain: true });
-    await updateMatchPlayer(match.id, shuffledPlayers[1].id, { team: 'b', captain: true });
+    await client.updateMatchPlayer(match.id, shuffledPlayers[0].id, { team: 'a', captain: true });
+    await client.updateMatchPlayer(match.id, shuffledPlayers[1].id, { team: 'b', captain: true });
 
-    const result = await updateMatch(params['matchId'], { status: 'picking' });
+    const result = await client.updateMatch(params['matchId'], { status: 'picking' });
     if (result.error) {
       return json(result.error, { status: result.status });
     }

@@ -13,6 +13,7 @@
     "generate-types": "supabase gen types typescript --project-id lprcjdlrakeamyeuydcr > app/lib/databse.types.ts"
   },
   "dependencies": {
+    "@bf2-matchmaking/supabase": "*",
     "@netlify/functions": "^1.3.0",
     "@remix-run/node": "^1.7.5",
     "@remix-run/react": "^1.7.5",

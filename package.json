@@ -7,7 +7,8 @@
   "version": "1.0.0",
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev"
+    "dev": "turbo run dev",
+    "generate-types": "supabase gen types typescript --project-id lprcjdlrakeamyeuydcr > packages/supabase/src/database.types.ts"
   },
   "repository": {
     "type": "git",
@@ -20,7 +21,9 @@
   },
   "homepage": "https://github.com/espehel/bf2-matchmaking#readme",
   "devDependencies": {
+    "@types/node": "^18.11.18",
     "prettier": "^2.8.1",
+    "supabase": "^1.27.10",
     "turbo": "^1.6.3"
   }
 }

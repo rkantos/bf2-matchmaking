@@ -9,17 +9,19 @@ import Open from '~/components/match/Open';
 import Started from '~/components/match/Started';
 import MatchActions from '~/components/match/MatchActions';
 import { getTeamCaptain } from '~/utils/match-utils';
+import { remixClient } from '@bf2-matchmaking/supabase';
 
 export const loader = async ({ request, params }: LoaderArgs) => {
-  const response = initSupabase(request);
-  const { data: match } = await getMatch(params['matchId']);
+  const client = remixClient(request);
+  const matchId = params['matchId'] ? parseInt(params['matchId']) : undefined;
+  const { data: match } = await client.getMatch(matchId);
 
   invariant(match, 'Match not found');
 
   return json(
     { match },
     {
-      headers: response.headers,
+      headers: client.response.headers,
     }
   );
 };

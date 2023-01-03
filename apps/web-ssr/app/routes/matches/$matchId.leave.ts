@@ -1,11 +1,6 @@
 import { ActionFunction, json, LoaderFunction, redirect } from '@remix-run/node';
 import invariant from 'tiny-invariant';
-import {
-  getSession,
-  initSupabase,
-  deleteMatchPlayer,
-  getPlayerByUserId,
-} from '../../lib/supabase.server';
+import { remixClient } from '@bf2-matchmaking/supabase';
 
 export const loader: LoaderFunction = ({ request, params }) => {
   return redirect(`/matches/${params['matchId']}`);
@@ -13,15 +8,15 @@ export const loader: LoaderFunction = ({ request, params }) => {
 
 export const action: ActionFunction = async ({ request, params }) => {
   try {
-    initSupabase(request);
+    const client = remixClient(request);
     const {
       data: { session },
-    } = await getSession();
+    } = await client.getSession();
 
     invariant(session, 'No active session');
-    const { data: player } = await getPlayerByUserId(session.user.id);
+    const { data: player } = await client.getPlayerByUserId(session.user.id);
     invariant(player, 'Could not find player connected to user id.');
-    const { error, status } = await deleteMatchPlayer(params['matchId']!, player.id);
+    const { error, status } = await client.deleteMatchPlayer(params['matchId']!, player.id);
 
     if (error) {
       return json(error, { status });

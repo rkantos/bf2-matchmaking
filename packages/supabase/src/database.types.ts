@@ -160,6 +160,8 @@ export interface Database {
           team2_tickets: string
           server: string
           map: number
+          si: Json | null
+          pl: Json | null
         }
         Insert: {
           id?: number
@@ -170,6 +172,8 @@ export interface Database {
           team2_tickets: string
           server: string
           map: number
+          si?: Json | null
+          pl?: Json | null
         }
         Update: {
           id?: number
@@ -180,6 +184,8 @@ export interface Database {
           team2_tickets?: string
           server?: string
           map?: number
+          si?: Json | null
+          pl?: Json | null
         }
       }
       servers: {

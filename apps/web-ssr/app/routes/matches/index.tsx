@@ -1,9 +1,8 @@
-import { ActionArgs, json, LoaderArgs, redirect } from '@remix-run/node'; // change this import to whatever runtime you are using
+import { ActionArgs, json, LoaderArgs, redirect } from '@remix-run/node';
 import invariant from 'tiny-invariant';
-import { createServerClient } from '@supabase/auth-helpers-remix';
 import { Form, Link, useLoaderData } from '@remix-run/react';
-import { createMatch, initSupabase } from '~/lib/supabase.server';
 import { isOpen, isStarted } from '~/utils/match-utils';
+import { remixClient } from '@bf2-matchmaking/supabase';
 
 export const action = async ({ request }: ActionArgs) => {
   const formData = await request.formData();
@@ -11,25 +10,15 @@ export const action = async ({ request }: ActionArgs) => {
   const pick = formData.get('pick')?.toString();
   invariant(size, 'No size included');
   invariant(pick, 'No pick included');
-  initSupabase(request);
-  const result = await createMatch({ pick, size, channel: 1 });
+  const client = remixClient(request);
+  const result = await client.createMatch({ pick, size, channel: 1 });
   invariant(result.data, 'Failed to create match');
   return redirect(`/matches/${result.data.id}`);
 };
 
 export const loader = async ({ request }: LoaderArgs) => {
-  const response = new Response();
-  invariant(process.env.SUPABASE_URL, 'Missing "process.env.SUPABASE_URL"');
-  invariant(process.env.SUPABASE_ANON_KEY, 'Missing "process.env.SUPABASE_ANON_KEY"');
-
-  const supabaseClient = createServerClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY,
-    { request, response }
-  );
-
-  const { data: matches } = await supabaseClient.from('matches').select('*');
-
+  const client = remixClient(request);
+  const { data: matches } = await client.getMatches();
   return json({ matches });
 };
 

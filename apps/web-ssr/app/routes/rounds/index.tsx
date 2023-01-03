@@ -1,13 +1,13 @@
 import React from 'react';
 import { json, LoaderArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
-import { getRounds, initSupabase, JoinedRound } from '../../lib/supabase.server';
 import { groupRoundsByServer } from '../../utils/round-utils';
 import RoundItem from '../../components/round/RoundItem';
+import { remixClient } from '@bf2-matchmaking/supabase';
 
 export const loader = async ({ request, params }: LoaderArgs) => {
-  const response = initSupabase(request);
-  const { data: rounds, error, status } = await getRounds();
+  const client = remixClient(request);
+  const { data: rounds, error, status } = await client.getRounds();
 
   if (error) {
     throw json(error, { status });
@@ -16,7 +16,7 @@ export const loader = async ({ request, params }: LoaderArgs) => {
   return json(
     { rounds },
     {
-      headers: response.headers,
+      headers: client.response.headers,
     }
   );
 };

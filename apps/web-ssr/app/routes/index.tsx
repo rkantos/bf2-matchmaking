@@ -1,35 +1,19 @@
 import { json, LoaderArgs } from '@remix-run/node'; // change this import to whatever runtime you are using
-import { Auth, ThemeSupa, ThemeMinimal } from '@supabase/auth-ui-react';
+import { Auth, ThemeSupa } from '@supabase/auth-ui-react';
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
-import invariant from 'tiny-invariant';
-import { createServerClient } from '@supabase/auth-helpers-remix';
 import { Link, useLoaderData } from '@remix-run/react';
 import { isNotDeleted } from '~/utils/match-utils';
+import { remixClient } from '@bf2-matchmaking/supabase';
 
 export const loader = async ({ request }: LoaderArgs) => {
-  const response = new Response();
-  invariant(process.env.SUPABASE_URL, 'Missing "process.env.SUPABASE_URL"');
-  invariant(process.env.SUPABASE_ANON_KEY, 'Missing "process.env.SUPABASE_ANON_KEY"');
-
-  const supabaseClient = createServerClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY,
-    { request, response }
-  );
-
-  const { data: matches, error } = await supabaseClient
-    .from('matches')
-    .select('*')
-    .eq('status', 'open');
-
-  const {
-    data: { session },
-  } = await supabaseClient.auth.getSession();
+  const client = remixClient(request);
+  const { data: session } = await client.getSession();
+  const { data: matches } = await client.getOpenMatches();
 
   return json(
     { session, matches },
     {
-      headers: response.headers,
+      headers: client.response.headers,
     }
   );
 };
@@ -37,7 +21,7 @@ export const loader = async ({ request }: LoaderArgs) => {
 const authRedirect =
   process.env.NODE_ENV === 'production'
     ? 'https://bf2-matchmaking.netlify.app/matches/'
-    : 'http://localhost:3000/matches/';
+    : 'http://localhost:5003/matches/';
 
 export default function Index() {
   const supabase = useSupabaseClient();
