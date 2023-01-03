@@ -1,4 +1,5 @@
 {
+  "name": "web-ssr",
   "private": true,
   "sideEffects": false,
   "scripts": {
@@ -6,7 +7,7 @@
     "build-remix": "remix build",
     "build-tailwind": "tailwindcss -m -i ./styles/main.css -o app/styles/app.css",
     "dev": "concurrently \"npm:dev-*\"",
-    "dev-remix": "remix dev",
+    "dev-remix": "remix dev --port 5003",
     "dev-tailwind": "tailwindcss -w -i ./styles/main.css -o app/styles/app.css",
     "start": "cross-env NODE_ENV=production netlify dev",
     "generate-types": "supabase gen types typescript --project-id lprcjdlrakeamyeuydcr > app/lib/databse.types.ts"

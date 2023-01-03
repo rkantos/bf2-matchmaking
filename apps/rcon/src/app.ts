@@ -150,7 +150,7 @@ app.post('/rounds', async (req, res) => {
   return res.status(201).send(`Round ${round.id} created.`);
 });
 
-const PORT = process.env.PORT ? parseInt(process.env.PORT) : 4500;
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 5002;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`rcon api listening on port ${PORT}`);
 });

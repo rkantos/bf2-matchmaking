@@ -23,8 +23,8 @@ import { getOrCreatePlayer, startMatchDraft } from './services/match';
 
 // Create an express app
 const app = express();
-// Get port, or default to 4000
-const PORT = process.env.PORT || 4000;
+// Get port, or default to 5001
+const PORT = process.env.PORT || 5001;
 // Parse request body and verifies incoming requests using discord-interactions package
 invariant(process.env.PUBLIC_KEY, 'PUBLIC_KEY not defined');
 app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));

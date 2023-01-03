@@ -1,0 +1,26 @@
+{
+  "name": "bf2-matchmaking",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "version": "1.0.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/espehel/bf2-matchmaking.git"
+  },
+  "author": "Espen Hellerud",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/espehel/bf2-matchmaking/issues"
+  },
+  "homepage": "https://github.com/espehel/bf2-matchmaking#readme",
+  "devDependencies": {
+    "prettier": "^2.8.1",
+    "turbo": "^1.6.3"
+  }
+}
