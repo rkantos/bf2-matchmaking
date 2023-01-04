@@ -6,7 +6,7 @@ import { remixClient } from '@bf2-matchmaking/supabase';
 
 export const action = async ({ request }: ActionArgs) => {
   const formData = await request.formData();
-  const size = parseInt(formData.get('size')?.toString() || '');
+  const size = parseInt(formData.get('size')?.toString() || '') * 2;
   const pick = formData.get('pick')?.toString();
   invariant(size, 'No size included');
   invariant(pick, 'No pick included');
@@ -33,7 +33,7 @@ export default function Index() {
         <Form className="flex flex-col" method="post" reloadDocument>
           <div className="flex gap-4 my-2">
             <label>
-              Size:
+              Team Size:
               <input className="text-field" name="size" />
             </label>
             <label>

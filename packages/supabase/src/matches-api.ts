@@ -1,7 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
-import { MatchesInsert } from './types';
-import { JoinedMatch, Match, MatchPlayer } from 'web-ssr/app/lib/supabase.server';
+import { MatchesInsert, MatchesJoined, MatchesUpdate, MatchPlayersRow } from './types';
 
 export default (client: SupabaseClient<Database>) => ({
   createMatch: (values: MatchesInsert) =>
@@ -12,15 +11,15 @@ export default (client: SupabaseClient<Database>) => ({
     client
       .from('matches')
       .select<
-        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain)',
-        JoinedMatch
+        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)',
+        MatchesJoined
       >(
-        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain)'
+        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)'
       )
       .eq('id', matchId)
       .single(),
 
-  updateMatch: (matchId: string | undefined, values: Partial<Match>) =>
+  updateMatch: (matchId: number | undefined, values: MatchesUpdate) =>
     client.from('matches').update(values).eq('id', matchId),
 
   createMatchPlayer: (match_id: number, player_id: string) =>
@@ -33,7 +32,11 @@ export default (client: SupabaseClient<Database>) => ({
       .eq('match_id', matchId)
       .eq('player_id', playerId),
 
-  updateMatchPlayer: (matchId: number, playerId: string, values: Partial<MatchPlayer>) =>
+  updateMatchPlayer: (
+    matchId: number,
+    playerId: string,
+    values: Partial<MatchPlayersRow>
+  ) =>
     client
       .from('match_players')
       .update(values)

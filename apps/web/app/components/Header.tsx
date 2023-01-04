@@ -9,7 +9,7 @@ const Header: FC = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="flex items-center justify-between h-20 m-auto px-4 border-b">
+    <header className="header">
       <h2 className="text-2xl bold justify-self-start">BF2 Matchmaking</h2>
       <nav className="justify-self-center">
         <ul className="flex gap-4">

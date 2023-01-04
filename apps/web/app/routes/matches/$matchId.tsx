@@ -1,7 +1,6 @@
-import { json, LoaderArgs } from '@remix-run/node'; // change this import to whatever runtime you are using
+import { json, LoaderArgs } from '@remix-run/node';
 import invariant from 'tiny-invariant';
 import { useLoaderData, useNavigate } from '@remix-run/react';
-import { getMatch, initSupabase } from '~/lib/supabase.server';
 import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
 import { useEffect } from 'react';
 import Picking from '~/components/match/Picking';
@@ -10,16 +9,17 @@ import Started from '~/components/match/Started';
 import MatchActions from '~/components/match/MatchActions';
 import { getTeamCaptain } from '~/utils/match-utils';
 import { remixClient } from '@bf2-matchmaking/supabase';
+import ServerSelection from '~/components/match/ServerSelection';
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   const client = remixClient(request);
   const matchId = params['matchId'] ? parseInt(params['matchId']) : undefined;
   const { data: match } = await client.getMatch(matchId);
-
+  const { data: servers, error } = await client.getServers();
   invariant(match, 'Match not found');
-
+  console.log(error);
   return json(
-    { match },
+    { match, servers },
     {
       headers: client.response.headers,
     }
@@ -63,13 +63,14 @@ export default function Index() {
   }, [supabase]);
 
   return (
-    <article className="max-w-3xl m-auto mt-4">
+    <article className="route">
       <div className="flex flex-col justify-between mb-4">
-        <div className="mb-4">
+        <div className="mb-4 section">
           <h1 className="text-2xl">Match {match.id}</h1>
           <span className="mr-4">Status: {match.status}</span>
           <span>Pick mode: {match.pick}</span>
           {currentPicker && <span className="ml-4">Picking: {currentPicker.username}</span>}
+          {match.server && <span className="ml-4">Server: {match.server.name}</span>}
         </div>
         {match.status === 'open' && <Open />}
         {match.status === 'picking' && (

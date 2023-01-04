@@ -73,7 +73,7 @@ export default function App() {
       <body>
         <SessionContextProvider supabaseClient={supabaseClient} initialSession={initialSession}>
           <Header />
-          <main className="mx-4 w-full md:w-3/4 md:mx-auto">
+          <main className="main">
             <Outlet />
           </main>
         </SessionContextProvider>

@@ -1,8 +1,9 @@
-import { JoinedMatch, Match, Player } from '~/lib/supabase.server';
+import { MatchesJoined, MatchesRow, PlayersRow } from '@bf2-matchmaking/supabase/src/types';
 
-export const isNotDeleted = (match: Match) => match.status !== 'deleted';
-export const isOpen = (match: Match) => match.status === 'open';
-export const isStarted = (match: Match) => match.status === 'started' || match.status === 'closed';
+export const isNotDeleted = (match: MatchesRow) => match.status !== 'deleted';
+export const isOpen = (match: MatchesRow) => match.status === 'open';
+export const isStarted = (match: MatchesRow) =>
+  match.status === 'started' || match.status === 'closed';
 
 export const shuffleArray = <T = unknown>(array: Array<T>) => {
   const clonedArray = [...array];
@@ -13,16 +14,21 @@ export const shuffleArray = <T = unknown>(array: Array<T>) => {
   return clonedArray;
 };
 
-export const assignMatchPlayerTeams = (players: Array<Player>) =>
+export const assignMatchPlayerTeams = (players: Array<PlayersRow>) =>
   shuffleArray(players).map((player, i) => ({
     playerId: player.id,
     team: i % 2 === 1 ? 'a' : 'b',
   }));
 
-export const isAssignedTeam = (match: JoinedMatch, playerId: string) =>
+export const isAssignedTeam = (match: MatchesJoined, playerId: string) =>
   match.teams.some(({ player_id, team }) => player_id === playerId && team !== null);
 
-export const getTeamCaptain = (match: JoinedMatch, team: string) => {
+export const getTeamCaptain = (match: MatchesJoined, team: string) => {
   const playerId = match.teams.find((player) => player.captain && player.team === team)?.player_id;
   return match.players.find(({ id }) => id === playerId);
+};
+
+export const isCaptain = (match: MatchesJoined, userId?: string) => {
+  const playerId = match.players.find((player) => player.user_id === userId)?.id;
+  return match.teams.some((player) => player.player_id === playerId && player.captain);
 };

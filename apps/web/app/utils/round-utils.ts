@@ -1,7 +1,7 @@
-import { JoinedRound } from '../lib/supabase.server';
+import { RoundsJoined } from '@bf2-matchmaking/supabase/src/types';
 
-export const groupRoundsByServer = (rounds: Array<JoinedRound>) => {
-  const groupedByServers = rounds.reduce<Record<string, Array<JoinedRound>>>((acc, cur) => {
+export const groupRoundsByServer = (rounds: Array<RoundsJoined>) => {
+  const groupedByServers = rounds.reduce<Record<string, Array<RoundsJoined>>>((acc, cur) => {
     const serverRounds = acc[cur.server.name];
     if (serverRounds) {
       return { ...acc, [cur.server.name]: serverRounds.concat(cur) };

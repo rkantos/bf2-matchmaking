@@ -7,7 +7,7 @@ export default function Open() {
   const playerCount = match.players.length;
 
   return (
-    <section>
+    <section className="section">
       <h2 className="text-xl">
         Players({playerCount}/{match.size}):
       </h2>

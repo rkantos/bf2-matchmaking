@@ -1,11 +1,12 @@
 import { useLoaderData, useNavigate, useSubmit } from '@remix-run/react';
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { FC, useEffect } from 'react';
-import { Player } from '~/lib/supabase.server';
 import { loader } from '~/routes/matches/$matchId';
+import { PlayersRow } from '@bf2-matchmaking/supabase/src/types';
+import ServerSelection from '~/components/match/ServerSelection';
 
 interface Props {
-  currentPicker?: Player;
+  currentPicker?: PlayersRow;
   currentTeam: string;
 }
 
@@ -16,7 +17,7 @@ export const Picking: FC<Props> = ({ currentPicker, currentTeam }) => {
   const user = useUser();
   const supabase = useSupabaseClient();
 
-  const isTeam = (team: string | null) => (player: Player) =>
+  const isTeam = (team: string | null) => (player: PlayersRow) =>
     match.teams.some(({ player_id, team: t }) => player_id === player.id && t === team);
 
   const playerPool = match.players.filter(isTeam(null));
@@ -40,9 +41,9 @@ export const Picking: FC<Props> = ({ currentPicker, currentTeam }) => {
     );
 
   return (
-    <article className="max-w-3xl mt-4 flex justify-between">
-      <section>
-        <h2>Player pool:</h2>
+    <article className="max-w-3xl mt-4 flex justify-between gap-4">
+      <section className="section grow">
+        <h2 className="text-xl">Player pool:</h2>
         <ul>
           {playerPool.map((player) => (
             <li key={player.id}>
@@ -56,7 +57,7 @@ export const Picking: FC<Props> = ({ currentPicker, currentTeam }) => {
           ))}
         </ul>
       </section>
-      <section>
+      <section className="section grow">
         <h2 className="text-xl">Teams:</h2>
         <div className="flex gap-8">
           <div className="mb-2">
@@ -77,6 +78,7 @@ export const Picking: FC<Props> = ({ currentPicker, currentTeam }) => {
           </div>
         </div>
       </section>
+      <ServerSelection />
     </article>
   );
 };

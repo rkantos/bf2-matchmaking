@@ -101,6 +101,7 @@ export interface Database {
           pick: string
           channel: number | null
           map_draft: string
+          server: string | null
         }
         Insert: {
           id?: number
@@ -110,6 +111,7 @@ export interface Database {
           pick?: string
           channel?: number | null
           map_draft?: string
+          server?: string | null
         }
         Update: {
           id?: number
@@ -119,6 +121,7 @@ export interface Database {
           pick?: string
           channel?: number | null
           map_draft?: string
+          server?: string | null
         }
       }
       players: {

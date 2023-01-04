@@ -1,16 +1,16 @@
 import { useLoaderData } from '@remix-run/react';
-import { Player } from '~/lib/supabase.server';
 import { loader } from '~/routes/matches/$matchId';
+import { PlayersRow } from '@bf2-matchmaking/supabase/src/types';
 
 export default function Started() {
   const { match } = useLoaderData<typeof loader>();
 
-  const isTeam = (team: string) => (player: Player) =>
+  const isTeam = (team: string) => (player: PlayersRow) =>
     match.teams.some(({ player_id, team: t }) => player_id === player.id && t === team);
 
   return (
-    <section className="flex justify-around">
-      <div>
+    <div className="flex justify-around gap-4">
+      <section className="section grow">
         <h2 className="text-xl">Teams:</h2>
         <div className="mb-2">
           <h3 className="text-lg">Team A</h3>
@@ -28,15 +28,15 @@ export default function Started() {
             ))}
           </ul>
         </div>
-      </div>
-      <div>
+      </section>
+      <section className="section grow h-fit">
         <h2 className="text-xl">Maps:</h2>
         <ul>
           {match.maps.map(({ name, id }) => (
             <li key={id}>{name}</li>
           ))}
         </ul>
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }
