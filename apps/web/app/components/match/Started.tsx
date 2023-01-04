@@ -1,6 +1,7 @@
 import { useLoaderData } from '@remix-run/react';
 import { loader } from '~/routes/matches/$matchId';
 import { PlayersRow } from '@bf2-matchmaking/supabase/src/types';
+import RoundsList from '~/components/match/RoundsList';
 
 export default function Started() {
   const { match } = useLoaderData<typeof loader>();
@@ -9,7 +10,7 @@ export default function Started() {
     match.teams.some(({ player_id, team: t }) => player_id === player.id && t === team);
 
   return (
-    <div className="flex justify-around gap-4">
+    <div className="flex justify-around gap-4 flex-wrap">
       <section className="section grow">
         <h2 className="text-xl">Teams:</h2>
         <div className="mb-2">
@@ -37,6 +38,7 @@ export default function Started() {
           ))}
         </ul>
       </section>
+      <RoundsList />
     </div>
   );
 }

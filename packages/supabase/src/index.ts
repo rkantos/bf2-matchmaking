@@ -33,3 +33,5 @@ export const remixClient = (request: Request) => {
     getSession: () => supabase.auth.getSession(),
   };
 };
+
+export * from './services/match-service';

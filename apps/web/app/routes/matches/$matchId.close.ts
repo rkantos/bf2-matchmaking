@@ -1,6 +1,6 @@
 import { ActionFunction, json, LoaderFunction, redirect } from '@remix-run/node';
-import { createMatchMaps, initSupabase, updateMatch } from '~/lib/supabase.server';
 import { remixClient } from '@bf2-matchmaking/supabase';
+import invariant from 'tiny-invariant';
 
 export const loader: LoaderFunction = ({ request, params }) => {
   return redirect(`/matches/${params['matchId']}`);
@@ -9,7 +9,12 @@ export const loader: LoaderFunction = ({ request, params }) => {
 export const action: ActionFunction = async ({ request, params }) => {
   try {
     const client = remixClient(request);
-    const { error, status } = await client.updateMatch(params['matchId'], { status: 'closed' });
+    const matchId = params['matchId'] ? parseInt(params['matchId']) : undefined;
+    invariant(matchId, 'No matchId');
+    const { error, status } = await client.updateMatch(matchId, {
+      status: 'closed',
+      closed_at: new Date().toISOString(),
+    });
 
     if (error) {
       return json(error, { status: status });

@@ -12,7 +12,7 @@ const ServerSelection: FC = () => {
   }
 
   return (
-    <section className="section mb-4">
+    <section className="section w-full">
       <h2 className="text-xl">Servers</h2>
       <ul className="grid grid-cols-3 auto-cols-max gap-4">
         {servers.sort(compareServer(match)).map((server) => (

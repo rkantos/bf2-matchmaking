@@ -30,7 +30,10 @@ export const action: ActionFunction = async ({ request, params }) => {
         )
       );
     }
-    const startResult = await client.updateMatch(params['matchId'], { status: 'started' });
+    const startResult = await client.updateMatch(matchId, {
+      status: 'started',
+      started_at: new Date().toISOString(),
+    });
 
     if (addResult.error) {
       return json(addResult.error, { status: addResult.status });

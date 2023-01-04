@@ -16,4 +16,15 @@ export default (client: SupabaseClient<Database>) => ({
       .from('servers')
       .select<'*, matches(id, status)', ServersJoined>('*, matches(id, status)')
       .or('status.eq.picking,status.eq.started', { foreignTable: 'matches' }),
+  getServerRoundsByTimestampRange: (
+    serverIp: string,
+    timestampFrom: string,
+    timestampTo: string
+  ) =>
+    client
+      .from('rounds')
+      .select<'*, map(*), server(*)', RoundsJoined>('*, map(*), server(*)')
+      .gt('created_at', timestampFrom)
+      .lt('created_at', timestampTo)
+      .eq('server.ip', serverIp),
 });

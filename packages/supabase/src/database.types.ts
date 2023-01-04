@@ -102,6 +102,8 @@ export interface Database {
           channel: number | null
           map_draft: string
           server: string | null
+          started_at: string | null
+          closed_at: string | null
         }
         Insert: {
           id?: number
@@ -112,6 +114,8 @@ export interface Database {
           channel?: number | null
           map_draft?: string
           server?: string | null
+          started_at?: string | null
+          closed_at?: string | null
         }
         Update: {
           id?: number
@@ -122,6 +126,8 @@ export interface Database {
           channel?: number | null
           map_draft?: string
           server?: string | null
+          started_at?: string | null
+          closed_at?: string | null
         }
       }
       players: {

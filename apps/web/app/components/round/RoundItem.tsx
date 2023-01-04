@@ -1,9 +1,9 @@
 import { FC } from 'react';
 import { useFirstRenderDefault } from '../../hooks/ssr-hooks';
-import { JoinedRound } from '../../lib/supabase.server';
+import { RoundsJoined } from '@bf2-matchmaking/supabase/src/types';
 
 interface Props {
-  round: JoinedRound;
+  round: RoundsJoined;
 }
 
 const RoundItem: FC<Props> = ({ round }) => {
@@ -11,7 +11,7 @@ const RoundItem: FC<Props> = ({ round }) => {
     new Date(round.created_at).toLocaleString()
   );
   return (
-    <li className="flex gap-4 m-4 p-4 border rounded w-96">
+    <li className="flex gap-4 p-4 border rounded w-full">
       <div className="mr-auto">
         <p className="text-xl">{round.map.name}</p>
         <p className="text-sm">{date}</p>

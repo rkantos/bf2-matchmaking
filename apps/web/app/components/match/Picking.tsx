@@ -41,7 +41,7 @@ export const Picking: FC<Props> = ({ currentPicker, currentTeam }) => {
     );
 
   return (
-    <article className="max-w-3xl mt-4 flex justify-between gap-4">
+    <article className="max-w-3xl mt-4 flex justify-between flex-wrap gap-4">
       <section className="section grow">
         <h2 className="text-xl">Player pool:</h2>
         <ul>

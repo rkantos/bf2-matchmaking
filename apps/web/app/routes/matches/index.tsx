@@ -26,9 +26,9 @@ export default function Index() {
   const { matches } = useLoaderData<typeof loader>();
 
   return (
-    <article>
+    <article className="route flex flex-col gap-4">
       <h1 className="text-2xl">Matches</h1>
-      <section className="border p-4 rounded mb-4">
+      <section className="section">
         <h2 className="text-xl">Create new match</h2>
         <Form className="flex flex-col" method="post" reloadDocument>
           <div className="flex gap-4 my-2">
@@ -49,7 +49,7 @@ export default function Index() {
           </button>
         </Form>
       </section>
-      <section>
+      <section className="section">
         <h2 className="text-2xl">Open matches:</h2>
         <ul className="flex flex-col">
           {matches?.filter(isOpen).map((match) => (
@@ -62,7 +62,7 @@ export default function Index() {
           ))}
         </ul>
       </section>
-      <section>
+      <section className="section">
         <h2 className="text-2xl">Previous matches:</h2>
         <ul className="flex flex-col">
           {matches?.filter(isStarted).map((match) => (
