@@ -1,0 +1,13 @@
+{
+  "name": "@bf2-matchmaking/logging",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "version": "1.0.0",
+  "dependencies": {
+    "express-winston": "^4.2.0",
+    "winston": "^3.8.2"
+  },
+  "devDependencies": {
+    "typescript": "latest"
+  }
+}

@@ -9,6 +9,7 @@ import Started from '~/components/match/Started';
 import MatchActions from '~/components/match/MatchActions';
 import { getTeamCaptain } from '~/utils/match-utils';
 import { getMatchRounds, remixClient } from '@bf2-matchmaking/supabase';
+import { Database } from '@bf2-matchmaking/supabase/src/database.types';
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   const client = remixClient(request);
@@ -29,7 +30,7 @@ export default function Index() {
   const { match } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const user = useUser();
-  const supabase = useSupabaseClient();
+  const supabase = useSupabaseClient<Database>();
 
   const playerPool = match.teams.filter(({ team }) => team === null);
   const currentTeam = playerPool.length % 2 === 0 ? 'a' : 'b';
@@ -56,6 +57,18 @@ export default function Index() {
       .channel('public:matches')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'matches' }, () => {
         navigate('.', { replace: true });
+      })
+      .subscribe();
+    () => channel.unsubscribe();
+  }, [supabase]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:rounds')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rounds' }, (event) => {
+        if (match.server && match.server.ip === event.new.server) {
+          navigate('.', { replace: true });
+        }
       })
       .subscribe();
     () => channel.unsubscribe();

@@ -1,0 +1,27 @@
+{
+  "name": "engine",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"npm:dev-*\"",
+    "build": "rimraf ./build && tsc",
+    "start": "npm run build && node build/app.js",
+    "dev-nodemon": "nodemon",
+    "dev-ngrok": "node ./scripts/ngrok"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.15",
+    "@types/node": "^18.11.18",
+    "concurrently": "^7.6.0",
+    "ngrok": "^4.3.3",
+    "nodemon": "^2.0.20",
+    "rimraf": "^3.0.2",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "@bf2-matchmaking/logging": "*",
+    "@bf2-matchmaking/supabase": "*",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2"
+  }
+}

@@ -22,3 +22,40 @@ export type RoundsJoined = RoundsRow & { map: MapsRow } & { server: ServersRow }
 export type ServersJoined = ServersRow & {
   matches: Array<{ id: number; status: string }>;
 };
+
+type WebhookPostgresChangesPayloadBase = {
+  schema: string;
+  table: string;
+};
+
+export type WebhookPostgresInsertPayload<T extends Record<string, any>> =
+  WebhookPostgresChangesPayloadBase & {
+    type: `${WEBHOOK_POSTGRES_CHANGES_TYPE.INSERT}`;
+    record: T;
+    old_record: null;
+  };
+
+export type WebhookPostgresUpdatePayload<T extends Record<string, any>> =
+  WebhookPostgresChangesPayloadBase & {
+    type: `${WEBHOOK_POSTGRES_CHANGES_TYPE.UPDATE}`;
+    record: T;
+    old_record: Partial<T>;
+  };
+
+export type WebhookPostgresDeletePayload<T extends Record<string, any>> =
+  WebhookPostgresChangesPayloadBase & {
+    type: `${WEBHOOK_POSTGRES_CHANGES_TYPE.DELETE}`;
+    record: null;
+    old_record: Partial<T>;
+  };
+
+export type WebhookPostgresChangesPayload<T extends Record<string, any>> =
+  | WebhookPostgresInsertPayload<T>
+  | WebhookPostgresUpdatePayload<T>
+  | WebhookPostgresDeletePayload<T>;
+
+export enum WEBHOOK_POSTGRES_CHANGES_TYPE {
+  INSERT = 'INSERT',
+  UPDATE = 'UPDATE',
+  DELETE = 'DELETE',
+}

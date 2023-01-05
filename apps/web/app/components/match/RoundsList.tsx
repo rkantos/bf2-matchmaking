@@ -5,8 +5,7 @@ import RoundItem from '~/components/round/RoundItem';
 
 const RoundsList: FC = () => {
   const { rounds } = useLoaderData<typeof loader>();
-  console.log(rounds);
-  if (!rounds) {
+  if (!rounds || rounds.length === 0) {
     return null;
   }
   return (
@@ -14,7 +13,7 @@ const RoundsList: FC = () => {
       <h2 className="text-xl">Rounds</h2>
       <ul className="flex flex-col gap-4">
         {rounds.map((round) => (
-          <RoundItem round={round} />
+          <RoundItem key={round.id} round={round} />
         ))}
       </ul>
     </section>

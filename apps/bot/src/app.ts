@@ -1,7 +1,12 @@
 import 'dotenv/config';
 import express from 'express';
 import { InteractionResponseType } from 'discord-interactions';
-import { getOption, VerifyDiscordRequest, verifyResult, verifySingleResult } from './utils';
+import {
+  getOption,
+  VerifyDiscordRequest,
+  verifyResult,
+  verifySingleResult,
+} from './utils';
 import {
   createMatchPlayer,
   deleteMatchPlayer,
@@ -16,7 +21,11 @@ import {
   LEAVE_COMMAND,
   PICK_COMMAND,
 } from './commands';
-import { APIInteraction, InteractionType, ApplicationCommandType } from 'discord-api-types/v10';
+import {
+  APIInteraction,
+  InteractionType,
+  ApplicationCommandType,
+} from 'discord-api-types/v10';
 import { initDiscordGateway } from './discord-gateway';
 import { subscribeMatches, subscribeMatchPlayers } from './supabase-subscriptions';
 import { getOrCreatePlayer, startMatchDraft } from './services/match';
@@ -30,8 +39,8 @@ invariant(process.env.PUBLIC_KEY, 'PUBLIC_KEY not defined');
 app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
 
 initDiscordGateway();
-subscribeMatchPlayers();
-subscribeMatches();
+//subscribeMatchPlayers();
+//subscribeMatches();
 
 /**
  * Interactions endpoint URL where Discord will send HTTP requests

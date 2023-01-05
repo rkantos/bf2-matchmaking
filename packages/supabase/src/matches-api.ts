@@ -45,4 +45,6 @@ export default (client: SupabaseClient<Database>) => ({
 
   createMatchMaps: (match_id: number, ...maps: Array<number>) =>
     client.from('match_maps').insert(maps.map((mapId) => ({ match_id, map_id: mapId }))),
+  getStartedMatchesByServer: (serverIp: string) =>
+    client.from('matches').select('*').eq('status', 'started').eq('server', serverIp),
 });
