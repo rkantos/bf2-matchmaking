@@ -91,7 +91,6 @@ const eventHandler = net.createServer((socket) => {
     }
   };
 });
-
 const handleDisconnect = (timeout) => {
   client = initWebAdmin();
   setTimeout(() => {
@@ -112,9 +111,12 @@ eventHandler.listen(eventPort, () => {
 const initWebAdmin = () => {
   console.log(`connecting to ${LOCALHOST}:${process.env.RCON_PORT}`);
 
-  const waClient = net.createConnection({ port: process.env.RCON_PORT, host: LOCALHOST }, () => {
-    console.log('connected to rcon');
-  });
+  const waClient = net.createConnection(
+    { port: process.env.RCON_PORT, host: LOCALHOST },
+    () => {
+      console.log('connected to rcon');
+    }
+  );
 
   waClient.on('data', (chunk) => {
     const data = chunk.toString();
@@ -133,6 +135,7 @@ const initWebAdmin = () => {
 
   waClient.on('error', (err) => {
     console.log(`WA client error: ${err}`);
+    handleClientError();
   });
 
   const handleLogin = (data) => {
@@ -168,6 +171,17 @@ const initWebAdmin = () => {
         });
       }),
   };
+};
+
+const handleClientError = () => {
+  console.log(`WA client retrying in 10 seconds...`);
+  setTimeout(() => {
+    eventHandler.getConnections((err, count) => {
+      if (count === 0) {
+        client = initWebAdmin();
+      }
+    });
+  }, 10000);
 };
 
 const verify = (variable, message) => {
