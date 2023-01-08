@@ -45,7 +45,7 @@ const setRandomTeams = async (match: MatchesJoined) => {
 
 const setMatchCaptains = async (match: MatchesJoined) => {
   const shuffledPlayers = shuffleArray(
-    match.players.filter((player) => !player.username.includes('test'))
+    match.players.filter((player) => !player.username.includes('Test'))
   );
   if (shuffledPlayers.length < 2) {
     throw new Error('To few players for captain mode.');
