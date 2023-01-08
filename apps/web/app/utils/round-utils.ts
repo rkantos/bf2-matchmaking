@@ -1,4 +1,15 @@
-import { RoundsJoined } from '@bf2-matchmaking/supabase/src/types';
+import { RoundsJoined, RoundsRow } from '@bf2-matchmaking/supabase/src/types';
+
+export const groupRoundsByDate = (rounds: Array<RoundsJoined>) =>
+  rounds.sort(compareRoundByDate).reduce<Record<string, Array<RoundsJoined>>>((acc, cur) => {
+    const dateString = new Date(cur.created_at).toDateString();
+    const rounds = acc[dateString];
+    if (rounds) {
+      return { ...acc, [dateString]: rounds.concat(cur) };
+    } else {
+      return { ...acc, [dateString]: [cur] };
+    }
+  }, {});
 
 export const groupRoundsByServer = (rounds: Array<RoundsJoined>) => {
   const groupedByServers = rounds.reduce<Record<string, Array<RoundsJoined>>>((acc, cur) => {
@@ -14,3 +25,6 @@ export const groupRoundsByServer = (rounds: Array<RoundsJoined>) => {
     serverA[0].localeCompare(serverB[0])
   );
 };
+
+const compareRoundByDate = (roundA: RoundsRow, roundB: RoundsRow) =>
+  roundB.created_at.localeCompare(roundA.created_at);

@@ -8,7 +8,7 @@ interface Props {
 
 const RoundItem: FC<Props> = ({ round }) => {
   const date = useFirstRenderDefault(round.created_at, () =>
-    new Date(round.created_at).toLocaleString()
+    new Date(round.created_at).toLocaleTimeString()
   );
   return (
     <li className="flex gap-4 p-4 border rounded w-full">

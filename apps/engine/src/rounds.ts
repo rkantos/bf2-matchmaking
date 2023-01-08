@@ -23,6 +23,7 @@ export const handleInsertedRound = async (round: RoundsRow) => {
       )
       .then(verifyResult);
     if (rounds.length >= 4) {
+      info('handleInsertedRound', `Setting match ${match.id} status to "closed".`);
       await setMatchStatusClosed(match);
     }
   }
