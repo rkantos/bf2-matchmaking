@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "concurrently \"npm:dev-*\"",
-    "build": "esbuild src/app.ts --bundle --platform=node --outfile=build/app.js --external:express",
+    "build": "rimraf ./build && esbuild src/app.ts --bundle --platform=node --outfile=build/app.js --external:express",
     "start": "node build/app.js",
     "dev-nodemon": "nodemon",
     "dev-ngrok": "node ./scripts/ngrok"
