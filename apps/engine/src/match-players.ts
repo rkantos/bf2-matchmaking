@@ -50,24 +50,6 @@ export const handleDeletedMatchPlayer = (oldMatchPlayer: Partial<MatchPlayersRow
 };
 
 const setMatchStatusDrafting = async (match: MatchesJoined) => {
-  const shuffledPlayers = shuffleArray(
-    match.players.filter((player) => !player.username.includes('test'))
-  );
-  if (shuffledPlayers.length < 2) {
-    throw new Error('To few players for captain mode.');
-  }
-  await client()
-    .updateMatchPlayer(match.id, shuffledPlayers[0].id, {
-      team: 'a',
-      captain: true,
-    })
-    .then(verifyResult);
-  await client()
-    .updateMatchPlayer(match.id, shuffledPlayers[1].id, {
-      team: 'b',
-      captain: true,
-    })
-    .then(verifyResult);
   await client().updateMatch(match.id, { status: 'picking' }).then(verifyResult);
 };
 

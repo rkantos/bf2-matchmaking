@@ -29,7 +29,7 @@ app.use(getExpressAccessLogger());
 
 app.post(
   '/matches',
-  (req: Request<{}, {}, WebhookPostgresChangesPayload<MatchesRow>>, res) => {
+  async (req: Request<{}, {}, WebhookPostgresChangesPayload<MatchesRow>>, res) => {
     try {
       switch (req.body.type) {
         case WEBHOOK_POSTGRES_CHANGES_TYPE.INSERT: {
@@ -37,7 +37,7 @@ app.post(
           break;
         }
         case WEBHOOK_POSTGRES_CHANGES_TYPE.UPDATE: {
-          handleUpdatedMatch(req.body.record, req.body.old_record);
+          await handleUpdatedMatch(req.body.record, req.body.old_record);
           break;
         }
         case WEBHOOK_POSTGRES_CHANGES_TYPE.DELETE: {
