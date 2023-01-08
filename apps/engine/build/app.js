@@ -47896,6 +47896,16 @@ var handleDeletedMatch = (oldMatch) => {
   info("handleDeletedMatch", `Match ${oldMatch.id} removed`);
 };
 
+// src/utils.ts
+var shuffleArray = (array) => {
+  const clonedArray = [...array];
+  for (let i = clonedArray.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [clonedArray[i], clonedArray[j]] = [clonedArray[j], clonedArray[i]];
+  }
+  return clonedArray;
+};
+
 // src/match-players.ts
 var handleInsertedMatchPlayer = async (matchPlayer) => {
   info("handleInsertedMatchPlayer", `Player ${matchPlayer.player_id} joined.`);
@@ -47932,7 +47942,9 @@ var handleDeletedMatchPlayer = (oldMatchPlayer) => {
   info("handleDeletedMatchPlayer", `Player ${oldMatchPlayer.player_id} left.`);
 };
 var setMatchStatusDrafting = async (match) => {
-  const shuffledPlayers = match.players;
+  const shuffledPlayers = shuffleArray(
+    match.players.filter((player) => !player.username.includes("test"))
+  );
   if (shuffledPlayers.length < 2) {
     throw new Error("To few players for captain mode.");
   }

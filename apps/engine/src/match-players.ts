@@ -5,6 +5,7 @@ import {
   WebhookPostgresUpdatePayload,
 } from '@bf2-matchmaking/supabase';
 import { client, verifyResult, verifySingleResult } from '@bf2-matchmaking/supabase';
+import { shuffleArray } from './utils';
 
 export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) => {
   info('handleInsertedMatchPlayer', `Player ${matchPlayer.player_id} joined.`);
@@ -49,9 +50,9 @@ export const handleDeletedMatchPlayer = (oldMatchPlayer: Partial<MatchPlayersRow
 };
 
 const setMatchStatusDrafting = async (match: MatchesJoined) => {
-  const shuffledPlayers = match.players.filter(
-    (player) => !player.username.includes('test')
-  ); /*shuffleArray(match.players)*/
+  const shuffledPlayers = shuffleArray(
+    match.players.filter((player) => !player.username.includes('test'))
+  );
   if (shuffledPlayers.length < 2) {
     throw new Error('To few players for captain mode.');
   }
