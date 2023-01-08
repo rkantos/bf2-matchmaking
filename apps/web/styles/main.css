@@ -41,3 +41,7 @@
     @apply h-full bg-gray-200;
   }
 }
+
+.ReactCollapse--collapse {
+  transition: height 300ms;
+}
