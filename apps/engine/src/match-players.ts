@@ -49,7 +49,9 @@ export const handleDeletedMatchPlayer = (oldMatchPlayer: Partial<MatchPlayersRow
 };
 
 const setMatchStatusDrafting = async (match: MatchesJoined) => {
-  const shuffledPlayers = match.players; /*shuffleArray(match.players)*/
+  const shuffledPlayers = match.players.filter(
+    (player) => !player.username.includes('test')
+  ); /*shuffleArray(match.players)*/
   if (shuffledPlayers.length < 2) {
     throw new Error('To few players for captain mode.');
   }
