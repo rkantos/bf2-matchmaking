@@ -1,9 +1,5 @@
 import { info, warn } from '@bf2-matchmaking/logging';
-import {
-  MatchesJoined,
-  MatchesRow,
-  RoundsRow,
-} from '@bf2-matchmaking/supabase/src/types';
+import { MatchesRow, RoundsRow } from '@bf2-matchmaking/supabase';
 import { client, verifyResult } from '@bf2-matchmaking/supabase';
 
 export const handleInsertedRound = async (round: RoundsRow) => {

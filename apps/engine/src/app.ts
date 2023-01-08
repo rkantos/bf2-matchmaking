@@ -7,7 +7,7 @@ import {
   RoundsRow,
   WEBHOOK_POSTGRES_CHANGES_TYPE,
   WebhookPostgresChangesPayload,
-} from '@bf2-matchmaking/supabase/src/types';
+} from '@bf2-matchmaking/supabase';
 import {
   error,
   getExpressAccessLogger,

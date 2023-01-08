@@ -1,4 +1,4 @@
-import { MatchesRow } from '@bf2-matchmaking/supabase/src/types';
+import { MatchesRow } from '@bf2-matchmaking/supabase';
 import { info } from '@bf2-matchmaking/logging';
 
 export const handleInsertedMatch = (match: MatchesRow) => {

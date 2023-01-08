@@ -53,3 +53,4 @@ export const verifySingleResult = <T>({ data, error }: PostgrestSingleResponse<T
 };
 
 export * from './services/match-service';
+export * from './types';
