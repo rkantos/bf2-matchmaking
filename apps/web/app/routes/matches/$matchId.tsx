@@ -81,6 +81,7 @@ export default function Index() {
           <h1 className="text-2xl">Match {match.id}</h1>
           <span className="mr-4">Status: {match.status}</span>
           <span>Pick mode: {match.pick}</span>
+          {match.channel && <span className="ml-4">Channel: {match.channel.name}</span>}
           {currentPicker && <span className="ml-4">Picking: {currentPicker.username}</span>}
           {match.server && <span className="ml-4">Server: {match.server.name}</span>}
         </div>

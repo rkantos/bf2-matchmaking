@@ -8,10 +8,11 @@ export const action = async ({ request }: ActionArgs) => {
   const formData = await request.formData();
   const size = parseInt(formData.get('size')?.toString() || '') * 2;
   const pick = formData.get('pick')?.toString();
+  const channel = parseInt(formData.get('channel')?.toString() || '');
   invariant(size, 'No size included');
   invariant(pick, 'No pick included');
   const client = remixClient(request);
-  const result = await client.createMatch({ pick, size, channel: 1 });
+  const result = await client.createMatch({ pick, size, channel });
   invariant(result.data, 'Failed to create match');
   return redirect(`/matches/${result.data.id}`);
 };
@@ -19,11 +20,12 @@ export const action = async ({ request }: ActionArgs) => {
 export const loader = async ({ request }: LoaderArgs) => {
   const client = remixClient(request);
   const { data: matches } = await client.getMatches();
-  return json({ matches });
+  const { data: channels } = await client.getChannels();
+  return json({ matches, channels });
 };
 
 export default function Index() {
-  const { matches } = useLoaderData<typeof loader>();
+  const { matches, channels } = useLoaderData<typeof loader>();
 
   return (
     <article className="route flex flex-col gap-4">
@@ -43,6 +45,17 @@ export default function Index() {
                 <option value="random">Random pick</option>
               </select>
             </label>
+            {channels && (
+              <label>
+                channel:
+                <select className="dropdown" name="channel" defaultValue="">
+                  <option value="">None</option>
+                  {channels.map((channel) => (
+                    <option value={channel.id}>{channel.name}</option>
+                  ))}
+                </select>
+              </label>
+            )}
           </div>
           <button type="submit" className="filled-button max-w-sm">
             Create

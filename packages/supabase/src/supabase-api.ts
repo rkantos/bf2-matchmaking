@@ -27,4 +27,5 @@ export default (client: SupabaseClient<Database>) => ({
       .gt('created_at', timestampFrom)
       .lt('created_at', timestampTo)
       .eq('server.ip', serverIp),
+  getChannels: () => client.from('discord_channels').select('*'),
 });

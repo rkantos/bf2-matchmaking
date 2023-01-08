@@ -1,10 +1,10 @@
 import { Form } from '@remix-run/react';
 import { User } from '@supabase/supabase-js';
 import { FC } from 'react';
-import { JoinedMatch } from '~/lib/supabase.server';
+import { MatchesJoined } from '@bf2-matchmaking/supabase';
 
 interface Props {
-  match: JoinedMatch;
+  match: MatchesJoined;
   user: User;
 }
 
