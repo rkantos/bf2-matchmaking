@@ -138,8 +138,8 @@ app.post('/rounds', async (req, res) => {
     team2_tickets: event.team2.tickets,
     map: map.id,
     server: server.ip,
-    si: JSON.stringify(bf2ccSi),
-    pl: JSON.stringify(bf2ccPl),
+    si: bf2ccSi && JSON.stringify(bf2ccSi),
+    pl: bf2ccPl && JSON.stringify(bf2ccPl),
   });
 
   if (roundsError) {

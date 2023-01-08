@@ -124,8 +124,8 @@ export interface PlayerInfo {
 export const mapListPlayers = (data?: string): Array<PlayerInfo> | null =>
   data
     ? data
-        .split('\n')
-        .filter((text) => Boolean(text))
+        .split(/(\r\n|\r|\n)/)
+        .filter((text) => Boolean(text.trim()))
         .map((playerData) => {
           const array = playerData.split('\t');
           return {
