@@ -52,6 +52,35 @@ export interface Database {
           name?: string | null
         }
       }
+      match_configs: {
+        Row: {
+          id: number
+          name: string
+          channel: number | null
+          size: number
+          draft: string
+          map_draft: string
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          name: string
+          channel?: number | null
+          size: number
+          draft: string
+          map_draft: string
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          name?: string
+          channel?: number | null
+          size?: number
+          draft?: string
+          map_draft?: string
+          created_at?: string
+        }
+      }
       match_maps: {
         Row: {
           created_at: string | null
@@ -104,6 +133,7 @@ export interface Database {
           server: string | null
           started_at: string | null
           closed_at: string | null
+          host: string | null
         }
         Insert: {
           id?: number
@@ -116,6 +146,7 @@ export interface Database {
           server?: string | null
           started_at?: string | null
           closed_at?: string | null
+          host?: string | null
         }
         Update: {
           id?: number
@@ -128,6 +159,7 @@ export interface Database {
           server?: string | null
           started_at?: string | null
           closed_at?: string | null
+          host?: string | null
         }
       }
       players: {
@@ -216,7 +248,14 @@ export interface Database {
       }
     }
     Views: {
-      [_ in never]: never
+      quick_start_view: {
+        Row: {
+          id: number | null
+          channel: number | null
+          name: string | null
+          match_id: number | null
+        }
+      }
     }
     Functions: {
       [_ in never]: never

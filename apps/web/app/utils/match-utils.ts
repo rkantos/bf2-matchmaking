@@ -32,3 +32,6 @@ export const isCaptain = (match: MatchesJoined, userId?: string) => {
   const playerId = match.players.find((player) => player.user_id === userId)?.id;
   return match.teams.some((player) => player.player_id === playerId && player.captain);
 };
+
+export const compareMatchByChannel = (channel: number) => (match: MatchesJoined) =>
+  match.channel.id === channel;

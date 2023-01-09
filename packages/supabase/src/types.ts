@@ -7,10 +7,12 @@ export type MatchPlayersRow = Database['public']['Tables']['match_players']['Row
 export type RoundsRow = Database['public']['Tables']['rounds']['Row'];
 export type ServersRow = Database['public']['Tables']['servers']['Row'];
 export type DiscordChannelsRow = Database['public']['Tables']['discord_channels']['Row'];
+export type MatchConfigsRow = Database['public']['Tables']['match_configs']['Row'];
+
+export type QuickStartRow = Database['public']['Views']['quick_start_view']['Row'];
 
 export type MatchesInsert = Database['public']['Tables']['matches']['Insert'];
 export type MatchesUpdate = Database['public']['Tables']['matches']['Update'];
-
 export type MatchesJoined = MatchesRow & { maps: Array<MapsRow> } & {
   players: Array<PlayersRow>;
 } & { channel: DiscordChannelsRow } & {
@@ -18,10 +20,17 @@ export type MatchesJoined = MatchesRow & { maps: Array<MapsRow> } & {
 } & {
   server: ServersRow | null;
 };
+
 export type RoundsJoined = RoundsRow & { map: MapsRow } & { server: ServersRow };
+
 export type ServersJoined = ServersRow & {
   matches: Array<{ id: number; status: string }>;
 };
+
+export type MatchConfigsJoined = MatchConfigsRow & { channel: DiscordChannelsRow };
+export type QuickStartJoined = { config: QuickStartRow } & {
+  channel: DiscordChannelsRow;
+} & { match: MatchesRow };
 
 type WebhookPostgresChangesPayloadBase = {
   schema: string;

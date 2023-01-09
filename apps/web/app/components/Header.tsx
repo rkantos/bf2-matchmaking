@@ -3,6 +3,11 @@ import { NavLink, useNavigate } from '@remix-run/react';
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useUser } from '@supabase/auth-helpers-react';
 
+const authRedirect =
+  process.env.NODE_ENV === 'production'
+    ? 'https://bf2-matchmaking.netlify.app/matches/'
+    : 'http://localhost:5003/matches/';
+
 const Header: FC = () => {
   const supabase = useSupabaseClient();
   const user = useUser();
@@ -10,7 +15,7 @@ const Header: FC = () => {
 
   return (
     <header className="header">
-      <h2 className="text-2xl bold justify-self-start">BF2 Matchmaking</h2>
+      <h1 className="text-2xl bold justify-self-start">BF2 Matchmaking</h1>
       <nav className="justify-self-center">
         <ul className="flex gap-4">
           <li>
@@ -42,7 +47,23 @@ const Header: FC = () => {
                   navigate('/');
                 }}
               >
-                Log out
+                Sign out
+              </button>
+            </li>
+          )}
+          {!user && (
+            <li>
+              <button
+                onClick={async () => {
+                  await supabase.auth.signInWithOAuth({
+                    provider: 'discord',
+                    options: {
+                      redirectTo: authRedirect,
+                    },
+                  });
+                }}
+              >
+                Sign in
               </button>
             </li>
           )}

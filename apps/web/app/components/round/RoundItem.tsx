@@ -1,5 +1,5 @@
 import React, { FC, useState } from 'react';
-import { useFirstRenderDefault } from '../../hooks/ssr-hooks';
+import { useFirstRenderDefault } from '../../state/ssr-hooks';
 import { RoundsJoined } from '@bf2-matchmaking/supabase/src/types';
 import { UnmountClosed } from 'react-collapse';
 import RoundSummary from '~/components/round/RoundSummary';

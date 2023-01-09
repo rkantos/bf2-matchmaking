@@ -1,11 +1,16 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
 import matches from './matches-api';
-import { RoundsJoined, ServersJoined } from './types';
+import {
+  MatchConfigsJoined,
+  QuickStartJoined,
+  RoundsJoined,
+  ServersJoined,
+} from './types';
 
 export default (client: SupabaseClient<Database>) => ({
   ...matches(client),
-  getPlayerByUserId: (userId: string) =>
+  getPlayerByUserId: (userId?: string) =>
     client.from('players').select('*').eq('user_id', userId).single(),
   getRounds: () =>
     client
@@ -28,4 +33,8 @@ export default (client: SupabaseClient<Database>) => ({
       .lt('created_at', timestampTo)
       .eq('server.ip', serverIp),
   getChannels: () => client.from('discord_channels').select('*'),
+  getMatchConfigs: () =>
+    client
+      .from('match_configs')
+      .select<'*, channel(*)', MatchConfigsJoined>('*, channel(*)'),
 });

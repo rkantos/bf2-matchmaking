@@ -12,7 +12,8 @@ export const action = async ({ request }: ActionArgs) => {
   invariant(size, 'No size included');
   invariant(pick, 'No pick included');
   const client = remixClient(request);
-  const result = await client.createMatch({ pick, size, channel });
+  const user = await client.getUser();
+  const result = await client.createMatch({ pick, size, channel, host: user?.id });
   invariant(result.data, 'Failed to create match');
   return redirect(`/matches/${result.data.id}`);
 };
@@ -51,7 +52,9 @@ export default function Index() {
                 <select className="dropdown" name="channel" defaultValue="">
                   <option value="">None</option>
                   {channels.map((channel) => (
-                    <option value={channel.id}>{channel.name}</option>
+                    <option key={channel.id} value={channel.id}>
+                      {channel.name}
+                    </option>
                   ))}
                 </select>
               </label>

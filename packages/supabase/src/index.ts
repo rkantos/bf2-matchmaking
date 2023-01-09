@@ -19,22 +19,22 @@ export const client = () => {
 };
 
 export const remixClient = (request: Request) => {
-  invariant(process.env.SUPABASE_URL, 'SUPABASE_URL not defined.');
-  invariant(process.env.SUPABASE_ANON_KEY, 'SUPABASE_ANON_KEY not defined.');
+  const { SUPABASE_URL, SUPABASE_ANON_KEY } = process.env;
+  invariant(SUPABASE_URL, 'SUPABASE_URL not defined.');
+  invariant(SUPABASE_ANON_KEY, 'SUPABASE_ANON_KEY not defined.');
   const response = new Response();
-  const supabase = createServerClient<Database>(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = createServerClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    request,
+    response,
+  });
 
   return {
     ...api(supabase),
     response,
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
     getSession: () => supabase.auth.getSession(),
+    getUser: () => supabase.auth.getUser().then(({ data }) => data.user),
   };
 };
 

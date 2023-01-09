@@ -13,7 +13,7 @@
     @apply max-w-3xl m-auto;
   }
   .section {
-    @apply bg-white p-4 border border-gray-300 rounded;
+    @apply bg-white p-4 border-4 border-amber-400 hover:border-amber-300;
   }
   .outline-button {
     @apply inline-block bg-transparent hover:bg-emerald-500 text-emerald-800 font-semibold hover:text-white py-2 px-4 border border-emerald-500 hover:border-transparent rounded;
@@ -29,6 +29,9 @@
   }
   .dropdown {
     @apply block px-4 py-3 text-base bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-blue-500 focus:border-blue-500;
+  }
+  .join-button {
+    @apply inline-block bg-amber-400 hover:bg-amber-300 text-black font-bold text-xl w-80 p-6 border-2 border-black rounded;
   }
 }
 

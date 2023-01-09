@@ -6,7 +6,16 @@ export default (client: SupabaseClient<Database>) => ({
   createMatch: (values: MatchesInsert) =>
     client.from('matches').insert([values]).select().single(),
   getMatches: () => client.from('matches').select('*'),
-  getOpenMatches: () => client.from('matches').select('*').eq('status', 'open'),
+  getOpenMatches: () =>
+    client
+      .from('matches')
+      .select<
+        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)',
+        MatchesJoined
+      >(
+        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)'
+      )
+      .eq('status', 'open'),
   getMatch: (matchId: number | undefined) =>
     client
       .from('matches')

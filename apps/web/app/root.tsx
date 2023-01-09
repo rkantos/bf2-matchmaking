@@ -1,4 +1,4 @@
-import { json, LinksFunction, LoaderFunction, MetaFunction } from '@remix-run/node';
+import { json, LinksFunction, LoaderArgs, MetaFunction } from '@remix-run/node';
 import {
   Links,
   LiveReload,
@@ -9,10 +9,12 @@ import {
   useLoaderData,
 } from '@remix-run/react';
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
-import { createBrowserClient, createServerClient } from '@supabase/auth-helpers-remix';
+import { createBrowserClient } from '@supabase/auth-helpers-remix';
 import { useState } from 'react';
 import Header from './components/Header';
 import styles from './styles/app.css';
+import { remixClient } from '@bf2-matchmaking/supabase';
+import { PlayerContextProvider } from '~/state/PlayerContext';
 
 export const links: LinksFunction = () => {
   return [{ rel: 'stylesheet', href: styles }];
@@ -24,42 +26,30 @@ export const meta: MetaFunction = () => ({
   viewport: 'width=device-width,initial-scale=1',
 });
 
-export const loader: LoaderFunction = async ({ request }) => {
-  // environment variables may be stored somewhere other than
-  // `process.env` in runtimes other than node
-  // we need to pipe these Supabase environment variables to the browser
-  const { SUPABASE_URL, SUPABASE_ANON_KEY } = process.env;
-
-  // We can retrieve the session on the server and hand it to the client.
-  // This is used to make sure the session is available immediately upon rendering
-  const response = new Response();
-  const supabaseClient = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    { request, response }
-  );
+export const loader = async ({ request }: LoaderArgs) => {
+  const client = remixClient(request);
   const {
     data: { session: initialSession },
-  } = await supabaseClient.auth.getSession();
+  } = await client.getSession();
+  const { data: player } = await client.getPlayerByUserId(initialSession?.user.id);
 
-  // in order for the set-cookie header to be set,
-  // headers must be returned as part of the loader response
   return json(
     {
       initialSession,
+      player,
       env: {
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY,
+        SUPABASE_URL: client.SUPABASE_URL,
+        SUPABASE_ANON_KEY: client.SUPABASE_ANON_KEY,
       },
     },
     {
-      headers: response.headers,
+      headers: client.response.headers,
     }
   );
 };
 
 export default function App() {
-  const { env, initialSession } = useLoaderData<typeof loader>();
+  const { env, initialSession, player } = useLoaderData<typeof loader>();
   const [supabaseClient] = useState(() =>
     createBrowserClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
   );
@@ -72,10 +62,12 @@ export default function App() {
       </head>
       <body>
         <SessionContextProvider supabaseClient={supabaseClient} initialSession={initialSession}>
-          <Header />
-          <main className="main">
-            <Outlet />
-          </main>
+          <PlayerContextProvider player={player}>
+            <Header />
+            <main className="main">
+              <Outlet />
+            </main>
+          </PlayerContextProvider>
         </SessionContextProvider>
         <ScrollRestoration />
         <Scripts />
