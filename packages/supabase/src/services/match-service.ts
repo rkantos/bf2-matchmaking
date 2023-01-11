@@ -1,21 +1,55 @@
-import { MatchesJoined, RoundsJoined } from '../types';
-export const getMatchRounds = async (match: MatchesJoined, client: any) => {
-  if (!match.server) {
-    return null;
-  }
-  if (!match.started_at) {
-    return null;
-  }
+import { MatchConfigsJoined, MatchesJoined, QuickMatch, RoundsJoined } from '../types';
+import supabaseApi from '../supabase-api';
+import { verifyResult, verifySingleResult } from '../index';
+import { warn } from '@bf2-matchmaking/logging';
 
-  const closedAt = match.closed_at || new Date().toISOString();
-  const { data, error } = await client.getServerRoundsByTimestampRange(
-    match.server.ip,
-    match.started_at,
-    closedAt
-  );
-  if (error) {
-    console.log(error);
-    return null;
-  }
-  return data as Array<RoundsJoined>;
-};
+export default (api: ReturnType<typeof supabaseApi>) => ({
+  getMatchRounds: async (match: MatchesJoined) => {
+    if (!match.server) {
+      return null;
+    }
+    if (!match.started_at) {
+      return null;
+    }
+
+    const closedAt = match.closed_at || new Date().toISOString();
+    const { data, error } = await api.getServerRoundsByTimestampRange(
+      match.server.ip,
+      match.started_at,
+      closedAt
+    );
+    if (error) {
+      console.log(error);
+      return null;
+    }
+    return data as Array<RoundsJoined>;
+  },
+  getQuickMatchFromConfig: async (config: MatchConfigsJoined): Promise<QuickMatch> => {
+    const openMatches = await api
+      .getOpenMatchesByChannel(config.channel.id)
+      .then(verifyResult);
+    const match = openMatches.at(0);
+
+    if (!match) {
+      const { draft, size, channel, map_draft } = config;
+      const newMatch = await api
+        .createMatch({
+          pick: draft,
+          size,
+          channel: channel.id,
+          map_draft,
+        })
+        .then(verifySingleResult);
+      return [config, newMatch];
+    }
+
+    if (openMatches.length > 1) {
+      warn(
+        'getQuickMatchFromConfig',
+        'Multiple open matches for the same channel exists.'
+      );
+    }
+
+    return [config, match];
+  },
+});

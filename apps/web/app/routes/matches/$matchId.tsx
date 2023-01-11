@@ -8,16 +8,16 @@ import Open from '~/components/match/Open';
 import Started from '~/components/match/Started';
 import MatchActions from '~/components/match/MatchActions';
 import { getTeamCaptain } from '~/utils/match-utils';
-import { getMatchRounds, remixClient } from '@bf2-matchmaking/supabase';
+import { remixClient } from '@bf2-matchmaking/supabase';
 import { Database } from '@bf2-matchmaking/supabase/src/database.types';
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   const client = remixClient(request);
   const matchId = params['matchId'] ? parseInt(params['matchId']) : undefined;
   const { data: match } = await client.getMatch(matchId);
-  const { data: servers, error } = await client.getServers();
+  const { data: servers } = await client.getServers();
   invariant(match, 'Match not found');
-  const rounds = await getMatchRounds(match, client);
+  const rounds = await client.services.getMatchRounds(match);
   return json(
     { match, servers, rounds },
     {

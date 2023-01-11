@@ -1,6 +1,7 @@
 import React, { FC } from 'react';
 import { MatchConfigsJoined, MatchesJoined } from '@bf2-matchmaking/supabase';
 import { Link } from '@remix-run/react';
+import Action from '~/components/form/Action';
 
 interface Props {
   config: MatchConfigsJoined;
@@ -14,16 +15,33 @@ const getMapDraftText = (draft: string) => (draft === 'random' ? 'Random' : 'Vot
 
 const QuickMatchSection: FC<Props> = ({ config, match, hasJoined }) => {
   return (
-    <section className="section text-center">
-      {match ? (
-        <Link to={`/matches/${match.id}`}>
-          <h2 className="text-xl mb-4">{config.name}</h2>
-        </Link>
-      ) : (
-        <h2 className="text-xl mb-4">{config.name}</h2>
+    <section
+      className={`section flex flex-col items-center justify-center ${
+        hasJoined ? 'border-green-500 hover:border-green-500' : ''
+      }`}
+    >
+      <h2 className="text-xl mb-4">{config.name}</h2>
+      <Action
+        className="join-button mb-4"
+        disabled={hasJoined}
+        action={`/matches/${match?.id}/join`}
+      >
+        {hasJoined ? 'Waiting for players...' : 'Join'}
+      </Action>
+      {hasJoined && (
+        <Action className="leave-button mb-4" action={`/matches/${match?.id}/leave`}>
+          Leave
+        </Action>
       )}
-      <button className="join-button mb-4">{hasJoined ? 'Waiting for players...' : 'Join'}</button>
-      <div className="flex justify-between gap-4">
+      <div className="flex justify-between gap-4 w-full">
+        {match && (
+          <div>
+            <span className="mr-1">Match:</span>
+            <Link className="underline text-blue-800" to={`/matches/${match.id}`}>
+              {match.id}
+            </Link>
+          </div>
+        )}
         <div>
           <span className="mr-1">Discord:</span>
           <a className="underline text-blue-800" href={config.channel.uri}>

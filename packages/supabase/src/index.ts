@@ -6,7 +6,8 @@ import {
 import invariant from 'tiny-invariant';
 import { Database } from './database.types';
 import { createServerClient } from '@supabase/auth-helpers-remix';
-import api from './supabase-api';
+import supabaseApi from './supabase-api';
+import matchServices from './services/match-service';
 
 export const client = () => {
   invariant(process.env.SUPABASE_URL, 'SUPABASE_URL not defined.');
@@ -15,7 +16,9 @@ export const client = () => {
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_KEY
   );
-  return { ...api(supabase) };
+  const api = supabaseApi(supabase);
+  const services = matchServices(api);
+  return { ...api, services };
 };
 
 export const remixClient = (request: Request) => {
@@ -28,8 +31,12 @@ export const remixClient = (request: Request) => {
     response,
   });
 
+  const api = supabaseApi(supabase);
+  const services = matchServices(api);
+
   return {
-    ...api(supabase),
+    ...api,
+    services,
     response,
     SUPABASE_URL,
     SUPABASE_ANON_KEY,

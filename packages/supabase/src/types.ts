@@ -153,3 +153,5 @@ export interface PlayerListItem {
   timesPunished: string;
   timesForgiven: string;
 }
+
+export type QuickMatch = [MatchConfigsJoined, MatchesJoined];

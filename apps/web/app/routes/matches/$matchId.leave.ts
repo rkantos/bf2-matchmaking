@@ -3,9 +3,8 @@ import invariant from 'tiny-invariant';
 import { remixClient } from '@bf2-matchmaking/supabase';
 
 export const loader: LoaderFunction = ({ request, params }) => {
-  return redirect(`/matches/${params['matchId']}`);
+  return redirect(`/`);
 };
-
 export const action: ActionFunction = async ({ request, params }) => {
   try {
     const client = remixClient(request);
@@ -22,7 +21,7 @@ export const action: ActionFunction = async ({ request, params }) => {
       return json(error, { status });
     }
 
-    return redirect(`/matches/${params['matchId']}`);
+    return redirect('/');
   } catch (err) {
     console.error(err);
     return json(err, { status: 500 });

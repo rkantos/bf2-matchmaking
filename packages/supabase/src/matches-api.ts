@@ -4,7 +4,16 @@ import { MatchesInsert, MatchesJoined, MatchesUpdate, MatchPlayersRow } from './
 
 export default (client: SupabaseClient<Database>) => ({
   createMatch: (values: MatchesInsert) =>
-    client.from('matches').insert([values]).select().single(),
+    client
+      .from('matches')
+      .insert([values])
+      .select<
+        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)',
+        MatchesJoined
+      >(
+        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)'
+      )
+      .single(),
   getMatches: () => client.from('matches').select('*'),
   getOpenMatches: () =>
     client
@@ -16,6 +25,17 @@ export default (client: SupabaseClient<Database>) => ({
         '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)'
       )
       .eq('status', 'open'),
+  getOpenMatchesByChannel: (channel: number) =>
+    client
+      .from('matches')
+      .select<
+        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)',
+        MatchesJoined
+      >(
+        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)'
+      )
+      .eq('status', 'open')
+      .eq('channel.id', channel),
   getMatch: (matchId: number | undefined) =>
     client
       .from('matches')

@@ -1,23 +1,27 @@
-import { json, LoaderArgs } from '@remix-run/node'; // change this import to whatever runtime you are using
-import { useUser } from '@supabase/auth-helpers-react';
+import { json, LoaderArgs } from '@remix-run/node';
 import { Link, useLoaderData } from '@remix-run/react';
-import { compareMatchByChannel, isNotDeleted } from '~/utils/match-utils';
-import { MatchConfigsJoined, MatchesJoined, remixClient } from '@bf2-matchmaking/supabase';
+import { remixClient, verifyResult } from '@bf2-matchmaking/supabase';
 import QuickMatchSection from '~/components/match/QuickMatchSection';
 import { usePlayer } from '~/state/PlayerContext';
 
 export const loader = async ({ request }: LoaderArgs) => {
   const client = remixClient(request);
-  const { data: matches } = await client.getOpenMatches();
-  const { data: configs } = await client.getMatchConfigs();
-  const quickMatches: Array<[MatchConfigsJoined, MatchesJoined | undefined]> | undefined =
-    configs?.map((config) => [config, matches?.find(compareMatchByChannel(config.channel.id))]);
-  return json(
-    { quickMatches },
-    {
-      headers: client.response.headers,
+  try {
+    const configs = await client.getMatchConfigs().then(verifyResult);
+    const quickMatches = await Promise.all(configs.map(client.services.getQuickMatchFromConfig));
+    return json(
+      { quickMatches },
+      {
+        headers: client.response.headers,
+      }
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Response(error.message);
+    } else {
+      throw error;
     }
-  );
+  }
 };
 
 const authRedirect =
