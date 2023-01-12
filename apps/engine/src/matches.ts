@@ -1,13 +1,8 @@
-import {
-  client,
-  MatchesJoined,
-  MatchesRow,
-  verifyResult,
-  verifySingleResult,
-} from '@bf2-matchmaking/supabase';
+import { client, verifyResult, verifySingleResult } from '@bf2-matchmaking/supabase';
 import { info } from '@bf2-matchmaking/logging';
 import { shuffleArray } from './utils';
 import { assignMatchPlayerTeams } from 'web/app/utils/match-utils';
+import { MatchesJoined, MatchesRow } from '@bf2-matchmaking/types';
 
 export const handleInsertedMatch = (match: MatchesRow) => {
   info('handleInsertedMatch', `New match ${match.id}`);

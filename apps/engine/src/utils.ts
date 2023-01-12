@@ -1,4 +1,4 @@
-import { PlayersRow } from '@bf2-matchmaking/supabase';
+import { PlayersRow } from '@bf2-matchmaking/types';
 
 export const shuffleArray = <T = unknown>(array: Array<T>) => {
   const clonedArray = [...array];

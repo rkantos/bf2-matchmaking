@@ -3,9 +3,8 @@ import {
   MatchesJoined,
   MatchPlayersRow,
   WebhookPostgresUpdatePayload,
-} from '@bf2-matchmaking/supabase';
+} from '@bf2-matchmaking/types';
 import { client, verifyResult, verifySingleResult } from '@bf2-matchmaking/supabase';
-import { shuffleArray } from './utils';
 
 export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) => {
   info('handleInsertedMatchPlayer', `Player ${matchPlayer.player_id} joined.`);
