@@ -1,7 +1,7 @@
 import { Form } from '@remix-run/react';
 import { User } from '@supabase/supabase-js';
 import { FC } from 'react';
-import { MatchesJoined } from '@bf2-matchmaking/supabase';
+import { MatchesJoined } from '@bf2-matchmaking/types';
 
 interface Props {
   match: MatchesJoined;

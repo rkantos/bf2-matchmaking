@@ -1,5 +1,5 @@
 import { createContext, FC, PropsWithChildren, useContext } from 'react';
-import { PlayersRow } from '@bf2-matchmaking/supabase';
+import { PlayersRow } from '@bf2-matchmaking/types';
 import invariant from 'tiny-invariant';
 
 interface PlayerContextValue {

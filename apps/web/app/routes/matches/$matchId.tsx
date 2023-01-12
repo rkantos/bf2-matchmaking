@@ -9,7 +9,7 @@ import Started from '~/components/match/Started';
 import MatchActions from '~/components/match/MatchActions';
 import { getTeamCaptain } from '~/utils/match-utils';
 import { remixClient } from '@bf2-matchmaking/supabase';
-import { Database } from '@bf2-matchmaking/supabase/src/database.types';
+import { Database } from '@bf2-matchmaking/types';
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   const client = remixClient(request);

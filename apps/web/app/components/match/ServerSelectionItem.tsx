@@ -1,5 +1,5 @@
 import React, { FC } from 'react';
-import { ServersJoined } from '@bf2-matchmaking/supabase/src/types';
+import { ServersJoined } from '@bf2-matchmaking/types';
 import { isActive } from '~/utils/servers-utils';
 import { Link, useLoaderData, useSubmit } from '@remix-run/react';
 import { loader } from '~/routes/matches/$matchId';

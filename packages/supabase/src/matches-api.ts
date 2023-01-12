@@ -1,6 +1,11 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Database } from './database.types';
-import { MatchesInsert, MatchesJoined, MatchesUpdate, MatchPlayersRow } from './types';
+import {
+  Database,
+  MatchesInsert,
+  MatchesJoined,
+  MatchesUpdate,
+  MatchPlayersRow,
+} from '@bf2-matchmaking/types';
 
 export default (client: SupabaseClient<Database>) => ({
   createMatch: (values: MatchesInsert) =>

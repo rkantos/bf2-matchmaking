@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@bf2-matchmaking/logging": "*",
+    "@bf2-matchmaking/types": "^1.0.0",
     "@supabase/auth-helpers-remix": "^0.1.3",
     "@supabase/supabase-js": "^2.2.3",
     "tiny-invariant": "^1.3.1"

@@ -1,8 +1,7 @@
 import React from 'react';
 import { json, LoaderArgs } from '@remix-run/node';
 import { useLoaderData } from '@remix-run/react';
-import { groupRoundsByDate, groupRoundsByServer } from '../../utils/round-utils';
-import RoundItem from '../../components/round/RoundItem';
+import { groupRoundsByDate } from '~/utils/round-utils';
 import { remixClient } from '@bf2-matchmaking/supabase';
 import ServerRoundList from '~/components/round/ServerRoundList';
 

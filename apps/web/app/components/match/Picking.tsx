@@ -2,7 +2,7 @@ import { useLoaderData, useNavigate, useSubmit } from '@remix-run/react';
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
 import { FC, useEffect } from 'react';
 import { loader } from '~/routes/matches/$matchId';
-import { PlayersRow } from '@bf2-matchmaking/supabase/src/types';
+import { PlayersRow } from '@bf2-matchmaking/types';
 import ServerSelection from '~/components/match/ServerSelection';
 
 interface Props {

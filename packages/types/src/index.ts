@@ -1,5 +1,7 @@
 import { Database } from './database.types';
 
+export * from './database.types';
+
 export type PlayersRow = Database['public']['Tables']['players']['Row'];
 export type MapsRow = Database['public']['Tables']['maps']['Row'];
 export type MatchesRow = Database['public']['Tables']['matches']['Row'];
@@ -8,8 +10,6 @@ export type RoundsRow = Database['public']['Tables']['rounds']['Row'];
 export type ServersRow = Database['public']['Tables']['servers']['Row'];
 export type DiscordChannelsRow = Database['public']['Tables']['discord_channels']['Row'];
 export type MatchConfigsRow = Database['public']['Tables']['match_configs']['Row'];
-
-export type QuickStartRow = Database['public']['Views']['quick_start_view']['Row'];
 
 export type MatchesInsert = Database['public']['Tables']['matches']['Insert'];
 export type MatchesUpdate = Database['public']['Tables']['matches']['Update'];
@@ -28,9 +28,6 @@ export type ServersJoined = ServersRow & {
 };
 
 export type MatchConfigsJoined = MatchConfigsRow & { channel: DiscordChannelsRow };
-export type QuickStartJoined = { config: QuickStartRow } & {
-  channel: DiscordChannelsRow;
-} & { match: MatchesRow };
 
 type WebhookPostgresChangesPayloadBase = {
   schema: string;

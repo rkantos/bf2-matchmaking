@@ -1,7 +1,7 @@
 import React, { FC } from 'react';
 import { groupRoundsByServer } from '~/utils/round-utils';
 import RoundItem from '../../components/round/RoundItem';
-import { RoundsJoined } from '@bf2-matchmaking/supabase';
+import { RoundsJoined } from '@bf2-matchmaking/types';
 
 interface Props {
   rounds: Array<RoundsJoined>;

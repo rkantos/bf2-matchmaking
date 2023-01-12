@@ -1,4 +1,4 @@
-import { MatchesJoined, MatchesRow, PlayersRow } from '@bf2-matchmaking/supabase/src/types';
+import { MatchesJoined, MatchesRow, PlayersRow } from '@bf2-matchmaking/types';
 
 export const isNotDeleted = (match: MatchesRow) => match.status !== 'deleted';
 export const isOpen = (match: MatchesRow) => match.status === 'open';

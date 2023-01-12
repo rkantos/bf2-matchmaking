@@ -4,10 +4,10 @@ import {
   PostgrestSingleResponse,
 } from '@supabase/supabase-js';
 import invariant from 'tiny-invariant';
-import { Database } from './database.types';
 import { createServerClient } from '@supabase/auth-helpers-remix';
 import supabaseApi from './supabase-api';
 import matchServices from './services/match-service';
+import { Database } from '@bf2-matchmaking/types';
 
 export const client = () => {
   invariant(process.env.SUPABASE_URL, 'SUPABASE_URL not defined.');
@@ -58,6 +58,3 @@ export const verifySingleResult = <T>({ data, error }: PostgrestSingleResponse<T
   }
   return data;
 };
-
-export * from './services/match-service';
-export * from './types';

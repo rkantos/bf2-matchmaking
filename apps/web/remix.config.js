@@ -3,7 +3,11 @@ module.exports = {
   serverBuildTarget: 'netlify',
   server: process.env.NETLIFY || process.env.NETLIFY_LOCAL ? './server.js' : undefined,
   ignoredRouteFiles: ['**/.*'],
-  serverDependenciesToBundle: ['@bf2-matchmaking/supabase', '@bf2-matchmaking/logging'],
+  serverDependenciesToBundle: [
+    '@bf2-matchmaking/supabase',
+    '@bf2-matchmaking/logging',
+    '@bf2-matchmaking/types',
+  ],
   watchPaths: ['../../packages/**/*'],
   // appDirectory: "app",
   // assetsBuildDirectory: "public/build",

@@ -1,4 +1,4 @@
-import { json, LoaderArgs } from '@remix-run/node';
+import { ErrorBoundaryComponent, json, LoaderArgs } from '@remix-run/node';
 import { Link, useLoaderData } from '@remix-run/react';
 import { remixClient, verifyResult } from '@bf2-matchmaking/supabase';
 import QuickMatchSection from '~/components/match/QuickMatchSection';
@@ -59,3 +59,14 @@ export default function Index() {
     </article>
   );
 }
+
+export const ErrorBoundary: ErrorBoundaryComponent = ({ error }) => {
+  return (
+    <div>
+      <h1>Error</h1>
+      <p>{error.message}</p>
+      <p>The stack trace is:</p>
+      <pre>{error.stack}</pre>
+    </div>
+  );
+};

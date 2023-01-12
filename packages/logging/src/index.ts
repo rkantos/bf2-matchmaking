@@ -15,7 +15,6 @@ const logger = createLogger({
   format: combine(timestamp(), APP_FORMAT, colorize()),
   transports: TRANSPORTS,
 });
-
 export const error = (label: string, message: string) =>
   logger.log({ level: 'error', label, message });
 export const warn = (label: string, message: string) =>

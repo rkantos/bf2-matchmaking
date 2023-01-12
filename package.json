@@ -8,7 +8,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "generate-types": "supabase gen types typescript --project-id lprcjdlrakeamyeuydcr > packages/supabase/src/database.types.ts"
+    "generate-types": "supabase gen types typescript --project-id lprcjdlrakeamyeuydcr > packages/types/src/database.types.ts"
   },
   "repository": {
     "type": "git",

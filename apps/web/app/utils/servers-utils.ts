@@ -1,4 +1,4 @@
-import { MatchesJoined, ServersJoined } from '@bf2-matchmaking/supabase/src/types';
+import { MatchesJoined, ServersJoined } from '@bf2-matchmaking/types';
 type MatchStatus = { status: string };
 const isMatchDrafting = ({ status }: MatchStatus) => status === 'picking';
 const isMatchOngoing = ({ status }: MatchStatus) => status === 'started';

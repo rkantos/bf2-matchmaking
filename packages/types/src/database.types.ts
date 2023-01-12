@@ -11,222 +11,222 @@ export interface Database {
     Tables: {
       discord_channels: {
         Row: {
-          id: number
-          created_at: string | null
-          name: string
-          uri: string
           channel_id: string
+          created_at: string | null
+          id: number
+          name: string
           server_id: string
+          uri: string
         }
         Insert: {
-          id?: number
-          created_at?: string | null
-          name: string
-          uri: string
           channel_id: string
+          created_at?: string | null
+          id?: number
+          name: string
           server_id: string
+          uri: string
         }
         Update: {
-          id?: number
-          created_at?: string | null
-          name?: string
-          uri?: string
           channel_id?: string
+          created_at?: string | null
+          id?: number
+          name?: string
           server_id?: string
+          uri?: string
         }
       }
       maps: {
         Row: {
-          id: number
           created_at: string | null
+          id: number
           name: string | null
         }
         Insert: {
-          id?: number
           created_at?: string | null
+          id?: number
           name?: string | null
         }
         Update: {
-          id?: number
           created_at?: string | null
+          id?: number
           name?: string | null
         }
       }
       match_configs: {
         Row: {
-          id: number
-          name: string
           channel: number | null
-          size: number
-          draft: string
-          map_draft: string
           created_at: string
+          draft: string
+          id: number
+          map_draft: string
+          name: string
+          size: number
         }
         Insert: {
-          id?: number
-          name: string
           channel?: number | null
-          size: number
-          draft: string
-          map_draft: string
           created_at?: string
+          draft: string
+          id?: number
+          map_draft: string
+          name: string
+          size: number
         }
         Update: {
-          id?: number
-          name?: string
           channel?: number | null
-          size?: number
-          draft?: string
-          map_draft?: string
           created_at?: string
+          draft?: string
+          id?: number
+          map_draft?: string
+          name?: string
+          size?: number
         }
       }
       match_maps: {
         Row: {
           created_at: string | null
-          match_id: number
           map_id: number
+          match_id: number
         }
         Insert: {
           created_at?: string | null
-          match_id: number
           map_id: number
+          match_id: number
         }
         Update: {
           created_at?: string | null
-          match_id?: number
           map_id?: number
+          match_id?: number
         }
       }
       match_players: {
         Row: {
-          player_id: string
-          match_id: number
-          updated_at: string
-          team: string | null
           captain: boolean
+          match_id: number
+          player_id: string
+          team: string | null
+          updated_at: string
         }
         Insert: {
-          player_id: string
-          match_id: number
-          updated_at?: string
-          team?: string | null
           captain?: boolean
+          match_id: number
+          player_id: string
+          team?: string | null
+          updated_at?: string
         }
         Update: {
-          player_id?: string
-          match_id?: number
-          updated_at?: string
-          team?: string | null
           captain?: boolean
+          match_id?: number
+          player_id?: string
+          team?: string | null
+          updated_at?: string
         }
       }
       matches: {
         Row: {
-          id: number
-          created_at: string | null
-          status: string
-          size: number
-          pick: string
           channel: number | null
-          map_draft: string
-          server: string | null
-          started_at: string | null
           closed_at: string | null
+          created_at: string | null
           host: string | null
+          id: number
+          map_draft: string
+          pick: string
+          server: string | null
+          size: number
+          started_at: string | null
+          status: string
         }
         Insert: {
-          id?: number
-          created_at?: string | null
-          status?: string
-          size?: number
-          pick?: string
           channel?: number | null
-          map_draft?: string
-          server?: string | null
-          started_at?: string | null
           closed_at?: string | null
+          created_at?: string | null
           host?: string | null
+          id?: number
+          map_draft?: string
+          pick?: string
+          server?: string | null
+          size?: number
+          started_at?: string | null
+          status?: string
         }
         Update: {
-          id?: number
-          created_at?: string | null
-          status?: string
-          size?: number
-          pick?: string
           channel?: number | null
-          map_draft?: string
-          server?: string | null
-          started_at?: string | null
           closed_at?: string | null
+          created_at?: string | null
           host?: string | null
+          id?: number
+          map_draft?: string
+          pick?: string
+          server?: string | null
+          size?: number
+          started_at?: string | null
+          status?: string
         }
       }
       players: {
         Row: {
+          avatar_url: string
+          created_at: string
+          full_name: string
           id: string
           updated_at: string
-          username: string
-          full_name: string
-          avatar_url: string
           user_id: string | null
-          created_at: string
+          username: string
         }
         Insert: {
+          avatar_url: string
+          created_at?: string
+          full_name: string
           id: string
           updated_at?: string
-          username: string
-          full_name: string
-          avatar_url: string
           user_id?: string | null
-          created_at?: string
+          username: string
         }
         Update: {
+          avatar_url?: string
+          created_at?: string
+          full_name?: string
           id?: string
           updated_at?: string
-          username?: string
-          full_name?: string
-          avatar_url?: string
           user_id?: string | null
-          created_at?: string
+          username?: string
         }
       }
       rounds: {
         Row: {
-          id: number
           created_at: string
+          id: number
+          map: number
+          pl: Json | null
+          server: string
+          si: Json | null
           team1_name: string
           team1_tickets: string
           team2_name: string
           team2_tickets: string
-          server: string
-          map: number
-          si: Json | null
-          pl: Json | null
         }
         Insert: {
-          id?: number
           created_at?: string
+          id?: number
+          map: number
+          pl?: Json | null
+          server: string
+          si?: Json | null
           team1_name: string
           team1_tickets: string
           team2_name: string
           team2_tickets: string
-          server: string
-          map: number
-          si?: Json | null
-          pl?: Json | null
         }
         Update: {
-          id?: number
           created_at?: string
+          id?: number
+          map?: number
+          pl?: Json | null
+          server?: string
+          si?: Json | null
           team1_name?: string
           team1_tickets?: string
           team2_name?: string
           team2_tickets?: string
-          server?: string
-          map?: number
-          si?: Json | null
-          pl?: Json | null
         }
       }
       servers: {
@@ -248,14 +248,7 @@ export interface Database {
       }
     }
     Views: {
-      quick_start_view: {
-        Row: {
-          id: number | null
-          channel: number | null
-          name: string | null
-          match_id: number | null
-        }
-      }
+      [_ in never]: never
     }
     Functions: {
       [_ in never]: never

@@ -1,5 +1,5 @@
 import React, { FC } from 'react';
-import { MatchConfigsJoined, MatchesJoined } from '@bf2-matchmaking/supabase';
+import { MatchConfigsJoined, MatchesJoined } from '@bf2-matchmaking/types';
 import { Link } from '@remix-run/react';
 import Action from '~/components/form/Action';
 

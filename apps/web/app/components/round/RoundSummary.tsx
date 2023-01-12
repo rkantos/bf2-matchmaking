@@ -1,5 +1,5 @@
 import React, { FC, useMemo } from 'react';
-import { PlayerListItem, RoundsRow, ServerInfo } from '@bf2-matchmaking/supabase';
+import { PlayerListItem, RoundsRow, ServerInfo } from '@bf2-matchmaking/types';
 import mock from './mock.json';
 
 interface Props {

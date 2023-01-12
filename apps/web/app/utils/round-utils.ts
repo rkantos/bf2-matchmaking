@@ -1,4 +1,4 @@
-import { RoundsJoined, RoundsRow } from '@bf2-matchmaking/supabase/src/types';
+import { RoundsJoined, RoundsRow } from '@bf2-matchmaking/types';
 
 export const groupRoundsByDate = (rounds: Array<RoundsJoined>) =>
   rounds.sort(compareRoundByDate).reduce<Record<string, Array<RoundsJoined>>>((acc, cur) => {

@@ -1,12 +1,11 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { Database } from './database.types';
 import matches from './matches-api';
 import {
+  Database,
   MatchConfigsJoined,
-  QuickStartJoined,
   RoundsJoined,
   ServersJoined,
-} from './types';
+} from '@bf2-matchmaking/types';
 
 export default (client: SupabaseClient<Database>) => ({
   ...matches(client),

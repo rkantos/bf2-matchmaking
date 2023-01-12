@@ -1,6 +1,6 @@
 import { useLoaderData } from '@remix-run/react';
 import { loader } from '~/routes/matches/$matchId';
-import { PlayersRow } from '@bf2-matchmaking/supabase/src/types';
+import { PlayersRow } from '@bf2-matchmaking/types';
 import RoundsList from '~/components/match/RoundsList';
 
 export default function Started() {

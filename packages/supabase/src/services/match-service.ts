@@ -1,7 +1,11 @@
-import { MatchConfigsJoined, MatchesJoined, QuickMatch, RoundsJoined } from '../types';
+import {
+  MatchConfigsJoined,
+  MatchesJoined,
+  QuickMatch,
+  RoundsJoined,
+} from '@bf2-matchmaking/types';
 import supabaseApi from '../supabase-api';
 import { verifyResult, verifySingleResult } from '../index';
-import { warn } from '@bf2-matchmaking/logging';
 
 export default (api: ReturnType<typeof supabaseApi>) => ({
   getMatchRounds: async (match: MatchesJoined) => {
@@ -44,10 +48,7 @@ export default (api: ReturnType<typeof supabaseApi>) => ({
     }
 
     if (openMatches.length > 1) {
-      warn(
-        'getQuickMatchFromConfig',
-        'Multiple open matches for the same channel exists.'
-      );
+      console.log('Multiple open matches for the same channel exists.');
     }
 
     return [config, match];
