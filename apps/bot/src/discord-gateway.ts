@@ -1,17 +1,15 @@
 import { Client, Message, PossiblyUncachedTextableChannel } from 'eris';
 import invariant from 'tiny-invariant';
-import { error, info } from './libs/logging';
-import { getChannelMap } from './services/channel';
+import { error, info } from '@bf2-matchmaking/logging';
 import {
   addPlayer,
   getMatchInfoByChannel,
   pickMatchPlayer,
   removePlayer,
-  startMatch,
-  startMatchDraft,
 } from './services/match';
+import { client, verifyResult } from '@bf2-matchmaking/supabase';
 
-let channels = new Map<string, number>();
+let channelMap = new Map<string, number>();
 
 export const initDiscordGateway = () => {
   invariant(process.env.DISCORD_TOKEN, 'process.env.DISCORD_TOKEN is not defined');
@@ -20,7 +18,8 @@ export const initDiscordGateway = () => {
   });
 
   gateway.on('ready', async () => {
-    channels = new Map(await getChannelMap());
+    const channels = await client().getChannels().then(verifyResult);
+    channelMap = new Map(channels.map(({ channel_id, id }) => [channel_id, id]));
     info('discord-gateway', 'Connected');
   });
 
@@ -29,13 +28,13 @@ export const initDiscordGateway = () => {
   });
 
   gateway.on('messageCreate', async (msg) => {
-    if (!channels.has(msg.channel.id)) {
+    if (!channelMap.has(msg.channel.id)) {
       return;
     }
     try {
       const result = await parseMessage(msg);
       if (result) {
-        gateway.createMessage(msg.channel.id, result);
+        await gateway.createMessage(msg.channel.id, result);
       }
     } catch (e) {
       if (e instanceof Error) {
@@ -64,40 +63,40 @@ export const initDiscordGateway = () => {
   };
 
   const onWho = async (msg: Message<PossiblyUncachedTextableChannel>) => {
-    info('discord-gateway', `Received command <${msg.content}> for channel <${msg.channel.id}>`);
+    info(
+      'discord-gateway',
+      `Received command <${msg.content}> for channel <${msg.channel.id}>`
+    );
     return getMatchInfoByChannel(msg.channel.id);
   };
 
   const onLeave = async (msg: Message<PossiblyUncachedTextableChannel>) => {
-    info('discord-gateway', `Received command <${msg.content}> for channel <${msg.channel.id}>`);
+    info(
+      'discord-gateway',
+      `Received command <${msg.content}> for channel <${msg.channel.id}>`
+    );
     await removePlayer(msg.channel.id, msg.author);
   };
 
   const onJoin = async (msg: Message<PossiblyUncachedTextableChannel>) => {
-    info('discord-gateway', `Received command <${msg.content}> for channel <${msg.channel.id}>`);
-    const match = await addPlayer(msg.channel.id, msg.author);
-
-    if (match.players.length === match.size && match.pick === 'captain') {
-      await startMatchDraft(match);
-    }
+    info(
+      'discord-gateway',
+      `Received command <${msg.content}> for channel <${msg.channel.id}>`
+    );
+    await addPlayer(msg.channel.id, msg.author);
   };
   const onPick = async (
     msg: Message<PossiblyUncachedTextableChannel>
   ): Promise<string | undefined> => {
-    info('discord-gateway', `Received command <${msg.content}> for channel <${msg.channel.id}>`);
+    info(
+      'discord-gateway',
+      `Received command <${msg.content}> for channel <${msg.channel.id}>`
+    );
     const playerId = msg.mentions[0]?.id || msg.content.split(' ')[1];
     if (!playerId) {
       return 'No player mentioned';
     }
-    const { error, match } = await pickMatchPlayer(msg.channel.id, msg.author.id, playerId);
-
-    if (error) {
-      return error;
-    }
-
-    if (match?.teams.every((player) => player.team !== null)) {
-      startMatch(match.id);
-    }
+    return pickMatchPlayer(msg.channel.id, msg.author.id, playerId);
   };
 
   gateway.connect();

@@ -3,6 +3,7 @@ import matches from './matches-api';
 import {
   Database,
   MatchConfigsJoined,
+  PlayersInsert,
   RoundsJoined,
   ServersJoined,
 } from '@bf2-matchmaking/types';
@@ -11,6 +12,10 @@ export default (client: SupabaseClient<Database>) => ({
   ...matches(client),
   getPlayerByUserId: (userId?: string) =>
     client.from('players').select('*').eq('user_id', userId).single(),
+  getPlayer: (playerId: string | undefined) =>
+    client.from('players').select('*').eq('id', playerId).single(),
+  createPlayer: (player: PlayersInsert) =>
+    client.from('players').insert([player]).select().single(),
   getRounds: () =>
     client
       .from('rounds')

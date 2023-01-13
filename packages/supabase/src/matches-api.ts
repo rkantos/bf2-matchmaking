@@ -52,14 +52,43 @@ export default (client: SupabaseClient<Database>) => ({
       )
       .eq('id', matchId)
       .single(),
-
+  getOpenMatchByChannelId: (channelId: string) =>
+    client
+      .from('matches')
+      .select<
+        '*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)',
+        MatchesJoined
+      >('*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)')
+      .eq('channel.channel_id', channelId)
+      .or('status.eq.open')
+      .single(),
+  getPickingMatchByChannelId: (channelId: string) =>
+    client
+      .from('matches')
+      .select<
+        '*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)',
+        MatchesJoined
+      >('*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)')
+      .eq('channel.channel_id', channelId)
+      .or('status.eq.picking')
+      .single(),
+  getStagingMatchByChannelId: (channelId: string) =>
+    client
+      .from('matches')
+      .select<
+        '*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)',
+        MatchesJoined
+      >('*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)')
+      .eq('channel.channel_id', channelId)
+      .or('status.eq.open,status.eq.picking')
+      .single(),
   updateMatch: (matchId: number | undefined, values: MatchesUpdate) =>
     client.from('matches').update(values).eq('id', matchId),
 
   createMatchPlayer: (match_id: number, player_id: string) =>
     client.from('match_players').insert([{ match_id, player_id }]),
 
-  deleteMatchPlayer: (matchId: string, playerId: string) =>
+  deleteMatchPlayer: (matchId: number, playerId: string) =>
     client
       .from('match_players')
       .delete()

@@ -1,18 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import { InteractionResponseType } from 'discord-interactions';
-import {
-  getOption,
-  VerifyDiscordRequest,
-  verifyResult,
-  verifySingleResult,
-} from './utils';
-import {
-  createMatchPlayer,
-  deleteMatchPlayer,
-  getMatch,
-  getOpenMatchByChannel,
-} from './libs/supabase/supabase';
+import { getOption, VerifyDiscordRequest } from './utils';
 import invariant from 'tiny-invariant';
 import {
   HasGuildCommands,
@@ -27,8 +16,12 @@ import {
   ApplicationCommandType,
 } from 'discord-api-types/v10';
 import { initDiscordGateway } from './discord-gateway';
-import { subscribeMatches, subscribeMatchPlayers } from './supabase-subscriptions';
-import { getOrCreatePlayer, startMatchDraft } from './services/match';
+import {
+  addPlayer,
+  getMatchInfoByChannel,
+  pickMatchPlayer,
+  removePlayer,
+} from './services/match';
 
 // Create an express app
 const app = express();
@@ -39,8 +32,6 @@ invariant(process.env.PUBLIC_KEY, 'PUBLIC_KEY not defined');
 app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
 
 initDiscordGateway();
-//subscribeMatchPlayers();
-//subscribeMatches();
 
 /**
  * Interactions endpoint URL where Discord will send HTTP requests
@@ -64,118 +55,61 @@ app.post('/interactions', async function (req, res) {
     type === InteractionType.ApplicationCommand &&
     data.type === ApplicationCommandType.ChatInput
   ) {
-    const { name, options } = data;
-    if (name === 'join') {
-      try {
-        const match = await getOpenMatchByChannel(channel_id).then(verifySingleResult);
+    try {
+      const { name, options } = data;
+      if (name === 'join') {
         invariant(member, 'Could not get user data from request.');
-        const player = await getOrCreatePlayer(member.user);
-
-        await createMatchPlayer(match.id, player.id).then(verifyResult);
-
-        if (match.players.length + 1 === match.size) {
-          const fullMatch = await getMatch(match.id).then(verifySingleResult);
-          if (fullMatch.players.length === fullMatch.size) {
-            if (match.pick === 'captain') {
-              startMatchDraft(fullMatch);
-            }
-          }
+        await addPlayer(channel_id, member.user);
+      }
+      if (name === 'leave') {
+        invariant(member, 'Could not get user data from request.');
+        await removePlayer(channel_id, member.user);
+      }
+      if (name === 'info') {
+        const info = await getMatchInfoByChannel(channel_id);
+        return res.send({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            embeds: [info],
+          },
+        });
+      }
+      if (name === 'pick') {
+        const pickedPlayer = getOption('player', options);
+        invariant(member, 'Could not get user data from request.');
+        if (!pickedPlayer) {
+          return 'No player mentioned';
         }
+        const message = await pickMatchPlayer(channel_id, member.user.id, pickedPlayer);
 
-        return res.send({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: 'Joined match',
-          },
-        });
-      } catch (e: any) {
+        if (message) {
+          return res.send({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            data: {
+              content: pickedPlayer,
+            },
+          });
+        }
+      }
+    } catch (e) {
+      if (e instanceof Error) {
         return res.send({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
             content: e.message,
-          },
-        });
-      }
-    }
-    if (name === 'leave') {
-      try {
-        const match = await getOpenMatchByChannel(channel_id).then(verifySingleResult);
-        invariant(member, 'Could not get user data from request.');
-        const player = await getOrCreatePlayer(member.user);
-
-        await deleteMatchPlayer(match.id, player.id).then(verifyResult);
-
-        return res.send({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: 'Left match',
-          },
-        });
-      } catch (e: any) {
-        return res.send({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: e.message,
-          },
-        });
-      }
-    }
-    if (name === 'info') {
-      const match = await getOpenMatchByChannel(channel_id).then(verifySingleResult);
-      if (match) {
-        return res.send({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            embeds: [
-              {
-                title: `Match ${match.id}`,
-                description: `Players: [${match.players
-                  .map(({ username }) => username)
-                  .join(', ')}]`,
-                url: `https://bf2-matchmaking.netlify.app/matches/${match.id}`,
-              },
-            ],
           },
         });
       } else {
         return res.send({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
-            content: 'No open match in channel',
-          },
-        });
-      }
-    }
-    if (name === 'pick') {
-      try {
-        const match = await getOpenMatchByChannel(channel_id).then(verifySingleResult);
-        invariant(member, 'Could not get user data from request.');
-        const captain = await getOrCreatePlayer(member.user);
-        const pickedPlayer = getOption('player', options);
-
-        /*const team = captain;
-        invariant(team, 'Team not defined');
-
-        if (isAssignedTeam(match, playerId)) {
-          throw new Error('Player already assigned');
-        }
-        const result = await updateMatchPlayer(match.id, options.player, { team });*/
-        return res.send({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: pickedPlayer,
-          },
-        });
-      } catch (e: any) {
-        return res.send({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: e.message,
+            content: JSON.stringify(e),
           },
         });
       }
     }
   }
+  res.end();
 });
 
 app.listen(PORT, () => {

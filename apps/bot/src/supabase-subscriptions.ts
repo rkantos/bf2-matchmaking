@@ -44,7 +44,6 @@ export const subscribeMatchPlayers = async () => {
   });
 };
 
-// TODO: On match update do stuff
 export const subscribeMatches = () =>
   onMatchesInsert(async (payload) => {
     try {

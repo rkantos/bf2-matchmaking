@@ -5,10 +5,15 @@ import {
   WebhookPostgresUpdatePayload,
 } from '@bf2-matchmaking/types';
 import { client, verifyResult, verifySingleResult } from '@bf2-matchmaking/supabase';
+import { sendMatchJoinMessage, sendMatchLeaveMessage } from './message-service';
 
 export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) => {
   info('handleInsertedMatchPlayer', `Player ${matchPlayer.player_id} joined.`);
   const match = await client().getMatch(matchPlayer.match_id).then(verifySingleResult);
+
+  if (match.channel) {
+    await sendMatchJoinMessage(matchPlayer, match.channel.channel_id);
+  }
 
   if (match.status !== 'open') {
     warn(
@@ -32,6 +37,11 @@ export const handleUpdatedMatchPlayer = async (
     const match = await client()
       .getMatch(payload.record.match_id)
       .then(verifySingleResult);
+
+    if (match.channel) {
+      await sendMatchJoinMessage(payload.record, match.channel.channel_id);
+    }
+
     if (match.status !== 'picking') {
       warn(
         'handleUpdatedMatchPlayer',
@@ -40,12 +50,20 @@ export const handleUpdatedMatchPlayer = async (
     } else if (isFullMatch(match)) {
       info('handleUpdatedMatchPlayer', `Setting match ${match.id} status to "started".`);
       await setMatchStatusStarted(match);
+      // TODO: Create new match if config
     }
   }
 };
 
-export const handleDeletedMatchPlayer = (oldMatchPlayer: Partial<MatchPlayersRow>) => {
+export const handleDeletedMatchPlayer = async (
+  oldMatchPlayer: Partial<MatchPlayersRow>
+) => {
   info('handleDeletedMatchPlayer', `Player ${oldMatchPlayer.player_id} left.`);
+
+  const match = await client().getMatch(oldMatchPlayer.match_id).then(verifySingleResult);
+  if (match.channel) {
+    await sendMatchLeaveMessage(oldMatchPlayer, match.channel.channel_id);
+  }
 };
 
 const setMatchStatusDrafting = async (match: MatchesJoined) => {

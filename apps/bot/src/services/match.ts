@@ -1,12 +1,8 @@
 import { APIUser } from 'discord-api-types/v10';
-import { error, info } from '../libs/logging';
+import { error, info } from '@bf2-matchmaking/logging';
 import {
-  createMatchPlayer,
-  createPlayer,
-  deleteMatchPlayer,
   getChannel,
   getMatch,
-  getOpenMatchByChannel,
   getPlayer,
   JoinedMatch,
   Match,
@@ -14,25 +10,34 @@ import {
   updateMatch,
   updateMatchPlayer,
 } from '../libs/supabase/supabase';
-import { verifyResult, verifySingleResult } from '../utils';
 import { getTeamPlayers, isAssignedTeam } from '../utils/match-utils';
+import { client, verifySingleResult, verifyResult } from '@bf2-matchmaking/supabase';
 
-export const getOrCreatePlayer = async ({ id, username, discriminator, avatar }: APIUser) => {
-  const { error, data } = await getPlayer(id);
+export const getOrCreatePlayer = async ({
+  id,
+  username,
+  discriminator,
+  avatar,
+}: APIUser) => {
+  const { error, data } = await client().getPlayer(id);
   if (error) {
-    info('service/match', `Inserting Player <${username}> with id ${id}`);
-    return createPlayer({
-      id,
-      username: `${username}#${discriminator}`,
-      full_name: username,
-      avatar_url: avatar || '',
-    }).then(verifySingleResult);
+    info('getOrCreatePlayer', `Inserting Player <${username}> with id ${id}`);
+    return client()
+      .createPlayer({
+        id,
+        username: `${username}#${discriminator}`,
+        full_name: username,
+        avatar_url: avatar || '',
+      })
+      .then(verifySingleResult);
   }
   return data;
 };
 
 export const getMatchInfoByChannel = async (channelId: string) => {
-  const match = await getOpenMatchByChannel(channelId).then(verifySingleResult);
+  const match = await client()
+    .getStagingMatchByChannelId(channelId)
+    .then(verifySingleResult);
   return {
     embed: {
       title: `Match ${match.id}`,
@@ -43,20 +48,19 @@ export const getMatchInfoByChannel = async (channelId: string) => {
 };
 
 export const addPlayer = async (channelId: string, user: APIUser) => {
-  const match = await getOpenMatchByChannel(channelId).then(verifySingleResult);
+  const match = await client()
+    .getOpenMatchByChannelId(channelId)
+    .then(verifySingleResult);
   const player = await getOrCreatePlayer(user);
-  await createMatchPlayer(match.id, player.id).then(verifyResult);
-
-  if (match.players.length + 1 === match.size) {
-    return await getMatch(match.id).then(verifySingleResult);
-  }
-  return match;
+  await client().createMatchPlayer(match.id, player.id).then(verifyResult);
 };
 
 export const removePlayer = async (channelId: string, user: APIUser) => {
-  const match = await getOpenMatchByChannel(channelId).then(verifySingleResult);
+  const match = await client()
+    .getOpenMatchByChannelId(channelId)
+    .then(verifySingleResult);
   const player = await getOrCreatePlayer(user);
-  await deleteMatchPlayer(match.id, player.id).then(verifyResult);
+  await client().deleteMatchPlayer(match.id, player.id).then(verifyResult);
 };
 
 export const startMatchDraft = async (match: JoinedMatch) => {
@@ -66,51 +70,50 @@ export const startMatchDraft = async (match: JoinedMatch) => {
   if (shuffledPlayers.length < 2) {
     throw new Error('To few players for captian mode.');
   }
-  await updateMatchPlayer(match.id, shuffledPlayers[0].id, { team: 'a', captain: true }).then(
-    verifyResult
-  );
-  await updateMatchPlayer(match.id, shuffledPlayers[1].id, { team: 'b', captain: true }).then(
-    verifyResult
-  );
+  await updateMatchPlayer(match.id, shuffledPlayers[0].id, {
+    team: 'a',
+    captain: true,
+  }).then(verifyResult);
+  await updateMatchPlayer(match.id, shuffledPlayers[1].id, {
+    team: 'b',
+    captain: true,
+  }).then(verifyResult);
   return await updateMatch(match.id, { status: 'picking' }).then(verifyResult);
 };
 
 export const pickMatchPlayer = async (
   channelId: string,
   captainId: string,
-  playerId: string
-): Promise<{ error?: string; match?: JoinedMatch }> => {
-  const match = await getOpenMatchByChannel(channelId).then(verifySingleResult);
+  pickedPlayerId: string
+): Promise<string | undefined> => {
+  const match = await client()
+    .getPickingMatchByChannelId(channelId)
+    .then(verifySingleResult);
   const playerPool = match.teams.filter(({ team }) => team === null);
   const currentTeam = playerPool.length % 2 === 0 ? 'a' : 'b';
   const canPick = match.teams.some(
-    ({ captain, player_id, team }) => captain && player_id === captainId && team === currentTeam
+    ({ captain, player_id, team }) =>
+      captain && player_id === captainId && team === currentTeam
   );
+
   if (!canPick) {
-    return { error: 'Not allowed to pick' };
+    return 'Not allowed to pick';
   }
-  const inPlayerpool = playerPool.some((player) => player.player_id === playerId);
+  const inPlayerpool = playerPool.some((player) => player.player_id === pickedPlayerId);
   if (!inPlayerpool) {
-    return { error: 'Player not in match' };
+    return 'Player not in match';
   }
-  if (isAssignedTeam(match, playerId)) {
-    return { error: 'Player already picked' };
+  if (isAssignedTeam(match, pickedPlayerId)) {
+    return 'Player already picked';
   }
-  const { error: err, data } = await updateMatchPlayer(match.id, playerId, { team: currentTeam });
+  const { error: err, data } = await updateMatchPlayer(match.id, pickedPlayerId, {
+    team: currentTeam,
+  });
 
   if (err) {
     error('pickMatchPlayer', err.message);
-    return { error: 'Something went wrong while picking' };
+    return 'Something went wrong while picking';
   }
-  if (playerPool.length === 1) {
-    const updatedMatch = await getMatch(match.id).then(verifySingleResult);
-    return { match: updatedMatch };
-  }
-  return { match };
-};
-
-export const startMatch = (matchId: number) => {
-  updateMatch(matchId, { status: 'started' }).then(verifyResult);
 };
 
 export const getNewMatchInfo = async (match: Match) => {

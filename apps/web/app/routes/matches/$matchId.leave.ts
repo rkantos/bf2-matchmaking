@@ -15,7 +15,9 @@ export const action: ActionFunction = async ({ request, params }) => {
     invariant(session, 'No active session');
     const { data: player } = await client.getPlayerByUserId(session.user.id);
     invariant(player, 'Could not find player connected to user id.');
-    const { error, status } = await client.deleteMatchPlayer(params['matchId']!, player.id);
+    const matchId = params['matchId'] ? parseInt(params['matchId']) : undefined;
+    invariant(matchId, 'No matchId');
+    const { error, status } = await client.deleteMatchPlayer(matchId, player.id);
 
     if (error) {
       return json(error, { status });

@@ -20,6 +20,7 @@
     "typescript": "^4.9.4"
   },
   "dependencies": {
+    "@bf2-matchmaking/discord": "^1.0.0",
     "@bf2-matchmaking/logging": "*",
     "@bf2-matchmaking/supabase": "*",
     "@bf2-matchmaking/types": "^1.0.0",

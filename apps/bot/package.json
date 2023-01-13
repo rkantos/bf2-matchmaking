@@ -6,12 +6,14 @@
   "scripts": {
     "dev": "nodemon",
     "build": "rimraf ./build && tsc",
-    "start": "npm run build && node build/app.js",
-    "generate-types": "supabase gen types typescript --project-id lprcjdlrakeamyeuydcr > src/libs/supabase/database.types.ts"
+    "start": "npm run build && node build/app.js"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@bf2-matchmaking/logging": "^1.0.0",
+    "@bf2-matchmaking/supabase": "^1.0.0",
+    "@bf2-matchmaking/types": "^1.0.0",
     "@supabase/supabase-js": "^2.2.1",
     "cross-fetch": "^3.1.5",
     "discord-api-types": "^0.37.21",

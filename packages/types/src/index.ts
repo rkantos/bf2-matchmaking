@@ -11,6 +11,8 @@ export type ServersRow = Database['public']['Tables']['servers']['Row'];
 export type DiscordChannelsRow = Database['public']['Tables']['discord_channels']['Row'];
 export type MatchConfigsRow = Database['public']['Tables']['match_configs']['Row'];
 
+export type PlayersInsert = Database['public']['Tables']['players']['Insert'];
+
 export type MatchesInsert = Database['public']['Tables']['matches']['Insert'];
 export type MatchesUpdate = Database['public']['Tables']['matches']['Update'];
 export type MatchesJoined = MatchesRow & { maps: Array<MapsRow> } & {

@@ -48,6 +48,8 @@ app.post(
     } catch (e) {
       if (e instanceof Error) {
         error('/matches', e.message);
+      } else if (typeof e === 'string') {
+        error('/matches', e);
       } else {
         error('/matches', JSON.stringify(e));
       }
@@ -77,6 +79,8 @@ app.post(
     } catch (e) {
       if (e instanceof Error) {
         error('/match_players', e.message);
+      } else if (typeof e === 'string') {
+        error('/match_players', e);
       } else {
         error('/match_players', JSON.stringify(e));
       }
@@ -97,9 +101,11 @@ app.post(
       }
     } catch (e) {
       if (e instanceof Error) {
-        error('/match_players', e.message);
+        error('/rounds', e.message);
+      } else if (typeof e === 'string') {
+        error('/rounds', e);
       } else {
-        error('/match_players', JSON.stringify(e));
+        error('/rounds', JSON.stringify(e));
       }
     }
     res.end();
