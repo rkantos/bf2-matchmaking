@@ -53,4 +53,15 @@ export default (api: ReturnType<typeof supabaseApi>) => ({
 
     return [config, match];
   },
+  createMatchFromConfig: async (config: MatchConfigsJoined) => {
+    const { draft, size, channel, map_draft } = config;
+    return await api
+      .createMatch({
+        pick: draft,
+        size,
+        channel: channel.id,
+        map_draft,
+      })
+      .then(verifySingleResult);
+  },
 });

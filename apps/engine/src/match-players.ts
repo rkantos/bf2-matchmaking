@@ -5,7 +5,11 @@ import {
   WebhookPostgresUpdatePayload,
 } from '@bf2-matchmaking/types';
 import { client, verifyResult, verifySingleResult } from '@bf2-matchmaking/supabase';
-import { sendMatchJoinMessage, sendMatchLeaveMessage } from './message-service';
+import {
+  sendMatchJoinMessage,
+  sendMatchLeaveMessage,
+  sendMatchPickMessage,
+} from './message-service';
 
 export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) => {
   info('handleInsertedMatchPlayer', `Player ${matchPlayer.player_id} joined.`);
@@ -39,7 +43,7 @@ export const handleUpdatedMatchPlayer = async (
       .then(verifySingleResult);
 
     if (match.channel) {
-      await sendMatchJoinMessage(payload.record, match.channel.channel_id);
+      await sendMatchPickMessage(payload.record, match);
     }
 
     if (match.status !== 'picking') {
@@ -50,7 +54,13 @@ export const handleUpdatedMatchPlayer = async (
     } else if (isFullMatch(match)) {
       info('handleUpdatedMatchPlayer', `Setting match ${match.id} status to "started".`);
       await setMatchStatusStarted(match);
-      // TODO: Create new match if config
+      const { data: config } = await client().getMatchConfigByChannelId(
+        match.channel.channel_id
+      );
+      if (config) {
+        info('handleUpdatedMatchPlayer', `Creating new match with config ${config.id}`);
+        await client().services.createMatchFromConfig(config);
+      }
     }
   }
 };
