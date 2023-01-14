@@ -3,7 +3,7 @@ import { info } from '@bf2-matchmaking/logging';
 import { shuffleArray } from './utils';
 import { assignMatchPlayerTeams } from 'web/app/utils/match-utils';
 import { MatchesJoined, MatchesRow } from '@bf2-matchmaking/types';
-import { sendMatchInfoMessage } from './message-service';
+import { sendMatchDraftingMessage, sendMatchInfoMessage } from './message-service';
 
 export const handleInsertedMatch = (match: MatchesRow) => {
   info('handleInsertedMatch', `New match ${match.id}`);
@@ -18,13 +18,18 @@ export const handleUpdatedMatch = async (
     `Match ${match.id} updated. ${oldMatch.status} -> ${match.status}`
   );
   const matchJoined = await client().getMatch(match.id).then(verifySingleResult);
-  await sendMatchInfoMessage(matchJoined);
   if (oldMatch.status === 'open' && match.status === 'picking') {
     if (match.pick === 'random') {
       await setRandomTeams(matchJoined);
     } else {
       await setMatchCaptains(matchJoined);
+      const matchWithCaptains = await client()
+        .getMatch(match.id)
+        .then(verifySingleResult);
+      await sendMatchDraftingMessage(matchWithCaptains);
     }
+  } else {
+    await sendMatchInfoMessage(matchJoined);
   }
 };
 

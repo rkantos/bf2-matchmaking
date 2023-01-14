@@ -1,7 +1,7 @@
 import { MatchesJoined, PlayersRow } from '@bf2-matchmaking/types';
 
 export const getMatchEmbed = (match: MatchesJoined) => ({
-  title: `Match ${match.id}`,
+  title: `Match ${match.id}: ${match.status}`,
   fields: getMatchFields(match),
   url: `https://bf2-matchmaking.netlify.app/matches/${match.id}`,
 });
@@ -15,7 +15,7 @@ export const getMatchFields = (match: MatchesJoined) => {
         .join(', '),
     });
   }
-  if (match.status === 'picking') {
+  if (match.status !== 'open') {
     fields.push(
       ...[
         {

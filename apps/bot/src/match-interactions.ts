@@ -39,7 +39,9 @@ export const addPlayer = async (channelId: string, user: APIUser) => {
     .getOpenMatchByChannelId(channelId)
     .then(verifySingleResult);
   const player = await getOrCreatePlayer(user);
-  await client().createMatchPlayer(match.id, player.id).then(verifyResult);
+  if (match.status === 'open') {
+    await client().createMatchPlayer(match.id, player.id).then(verifyResult);
+  }
 };
 
 export const removePlayer = async (channelId: string, user: APIUser) => {
@@ -47,7 +49,9 @@ export const removePlayer = async (channelId: string, user: APIUser) => {
     .getOpenMatchByChannelId(channelId)
     .then(verifySingleResult);
   const player = await getOrCreatePlayer(user);
-  await client().deleteMatchPlayer(match.id, player.id).then(verifyResult);
+  if (match.status === 'open') {
+    await client().deleteMatchPlayer(match.id, player.id).then(verifyResult);
+  }
 };
 
 export const pickMatchPlayer = async (

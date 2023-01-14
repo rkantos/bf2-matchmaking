@@ -2,6 +2,8 @@ import { client, verifySingleResult } from '@bf2-matchmaking/supabase';
 import { MatchesJoined, MatchPlayersRow } from '@bf2-matchmaking/types';
 import { sendChannelMessage } from '@bf2-matchmaking/discord';
 import { getMatchEmbed } from '@bf2-matchmaking/discord';
+import { getCurrentCaptain } from '@bf2-matchmaking/utils';
+import { error } from '@bf2-matchmaking/logging';
 
 export const sendMatchJoinMessage = async (
   { player_id }: MatchPlayersRow,
@@ -39,4 +41,21 @@ export const sendMatchInfoMessage = async (match: MatchesJoined) => {
     `Match ${match.id} is ${match.status}`,
     embed
   );
+};
+
+export const sendMatchDraftingMessage = async (match: MatchesJoined) => {
+  const embed = getMatchEmbed(match);
+  const captain = getCurrentCaptain(match);
+  if (captain) {
+    await sendChannelMessage(
+      match.channel.channel_id,
+      `${captain.username} is picking`,
+      embed
+    );
+  } else {
+    error(
+      'sendMatchDraftingMessage',
+      `Failed to get current captain for match ${match.id}`
+    );
+  }
 };

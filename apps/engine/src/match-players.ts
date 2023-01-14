@@ -6,6 +6,7 @@ import {
 } from '@bf2-matchmaking/types';
 import { client, verifyResult, verifySingleResult } from '@bf2-matchmaking/supabase';
 import {
+  sendMatchDraftingMessage,
   sendMatchJoinMessage,
   sendMatchLeaveMessage,
   sendMatchPickMessage,
@@ -27,6 +28,12 @@ export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) =>
   } else if (match.players.length === match.size && match.pick === 'captain') {
     info('handleInsertedMatchPlayer', `Setting match ${match.id} status to "picking".`);
     await setMatchStatusDrafting(match);
+  } else if (match.players.length > match.size) {
+    warn(
+      'handleInsertedMatchPlayer',
+      `Player ${matchPlayer.player_id} joined full match ${match.id}. Removing player.`
+    );
+    client().deleteMatchPlayer(match.id, matchPlayer.player_id);
   }
 };
 
@@ -41,10 +48,6 @@ export const handleUpdatedMatchPlayer = async (
     const match = await client()
       .getMatch(payload.record.match_id)
       .then(verifySingleResult);
-
-    if (match.channel) {
-      await sendMatchPickMessage(payload.record, match);
-    }
 
     if (match.status !== 'picking') {
       warn(
@@ -61,6 +64,8 @@ export const handleUpdatedMatchPlayer = async (
         info('handleUpdatedMatchPlayer', `Creating new match with config ${config.id}`);
         await client().services.createMatchFromConfig(config);
       }
+    } else if (match.channel && !payload.record.captain) {
+      await sendMatchDraftingMessage(match);
     }
   }
 };

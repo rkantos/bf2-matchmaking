@@ -11,6 +11,13 @@ export const getPlayerPool = (match: MatchesJoined) =>
 export const getCurrentTeam = (match: MatchesJoined) =>
   getPlayerPool(match).length % 2 === 0 ? 'a' : 'b';
 
+export const getCurrentCaptain = (match: MatchesJoined) =>
+  match.players.find(
+    (player) =>
+      match.teams.find(({ team, captain }) => captain && team === getCurrentTeam(match))
+        ?.player_id === player.id
+  );
+
 export const isAssignedTeam = (
   match: MatchesJoined,
   playerId: string,
