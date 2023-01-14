@@ -1,4 +1,4 @@
-import { DiscordRequest } from './utils';
+import { DiscordRequest } from '@bf2-matchmaking/discord';
 import { APIApplicationCommand } from 'discord-api-types/v10';
 
 export async function HasGuildCommands(

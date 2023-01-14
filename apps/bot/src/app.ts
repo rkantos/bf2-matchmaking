@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import { InteractionResponseType } from 'discord-interactions';
-import { getOption, VerifyDiscordRequest } from './utils';
+import { getOption } from './utils';
 import invariant from 'tiny-invariant';
 import {
   HasGuildCommands,
@@ -21,7 +21,8 @@ import {
   getMatchInfoByChannel,
   pickMatchPlayer,
   removePlayer,
-} from './services/match';
+} from './match-interactions';
+import { VerifyDiscordRequest } from '@bf2-matchmaking/discord';
 
 // Create an express app
 const app = express();

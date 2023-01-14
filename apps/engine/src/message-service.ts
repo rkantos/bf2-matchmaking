@@ -1,7 +1,7 @@
 import { client, verifySingleResult } from '@bf2-matchmaking/supabase';
 import { MatchesJoined, MatchPlayersRow } from '@bf2-matchmaking/types';
 import { sendChannelMessage } from '@bf2-matchmaking/discord';
-import { getMatchEmbed } from '@bf2-matchmaking/discord/src/discord-embeds';
+import { getMatchEmbed } from '@bf2-matchmaking/discord';
 
 export const sendMatchJoinMessage = async (
   { player_id }: MatchPlayersRow,

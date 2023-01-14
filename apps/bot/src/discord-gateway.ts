@@ -6,7 +6,7 @@ import {
   getMatchInfoByChannel,
   pickMatchPlayer,
   removePlayer,
-} from './services/match';
+} from './match-interactions';
 import { client, verifyResult } from '@bf2-matchmaking/supabase';
 
 let channelMap = new Map<string, number>();

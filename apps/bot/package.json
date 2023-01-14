@@ -14,9 +14,11 @@
     "node": "18"
   },
   "dependencies": {
-    "@bf2-matchmaking/logging": "^1.0.0",
-    "@bf2-matchmaking/supabase": "^1.0.0",
-    "@bf2-matchmaking/types": "^1.0.0",
+    "@bf2-matchmaking/discord": "*",
+    "@bf2-matchmaking/logging": "*",
+    "@bf2-matchmaking/supabase": "*",
+    "@bf2-matchmaking/types": "*",
+    "@bf2-matchmaking/utils": "*",
     "@supabase/supabase-js": "^2.2.1",
     "cross-fetch": "^3.1.5",
     "discord-api-types": "^0.37.21",

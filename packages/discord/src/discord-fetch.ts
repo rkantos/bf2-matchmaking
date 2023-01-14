@@ -1,5 +1,6 @@
-import { info } from '@bf2-matchmaking/logging';
+import { error, info } from '@bf2-matchmaking/logging';
 import invariant from 'tiny-invariant';
+import { verifyKey } from 'discord-interactions';
 
 type Options = {
   body?: unknown;
@@ -26,8 +27,23 @@ export async function DiscordRequest(endpoint: string, options: Options) {
   });
   if (!res.ok) {
     const data = await res.json();
-    console.error('@bf2-matchmaking/discord', res.status);
-    throw new Error(JSON.stringify(data));
+    error(
+      '@bf2-matchmaking/discord',
+      `HTTP: ${res.status} Error: ${JSON.stringify(data)}`
+    );
   }
   return res;
 }
+
+export const VerifyDiscordRequest = (clientKey: string) => {
+  return function (req: any, res: any, buf: any, encoding: any) {
+    const signature = req.get('X-Signature-Ed25519');
+    const timestamp = req.get('X-Signature-Timestamp');
+
+    const isValidRequest = verifyKey(buf, signature, timestamp, clientKey);
+    if (!isValidRequest) {
+      res.status(401).send('Bad request signature');
+      throw new Error('Bad request signature');
+    }
+  };
+};

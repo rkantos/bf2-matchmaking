@@ -6,7 +6,7 @@ export const sendChannelMessage = (
   embed?: unknown
 ) => {
   const embeds = embed ? [embed] : [];
-  DiscordRequest(`channels/${channelId}/messages`, {
+  return DiscordRequest(`channels/${channelId}/messages`, {
     method: 'POST',
     body: {
       content,
