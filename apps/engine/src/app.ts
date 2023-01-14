@@ -12,6 +12,7 @@ import {
   error,
   getExpressAccessLogger,
   getExpressErrorLogger,
+  info,
 } from '@bf2-matchmaking/logging';
 import { handleDeletedMatch, handleInsertedMatch, handleUpdatedMatch } from './matches';
 import {
@@ -30,7 +31,7 @@ app.use(getExpressAccessLogger());
 app.post(
   '/matches',
   async (req: Request<{}, {}, WebhookPostgresChangesPayload<MatchesRow>>, res) => {
-    console.log(JSON.stringify(req.body));
+    info('POST /matches', `Request body: ${JSON.stringify(req.body)}`);
     try {
       switch (req.body.type) {
         case WEBHOOK_POSTGRES_CHANGES_TYPE.INSERT: {
@@ -62,7 +63,7 @@ app.post(
 app.post(
   '/match_players',
   async (req: Request<{}, {}, WebhookPostgresChangesPayload<MatchPlayersRow>>, res) => {
-    console.log(JSON.stringify(req.body));
+    info('POST /match_players', `Request body: ${JSON.stringify(req.body)}`);
     try {
       switch (req.body.type) {
         case WEBHOOK_POSTGRES_CHANGES_TYPE.INSERT: {
@@ -94,7 +95,7 @@ app.post(
 app.post(
   '/rounds',
   async (req: Request<{}, {}, WebhookPostgresChangesPayload<RoundsRow>>, res) => {
-    console.log(JSON.stringify(req.body));
+    info('POST /rounds', `Request body: ${JSON.stringify(req.body)}`);
     try {
       switch (req.body.type) {
         case WEBHOOK_POSTGRES_CHANGES_TYPE.INSERT: {

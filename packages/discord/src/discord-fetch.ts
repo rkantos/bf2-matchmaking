@@ -13,6 +13,7 @@ export async function DiscordRequest(endpoint: string, options: Options) {
 
   if (options.body) {
     options.body = JSON.stringify(options.body);
+    info('@bf2-matchmaking/discord', `Request body: ${options.body}`);
   }
 
   const res = await fetch(url, {
