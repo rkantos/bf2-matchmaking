@@ -8,6 +8,9 @@
     "dev-nodemon": "nodemon",
     "dev-tunnel": "lt --port 5004 --subdomain bf2-matchmaking"
   },
+  "engines": {
+    "node": "18"
+  },
   "devDependencies": {
     "@types/express": "^4.17.15",
     "@types/node": "^18.11.18",
