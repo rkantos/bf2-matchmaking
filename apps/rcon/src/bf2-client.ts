@@ -1,6 +1,6 @@
 import net from 'net';
 import crypto from 'crypto';
-import { info } from './logging';
+import { info } from '@bf2-matchmaking/logging';
 
 interface Options {
   host: string;
@@ -8,12 +8,12 @@ interface Options {
   password: string;
 }
 
-interface Client {
+interface Bf2Client {
   send: (message: string) => Promise<string>;
 }
 
 export const createClient = ({ host, port, password }: Options) => {
-  return new Promise<Client>((resolve) => {
+  return new Promise<Bf2Client>((resolve) => {
     const client = net.connect({
       host,
       port,

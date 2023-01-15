@@ -2,10 +2,10 @@ import 'dotenv/config';
 import express from 'express';
 import bodyParser from 'body-parser';
 import invariant from 'tiny-invariant';
-import { createClient } from './client';
+import { createClient } from './bf2-client';
 import { mapListPlayers, mapServerInfo } from './mappers';
-import { info, error } from './logging';
-import { createRound, searchMap, upsertServer } from './libs/supabase/supabase';
+import { error } from '@bf2-matchmaking/logging';
+import { client } from '@bf2-matchmaking/supabase';
 
 const app = express();
 
@@ -115,7 +115,7 @@ app.post('/rounds', async (req, res) => {
     return res.status(202).send('Empty server, no round created.');
   }
 
-  const { data: server, error: serversError } = await upsertServer(
+  const { data: server, error: serversError } = await client().upsertServer(
     serverInfo.ip,
     serverInfo.serverName
   );
@@ -125,13 +125,13 @@ app.post('/rounds', async (req, res) => {
     return res.status(502).send(serversError.message);
   }
 
-  const { data: map, error: mapsError } = await searchMap(event.map).single();
+  const { data: map, error: mapsError } = await client().searchMap(event.map).single();
   if (mapsError) {
     error('POST /rounds', mapsError.message);
     return res.status(400).send('Invalid map name.');
   }
 
-  const { data: round, error: roundsError } = await createRound({
+  const { data: round, error: roundsError } = await client().createRound({
     team1_name: event.team1.name,
     team1_tickets: event.team1.tickets,
     team2_name: event.team2.name,

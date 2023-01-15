@@ -1,38 +1,5 @@
-export interface ServerInfo {
-  version: string;
-  currentGameStatus: string;
-  maxPlayers: string;
-  connectedPlayers: string;
-  joiningPlayers: string;
-  currentMapName: string;
-  nextMapName: string;
-  serverName: string;
+import {PlayerListItem, ServerInfo} from "@bf2-matchmaking/types";
 
-  team1_Name: string;
-  team1_TicketState: string;
-  team1_startTickets: string;
-  team1_tickets: string;
-  team1_null: string;
-
-  team2_Name: string;
-  team2_TicketState: string;
-  team2_startTickets: string;
-  team2_tickets: string;
-  team2_null: string;
-
-  roundTime: string;
-  timeLeft: string;
-  gameMode: string;
-  modDir: string;
-  worldSize: string;
-  timeLimit: string;
-  autoBalanceTeam: string;
-  ranked: string;
-  team1: string;
-  team2: string;
-  wallTime: string;
-  reservedSlots: string;
-}
 export const mapServerInfo = (data?: string): ServerInfo | null => {
   if (!data) {
     return null;
@@ -72,56 +39,7 @@ export const mapServerInfo = (data?: string): ServerInfo | null => {
   };
 };
 
-export interface PlayerInfo {
-  index: string;
-  getName: string;
-  getTeam: string;
-  getPing: string;
-  isConnected: string;
-  isValid: string;
-  isRemote: string;
-  isAIPlayer: string;
-  isAlive: string;
-  isManDown: string;
-  getProfileId: string;
-  isFlagHolder: string;
-  getSuicide: string;
-  getTimeToSpawn: string;
-  getSquadId: string;
-  isSquadLeader: string;
-  isCommander: string;
-  getSpawnGroup: string;
-  getAddress: string;
-  scoreDamageAssists: string;
-  scorePassengerAssists: string;
-  scoreTargetAssists: string;
-  scoreRevives: string;
-  scoreTeamDamages: string;
-  scoreTeamVehicleDamages: string;
-  scoreCpCaptures: string;
-  scoreCpDefends: string;
-  scoreCpAssists: string;
-  scoreCpNeutralizes: string;
-  scoreCpNeutralizeAssists: string;
-  scoreSuicides: string;
-  scoreKills: string;
-  scoreTKs: string;
-  vehicleType: string;
-  kitTemplateName: string;
-  kiConnectedAt: string;
-  deaths: string;
-  score: string;
-  vehicleName: string;
-  rank: string;
-  position: string;
-  idleTime: string;
-  keyhash: string;
-  punished: string;
-  timesPunished: string;
-  timesForgiven: string;
-}
-
-export const mapListPlayers = (data?: string): Array<PlayerInfo> | null =>
+export const mapListPlayers = (data?: string): Array<PlayerListItem> | null =>
   data
     ? data
         .split(/(\r\n|\r|\n)/)
