@@ -2,9 +2,8 @@
   "include": ["**/*.ts"],
   "exclude": ["node_modules"],
   "compilerOptions": {
-    "target": "es5",
+    "target": "esnext",
     "module": "commonjs",
-    "lib": ["ES2019", "dom"],
     "allowJs": true,
     "outDir": "build",
     "rootDir": "src",
@@ -13,6 +12,8 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "useUnknownInCatchVariables": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "moduleResolution": "Node",
+    "lib": ["ES2019", "dom"]
   }
 }

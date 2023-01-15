@@ -1,11 +1,11 @@
-import 'dotenv/config';
 import {
   APIApplicationCommandInteractionDataOption,
   APIInteractionDataOptionBase,
   ApplicationCommandOptionType,
 } from 'discord-api-types/v10';
 
-export const getOption = (
+export const
+    getOption = (
   key: string,
   options: APIApplicationCommandInteractionDataOption[] = []
 ) => {
