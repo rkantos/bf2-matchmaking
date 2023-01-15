@@ -42,6 +42,13 @@ export const getMatchFields = (match: MatchesJoined) => {
         .join(', ')}`,
     });
   }
+
+  if (match.status === 'started' && match.server) {
+    fields.push({
+      name: match.server.name,
+      value: `[https://joinme.click/${match.server.ip}](https://joinme.click/g/bf2/${match.server.ip}:${match.server.port})`,
+    });
+  }
   return fields;
 };
 

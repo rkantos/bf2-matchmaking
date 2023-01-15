@@ -30,14 +30,35 @@ export default function Started() {
           </ul>
         </div>
       </section>
-      <section className="section grow h-fit">
-        <h2 className="text-xl">Maps:</h2>
-        <ul>
-          {match.maps.map(({ name, id }) => (
-            <li key={id}>{name}</li>
-          ))}
-        </ul>
-      </section>
+      <div className="grow">
+        <section className="section h-fit mb-4">
+          <h2 className="text-xl">Maps:</h2>
+          <ul>
+            {match.maps.map(({ name, id }) => (
+              <li key={id}>{name}</li>
+            ))}
+          </ul>
+        </section>
+        {match.server && (
+          <section className="section h-fit">
+            <h2 className="text-xl mb-4">Server: {match.server.name}</h2>
+            <a
+              className="block underline text-blue-800 mb-4"
+              href={`https://joinme.click/g/bf2/${match.server.ip}:${match.server.port}`}
+              target="_blank"
+            >
+              https://joinme.click/{match.server.ip}
+            </a>
+            <a
+              className="filled-button"
+              href={`https://joinme.click/g/bf2/${match.server.ip}:${match.server.port}`}
+              target="_blank"
+            >
+              BF2 Join Me
+            </a>
+          </section>
+        )}
+      </div>
       <RoundsList />
     </div>
   );

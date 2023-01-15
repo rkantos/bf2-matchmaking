@@ -233,16 +233,19 @@ export interface Database {
         Row: {
           ip: string
           name: string
+          port: string
           updated_at: string
         }
         Insert: {
           ip: string
           name: string
+          port?: string
           updated_at?: string
         }
         Update: {
           ip?: string
           name?: string
+          port?: string
           updated_at?: string
         }
       }

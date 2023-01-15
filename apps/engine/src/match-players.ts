@@ -9,7 +9,6 @@ import {
   sendMatchDraftingMessage,
   sendMatchJoinMessage,
   sendMatchLeaveMessage,
-  sendMatchPickMessage,
 } from './message-service';
 
 export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) => {
