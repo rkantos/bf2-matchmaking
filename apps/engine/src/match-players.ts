@@ -17,7 +17,7 @@ export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) =>
   const match = await client().getMatch(matchPlayer.match_id).then(verifySingleResult);
 
   if (match.channel) {
-    await sendMatchJoinMessage(matchPlayer, match.channel.channel_id);
+    await sendMatchJoinMessage(matchPlayer, match);
   }
 
   if (match.status !== 'open') {
@@ -77,7 +77,7 @@ export const handleDeletedMatchPlayer = async (
 
   const match = await client().getMatch(oldMatchPlayer.match_id).then(verifySingleResult);
   if (match.channel) {
-    await sendMatchLeaveMessage(oldMatchPlayer, match.channel.channel_id);
+    await sendMatchLeaveMessage(oldMatchPlayer, match);
   }
 };
 

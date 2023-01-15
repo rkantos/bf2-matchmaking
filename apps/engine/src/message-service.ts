@@ -7,18 +7,26 @@ import { error } from '@bf2-matchmaking/logging';
 
 export const sendMatchJoinMessage = async (
   { player_id }: MatchPlayersRow,
-  channelId: string
+  match: MatchesJoined
 ) => {
   const player = await client().getPlayer(player_id).then(verifySingleResult);
-  await sendChannelMessage(channelId, `${player.full_name} joined`);
+  await sendChannelMessage(
+    match.channel.channel_id,
+    `${player.full_name} joined`,
+    getMatchEmbed(match)
+  );
 };
 
 export const sendMatchLeaveMessage = async (
   { player_id }: Partial<MatchPlayersRow>,
-  channelId: string
+  match: MatchesJoined
 ) => {
   const player = await client().getPlayer(player_id).then(verifySingleResult);
-  await sendChannelMessage(channelId, `${player.full_name} left`);
+  await sendChannelMessage(
+    match.channel.channel_id,
+    `${player.full_name} left`,
+    getMatchEmbed(match)
+  );
 };
 
 export const sendMatchPickMessage = async (
