@@ -23,6 +23,8 @@ import {
   removePlayer,
 } from './match-interactions';
 import { VerifyDiscordRequest } from '@bf2-matchmaking/discord';
+import { sendMessage } from './discord-client';
+import { client, verifySingleResult } from '@bf2-matchmaking/supabase';
 
 // Create an express app
 const app = express();
@@ -32,12 +34,25 @@ const PORT = process.env.PORT || 5001;
 invariant(process.env.PUBLIC_KEY, 'PUBLIC_KEY not defined');
 app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
 
-initDiscordGateway();
+interface MatchEventBody {
+  event: 'Summon';
+  matchId: number;
+}
+app.post('/match_events', async (req, res) => {
+  const { event, matchId } = req.body as MatchEventBody;
+  console.log(req.body);
+  if (event === 'Summon') {
+    console.log('summ');
+    const match = await client().getMatch(matchId).then(verifySingleResult);
+    await sendMessage(match);
+  }
+  res.end();
+});
 
 /**
  * Interactions endpoint URL where Discord will send HTTP requests
  */
-app.post('/interactions', async function (req, res) {
+app.post('/interactions', async (req, res) => {
   // Interaction type and data
   const { type, id, data, member, channel_id } = req.body as APIInteraction;
 
