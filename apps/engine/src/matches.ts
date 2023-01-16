@@ -2,7 +2,7 @@ import { client, verifyResult, verifySingleResult } from '@bf2-matchmaking/supab
 import { info } from '@bf2-matchmaking/logging';
 import { shuffleArray } from './utils';
 import { assignMatchPlayerTeams } from 'web/app/utils/match-utils';
-import { MatchesJoined, MatchesRow } from '@bf2-matchmaking/types';
+import { MatchesJoined, MatchesRow, MatchStatus } from '@bf2-matchmaking/types';
 import { sendMatchDraftingMessage, sendMatchInfoMessage } from './message-service';
 
 export const handleInsertedMatch = (match: MatchesRow) => {
@@ -18,7 +18,7 @@ export const handleUpdatedMatch = async (
     `Match ${match.id} updated. ${oldMatch.status} -> ${match.status}`
   );
   const matchJoined = await client().getMatch(match.id).then(verifySingleResult);
-  if (oldMatch.status === 'open' && match.status === 'picking') {
+  if (oldMatch.status === MatchStatus.Open && match.status === MatchStatus.Drafting) {
     if (match.pick === 'random') {
       await setRandomTeams(matchJoined);
     } else {

@@ -1,5 +1,5 @@
 import React, { FC } from 'react';
-import { ServersJoined } from '@bf2-matchmaking/types';
+import { MatchStatus, ServersJoined } from '@bf2-matchmaking/types';
 import { isActive } from '~/utils/servers-utils';
 import { Link, useLoaderData, useSubmit } from '@remix-run/react';
 import { loader } from '~/routes/matches/$matchId';
@@ -30,7 +30,7 @@ const ServerSelectionItem: FC<Props> = ({ server }) => {
   }
 
   const activeMatch = server.matches.find(isActive);
-  if (activeMatch?.status === 'started') {
+  if (activeMatch?.status === MatchStatus.Ongoing) {
     return (
       <li>
         <div className="p-1 bg-gray-200 border-4 border-rose-200 rounded text-center">
@@ -45,7 +45,7 @@ const ServerSelectionItem: FC<Props> = ({ server }) => {
       </li>
     );
   }
-  if (activeMatch?.status === 'picking') {
+  if (activeMatch?.status === MatchStatus.Drafting) {
     return (
       <li>
         <div className="p-1 bg-gray-200 border-4 border-amber-200 rounded text-center">

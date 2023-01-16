@@ -1,9 +1,8 @@
 import React, { FC, useMemo } from 'react';
-import { PlayerListItem, RoundsRow, ServerInfo } from '@bf2-matchmaking/types';
-import mock from './mock.json';
+import { PlayerListItem, RoundsJoined, ServerInfo } from '@bf2-matchmaking/types';
 
 interface Props {
-  round: RoundsRow;
+  round: RoundsJoined;
 }
 
 const compareScore = (playerA: PlayerListItem, playerB: PlayerListItem) =>

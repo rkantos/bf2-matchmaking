@@ -1,14 +1,7 @@
 import { ActionFunction, json, LoaderFunction, redirect } from '@remix-run/node';
 import invariant from 'tiny-invariant';
 import { remixClient } from '@bf2-matchmaking/supabase';
-
-const getMaps = () => {
-  const mapIds = new Set<number>();
-  while (mapIds.size !== 2) {
-    mapIds.add(Math.floor(Math.random() * 17) + 1);
-  }
-  return mapIds.values();
-};
+import { MatchStatus } from '@bf2-matchmaking/types';
 
 export const loader: LoaderFunction = ({ request, params }) => {
   return redirect(`/matches/${params['matchId']}`);
@@ -30,7 +23,7 @@ export const action: ActionFunction = async ({ request, params }) => {
     await client.updateMatchPlayer(match.id, shuffledPlayers[0].id, { team: 'a', captain: true });
     await client.updateMatchPlayer(match.id, shuffledPlayers[1].id, { team: 'b', captain: true });
 
-    const result = await client.updateMatch(matchId, { status: 'picking' });
+    const result = await client.updateMatch(matchId, { status: MatchStatus.Drafting });
     if (result.error) {
       return json(result.error, { status: result.status });
     }

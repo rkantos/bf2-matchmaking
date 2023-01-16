@@ -5,6 +5,7 @@ import {
   MatchesJoined,
   MatchesUpdate,
   MatchPlayersRow,
+  MatchStatus,
 } from '@bf2-matchmaking/types';
 
 export default (client: SupabaseClient<Database>) => ({
@@ -29,7 +30,7 @@ export default (client: SupabaseClient<Database>) => ({
       >(
         '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)'
       )
-      .eq('status', 'open'),
+      .eq('status', MatchStatus.Open),
   getOpenMatchesByChannel: (channel: number) =>
     client
       .from('matches')
@@ -39,7 +40,7 @@ export default (client: SupabaseClient<Database>) => ({
       >(
         '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)'
       )
-      .eq('status', 'open')
+      .eq('status', MatchStatus.Open)
       .eq('channel.id', channel),
   getMatch: (matchId: number | undefined) =>
     client
@@ -62,7 +63,7 @@ export default (client: SupabaseClient<Database>) => ({
       .eq('channel.channel_id', channelId)
       .or('status.eq.open')
       .single(),
-  getPickingMatchByChannelId: (channelId: string) =>
+  getDraftingMatchByChannelId: (channelId: string) =>
     client
       .from('matches')
       .select<
@@ -70,7 +71,7 @@ export default (client: SupabaseClient<Database>) => ({
         MatchesJoined
       >('*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)')
       .eq('channel.channel_id', channelId)
-      .or('status.eq.picking')
+      .or(`status.eq.${MatchStatus.Drafting}`)
       .single(),
   getStagingMatchByChannelId: (channelId: string) =>
     client
@@ -80,7 +81,9 @@ export default (client: SupabaseClient<Database>) => ({
         MatchesJoined
       >('*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)')
       .eq('channel.channel_id', channelId)
-      .or('status.eq.open,status.eq.picking')
+      .or(
+        `status.eq.${MatchStatus.Open},status.eq.${MatchStatus.Summoning},status.eq.${MatchStatus.Drafting}`
+      )
       .single(),
   updateMatch: (matchId: number | undefined, values: MatchesUpdate) =>
     client.from('matches').update(values).eq('id', matchId),
@@ -108,6 +111,10 @@ export default (client: SupabaseClient<Database>) => ({
 
   createMatchMaps: (match_id: number, ...maps: Array<number>) =>
     client.from('match_maps').insert(maps.map((mapId) => ({ match_id, map_id: mapId }))),
-  getStartedMatchesByServer: (serverIp: string) =>
-    client.from('matches').select('*').eq('status', 'started').eq('server', serverIp),
+  getOngoingMatchesByServer: (serverIp: string) =>
+    client
+      .from('matches')
+      .select('*')
+      .eq('status', MatchStatus.Ongoing)
+      .eq('server', serverIp),
 });

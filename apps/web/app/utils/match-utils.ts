@@ -1,9 +1,8 @@
-import { MatchesJoined, MatchesRow, PlayersRow } from '@bf2-matchmaking/types';
+import { MatchesJoined, MatchesRow, MatchStatus, PlayersRow } from '@bf2-matchmaking/types';
 
-export const isNotDeleted = (match: MatchesRow) => match.status !== 'deleted';
-export const isOpen = (match: MatchesRow) => match.status === 'open';
+export const isOpen = (match: MatchesRow) => match.status === MatchStatus.Open;
 export const isStarted = (match: MatchesRow) =>
-  match.status === 'started' || match.status === 'closed';
+  match.status === MatchStatus.Ongoing || match.status === MatchStatus.Closed;
 
 export const shuffleArray = <T = unknown>(array: Array<T>) => {
   const clonedArray = [...array];

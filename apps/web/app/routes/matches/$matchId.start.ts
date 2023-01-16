@@ -2,6 +2,7 @@ import { ActionFunction, json, LoaderFunction, redirect } from '@remix-run/node'
 import invariant from 'tiny-invariant';
 import { assignMatchPlayerTeams } from '~/utils/match-utils';
 import { remixClient } from '@bf2-matchmaking/supabase';
+import { MatchStatus } from '@bf2-matchmaking/types';
 
 const getMaps = () => {
   const mapIds = new Set<number>();
@@ -31,7 +32,7 @@ export const action: ActionFunction = async ({ request, params }) => {
       );
     }
     const startResult = await client.updateMatch(matchId, {
-      status: 'started',
+      status: MatchStatus.Ongoing,
       started_at: new Date().toISOString(),
     });
 

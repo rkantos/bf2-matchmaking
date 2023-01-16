@@ -1,4 +1,4 @@
-import { RoundsJoined, RoundsRow } from '@bf2-matchmaking/types';
+import { RoundsJoined } from '@bf2-matchmaking/types';
 
 export const groupRoundsByDate = (rounds: Array<RoundsJoined>) =>
   rounds.sort(compareRoundByDate).reduce<Record<string, Array<RoundsJoined>>>((acc, cur) => {
@@ -26,5 +26,5 @@ export const groupRoundsByServer = (rounds: Array<RoundsJoined>) => {
   );
 };
 
-const compareRoundByDate = (roundA: RoundsRow, roundB: RoundsRow) =>
+const compareRoundByDate = (roundA: RoundsJoined, roundB: RoundsJoined) =>
   roundB.created_at.localeCompare(roundA.created_at);

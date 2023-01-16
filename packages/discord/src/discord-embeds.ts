@@ -1,4 +1,4 @@
-import { MatchesJoined, PlayersRow } from '@bf2-matchmaking/types';
+import { MatchesJoined, MatchStatus, PlayersRow } from '@bf2-matchmaking/types';
 
 export const getMatchEmbed = (match: MatchesJoined) => ({
   title: `Match ${match.id}: ${match.status}`,
@@ -7,7 +7,7 @@ export const getMatchEmbed = (match: MatchesJoined) => ({
 });
 export const getMatchFields = (match: MatchesJoined) => {
   const fields = [];
-  if (match.status === 'picking' && getTeamPlayers(match, null).length) {
+  if (match.status === MatchStatus.Drafting && getTeamPlayers(match, null).length) {
     fields.push({
       name: 'Pool',
       value: getTeamPlayers(match, null)
@@ -15,7 +15,7 @@ export const getMatchFields = (match: MatchesJoined) => {
         .join(', '),
     });
   }
-  if (match.status !== 'open') {
+  if (match.status !== MatchStatus.Open) {
     fields.push(
       ...[
         {
@@ -33,7 +33,7 @@ export const getMatchFields = (match: MatchesJoined) => {
       ]
     );
   }
-  if (match.status === 'open') {
+  if (match.status === MatchStatus.Open) {
     const count = match.players.length;
     fields.push({
       name: 'Players',
@@ -43,7 +43,7 @@ export const getMatchFields = (match: MatchesJoined) => {
     });
   }
 
-  if (match.status === 'started' && match.server) {
+  if (match.status === MatchStatus.Drafting && match.server) {
     fields.push({
       name: match.server.name,
       value: `[https://joinme.click/${match.server.ip}](https://joinme.click/g/bf2/${match.server.ip}:${match.server.port})`,

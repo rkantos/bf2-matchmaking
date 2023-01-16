@@ -1,17 +1,17 @@
 import { info, warn } from '@bf2-matchmaking/logging';
-import { MatchesRow, RoundsRow } from '@bf2-matchmaking/types';
+import { MatchesRow, MatchStatus, RoundsRow } from '@bf2-matchmaking/types';
 import { client, verifyResult } from '@bf2-matchmaking/supabase';
 
 export const handleInsertedRound = async (round: RoundsRow) => {
   info('handleInsertedRound', `New round ${round.id}`);
   const matches = await client()
-    .getStartedMatchesByServer(round.server)
+    .getOngoingMatchesByServer(round.server)
     .then(verifyResult);
   if (matches.length === 0) {
-    info('handleInsertedRound', `No started match found for round ${round.id}`);
+    info('handleInsertedRound', `No ongoing match found for round ${round.id}`);
   }
   if (matches.length > 1) {
-    warn('handleInsertedRound', `Multiple started matches found for round ${round.id}`);
+    warn('handleInsertedRound', `Multiple ongoing matches found for round ${round.id}`);
   }
   const [match] = matches;
   if (match && match.server && match.started_at) {
@@ -23,7 +23,7 @@ export const handleInsertedRound = async (round: RoundsRow) => {
       )
       .then(verifyResult);
     if (rounds.length >= 4) {
-      info('handleInsertedRound', `Setting match ${match.id} status to "closed".`);
+      info('handleInsertedRound', `Setting match ${match.id} status to "Closed".`);
       await setMatchStatusClosed(match);
     }
   }
@@ -31,6 +31,9 @@ export const handleInsertedRound = async (round: RoundsRow) => {
 
 const setMatchStatusClosed = async (match: MatchesRow) => {
   client()
-    .updateMatch(match.id, { status: 'closed', closed_at: new Date().toISOString() })
+    .updateMatch(match.id, {
+      status: MatchStatus.Closed,
+      closed_at: new Date().toISOString(),
+    })
     .then(verifyResult);
 };

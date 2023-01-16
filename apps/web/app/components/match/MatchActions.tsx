@@ -1,7 +1,7 @@
 import { Form } from '@remix-run/react';
 import { User } from '@supabase/supabase-js';
 import { FC } from 'react';
-import { MatchesJoined } from '@bf2-matchmaking/types';
+import { MatchesJoined, MatchStatus } from '@bf2-matchmaking/types';
 
 interface Props {
   match: MatchesJoined;
@@ -15,18 +15,22 @@ const MatchActions: FC<Props> = ({ match, user }) => {
 
   return (
     <div className="flex gap-2">
-      {match.status === 'open' && hasJoined && <Action action="./leave" name="Leave match" />}
-      {match.status === 'open' && !hasJoined && <Action action="./join" name="Join match" />}
-      {match.status === 'open' && match.pick === 'random' && (
+      {match.status === MatchStatus.Open && hasJoined && (
+        <Action action="./leave" name="Leave match" />
+      )}
+      {match.status === MatchStatus.Open && !hasJoined && (
+        <Action action="./join" name="Join match" />
+      )}
+      {match.status === MatchStatus.Open && match.pick === 'random' && (
         <Action action="./start" name="Start match" disabled={playerCount < match.size} />
       )}
-      {match.status === 'open' && match.pick === 'captain' && (
-        <Action action="./pick" name="Start picking" disabled={playerCount < match.size} />
+      {match.status === MatchStatus.Open && match.pick === 'captain' && (
+        <Action action="./drafting" name="Start drafting" disabled={playerCount < match.size} />
       )}
-      {match.status === 'picking' && (
+      {match.status === MatchStatus.Drafting && (
         <Action action="./start" name="Start match" disabled={hasUnpickedPlayers} />
       )}
-      {match.status === 'started' && <Action action="./close" name="Close match" />}
+      {match.status === MatchStatus.Ongoing && <Action action="./close" name="Close match" />}
     </div>
   );
 };

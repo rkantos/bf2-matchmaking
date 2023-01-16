@@ -54,7 +54,7 @@ export interface Database {
       }
       match_configs: {
         Row: {
-          channel: number | null
+          channel: number
           created_at: string
           draft: string
           id: number
@@ -63,7 +63,7 @@ export interface Database {
           size: number
         }
         Insert: {
-          channel?: number | null
+          channel: number
           created_at?: string
           draft: string
           id?: number
@@ -72,7 +72,7 @@ export interface Database {
           size: number
         }
         Update: {
-          channel?: number | null
+          channel?: number
           created_at?: string
           draft?: string
           id?: number
@@ -103,6 +103,7 @@ export interface Database {
           captain: boolean
           match_id: number
           player_id: string
+          ready: boolean
           team: string | null
           updated_at: string
         }
@@ -110,6 +111,7 @@ export interface Database {
           captain?: boolean
           match_id: number
           player_id: string
+          ready?: boolean
           team?: string | null
           updated_at?: string
         }
@@ -117,6 +119,7 @@ export interface Database {
           captain?: boolean
           match_id?: number
           player_id?: string
+          ready?: boolean
           team?: string | null
           updated_at?: string
         }

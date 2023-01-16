@@ -2,6 +2,7 @@ import { info, warn } from '@bf2-matchmaking/logging';
 import {
   MatchesJoined,
   MatchPlayersRow,
+  MatchStatus,
   WebhookPostgresUpdatePayload,
 } from '@bf2-matchmaking/types';
 import { client, verifyResult, verifySingleResult } from '@bf2-matchmaking/supabase';
@@ -19,13 +20,13 @@ export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) =>
     await sendMatchJoinMessage(matchPlayer, match);
   }
 
-  if (match.status !== 'open') {
+  if (match.status !== MatchStatus.Open) {
     warn(
       'handleInsertedMatchPlayer',
       `Player ${matchPlayer.player_id} joined a not open match(status="${match.status}").`
     );
   } else if (match.players.length === match.size && match.pick === 'captain') {
-    info('handleInsertedMatchPlayer', `Setting match ${match.id} status to "picking".`);
+    info('handleInsertedMatchPlayer', `Setting match ${match.id} status to "drafting".`);
     await setMatchStatusDrafting(match);
   } else if (match.players.length > match.size) {
     warn(
@@ -48,14 +49,14 @@ export const handleUpdatedMatchPlayer = async (
       .getMatch(payload.record.match_id)
       .then(verifySingleResult);
 
-    if (match.status !== 'picking') {
+    if (match.status !== MatchStatus.Drafting) {
       warn(
         'handleUpdatedMatchPlayer',
         `Player ${payload.record.player_id} joined team for match not drafting(status="${match.status}").`
       );
     } else if (isFullMatch(match)) {
       info('handleUpdatedMatchPlayer', `Setting match ${match.id} status to "started".`);
-      await setMatchStatusStarted(match);
+      await setMatchStatusOngoing(match);
       const { data: config } = await client().getMatchConfigByChannelId(
         match.channel.channel_id
       );
@@ -81,12 +82,17 @@ export const handleDeletedMatchPlayer = async (
 };
 
 const setMatchStatusDrafting = async (match: MatchesJoined) => {
-  await client().updateMatch(match.id, { status: 'picking' }).then(verifyResult);
+  await client()
+    .updateMatch(match.id, { status: MatchStatus.Drafting })
+    .then(verifyResult);
 };
 
-const setMatchStatusStarted = async (match: MatchesJoined) => {
+const setMatchStatusOngoing = async (match: MatchesJoined) => {
   client()
-    .updateMatch(match.id, { status: 'started', started_at: new Date().toISOString() })
+    .updateMatch(match.id, {
+      status: MatchStatus.Ongoing,
+      started_at: new Date().toISOString(),
+    })
     .then(verifyResult);
 };
 

@@ -3,13 +3,13 @@ import invariant from 'tiny-invariant';
 import { useLoaderData, useNavigate } from '@remix-run/react';
 import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
 import { useEffect } from 'react';
-import Picking from '~/components/match/Picking';
+import Drafting from '~/components/match/Drafting';
 import Open from '~/components/match/Open';
-import Started from '~/components/match/Started';
+import Ongoing from '~/components/match/Ongoing';
 import MatchActions from '~/components/match/MatchActions';
 import { getTeamCaptain } from '~/utils/match-utils';
 import { remixClient } from '@bf2-matchmaking/supabase';
-import { Database } from '@bf2-matchmaking/types';
+import { Database, MatchStatus } from '@bf2-matchmaking/types';
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   const client = remixClient(request);
@@ -85,12 +85,12 @@ export default function Index() {
           {currentPicker && <span className="ml-4">Picking: {currentPicker.username}</span>}
           {match.server && <span className="ml-4">Server: {match.server.name}</span>}
         </div>
-        {match.status === 'open' && <Open />}
-        {match.status === 'picking' && (
-          <Picking currentPicker={currentPicker} currentTeam={currentTeam} />
+        {match.status === MatchStatus.Open && <Open />}
+        {match.status === MatchStatus.Drafting && (
+          <Drafting currentPicker={currentPicker} currentTeam={currentTeam} />
         )}
-        {match.status === 'started' && <Started />}
-        {match.status === 'closed' && <Started />}
+        {match.status === MatchStatus.Ongoing && <Ongoing />}
+        {match.status === MatchStatus.Closed && <Ongoing />}
       </div>
       {user && <MatchActions match={match} user={user} />}
     </article>

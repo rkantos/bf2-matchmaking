@@ -1,8 +1,8 @@
-import { MatchesJoined, ServersJoined } from '@bf2-matchmaking/types';
-type MatchStatus = { status: string };
-const isMatchDrafting = ({ status }: MatchStatus) => status === 'picking';
-const isMatchOngoing = ({ status }: MatchStatus) => status === 'started';
-export const isActive = (match: MatchStatus) => isMatchOngoing(match) || isMatchDrafting(match);
+import { MatchesJoined, MatchStatus, ServersJoined } from '@bf2-matchmaking/types';
+type Status = { status: string };
+const isMatchDrafting = ({ status }: Status) => status === MatchStatus.Drafting;
+const isMatchOngoing = ({ status }: Status) => status === MatchStatus.Ongoing;
+export const isActive = (match: Status) => isMatchOngoing(match) || isMatchDrafting(match);
 const getServerSortValue = (server: ServersJoined, match: MatchesJoined) => {
   if (server.ip === match.server?.ip) {
     return 0;

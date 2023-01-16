@@ -3,6 +3,7 @@ import { error, info } from '@bf2-matchmaking/logging';
 import { client, verifySingleResult, verifyResult } from '@bf2-matchmaking/supabase';
 import { findCaptain, getCurrentTeam, isAssignedTeam } from '@bf2-matchmaking/utils';
 import { getMatchEmbed } from '@bf2-matchmaking/discord';
+import { MatchStatus } from '@bf2-matchmaking/types';
 
 export const getOrCreatePlayer = async ({
   id,
@@ -39,7 +40,7 @@ export const addPlayer = async (channelId: string, user: APIUser) => {
     .getOpenMatchByChannelId(channelId)
     .then(verifySingleResult);
   const player = await getOrCreatePlayer(user);
-  if (match.status === 'open') {
+  if (match.status === MatchStatus.Open) {
     await client().createMatchPlayer(match.id, player.id).then(verifyResult);
   }
 };
@@ -49,7 +50,7 @@ export const removePlayer = async (channelId: string, user: APIUser) => {
     .getOpenMatchByChannelId(channelId)
     .then(verifySingleResult);
   const player = await getOrCreatePlayer(user);
-  if (match.status === 'open') {
+  if (match.status === MatchStatus.Open) {
     await client().deleteMatchPlayer(match.id, player.id).then(verifyResult);
   }
 };
@@ -60,7 +61,7 @@ export const pickMatchPlayer = async (
   pickedPlayerId: string
 ): Promise<string | undefined> => {
   const match = await client()
-    .getPickingMatchByChannelId(channelId)
+    .getDraftingMatchByChannelId(channelId)
     .then(verifySingleResult);
   const currentTeam = getCurrentTeam(match);
   const captain = findCaptain(captainId, match.teams);

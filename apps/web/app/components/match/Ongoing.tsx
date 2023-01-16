@@ -3,7 +3,7 @@ import { loader } from '~/routes/matches/$matchId';
 import { PlayersRow } from '@bf2-matchmaking/types';
 import RoundsList from '~/components/match/RoundsList';
 
-export default function Started() {
+export default function Ongoing() {
   const { match } = useLoaderData<typeof loader>();
 
   const isTeam = (team: string) => (player: PlayersRow) =>
@@ -42,13 +42,6 @@ export default function Started() {
         {match.server && (
           <section className="section h-fit">
             <h2 className="text-xl mb-4">Server: {match.server.name}</h2>
-            <a
-              className="block underline text-blue-800 mb-4"
-              href={`https://joinme.click/g/bf2/${match.server.ip}:${match.server.port}`}
-              target="_blank"
-            >
-              https://joinme.click/{match.server.ip}
-            </a>
             <a
               className="filled-button"
               href={`https://joinme.click/g/bf2/${match.server.ip}:${match.server.port}`}

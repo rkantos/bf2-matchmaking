@@ -16,21 +16,35 @@ export type RoundsInsert = Database['public']['Tables']['rounds']['Insert'];
 export type MatchesInsert = Database['public']['Tables']['matches']['Insert'];
 
 export type MatchesUpdate = Database['public']['Tables']['matches']['Update'];
-export type MatchesJoined = MatchesRow & { maps: Array<MapsRow> } & {
+
+export enum MatchStatus {
+  Open = 'Open',
+  Summoning = 'Summoning',
+  Drafting = 'Drafting',
+  Ongoing = 'Ongoing',
+  Closed = 'Closed',
+  Deleted = 'Deleted',
+}
+export interface MatchesJoined extends Omit<MatchesRow, 'channel' | 'server' | 'status'> {
+  maps: Array<MapsRow>;
   players: Array<PlayersRow>;
-} & { channel: DiscordChannelsRow } & {
+  channel: DiscordChannelsRow;
   teams: Array<{ player_id: string; team: string | null; captain: boolean }>;
-} & {
   server: ServersRow | null;
-};
+  status: MatchStatus;
+}
+export interface RoundsJoined extends Omit<RoundsRow, 'map' | 'server'> {
+  map: MapsRow;
+  server: ServersRow;
+}
 
-export type RoundsJoined = RoundsRow & { map: MapsRow } & { server: ServersRow };
-
-export type ServersJoined = ServersRow & {
+export interface ServersJoined extends ServersRow {
   matches: Array<{ id: number; status: string }>;
-};
+}
 
-export type MatchConfigsJoined = MatchConfigsRow & { channel: DiscordChannelsRow };
+export interface MatchConfigsJoined extends Omit<MatchConfigsRow, 'channel'> {
+  channel: DiscordChannelsRow;
+}
 
 type WebhookPostgresChangesPayloadBase = {
   schema: string;

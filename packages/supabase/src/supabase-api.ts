@@ -3,6 +3,7 @@ import matches from './matches-api';
 import {
   Database,
   MatchConfigsJoined,
+  MatchStatus,
   PlayersInsert,
   RoundsInsert,
   RoundsJoined,
@@ -25,7 +26,9 @@ export default (client: SupabaseClient<Database>) => ({
     client
       .from('servers')
       .select<'*, matches(id, status)', ServersJoined>('*, matches(id, status)')
-      .or('status.eq.picking,status.eq.started', { foreignTable: 'matches' }),
+      .or(`status.eq.${MatchStatus.Drafting},status.eq.${MatchStatus.Ongoing}`, {
+        foreignTable: 'matches',
+      }),
   getServerRoundsByTimestampRange: (
     serverIp: string,
     timestampFrom: string,
