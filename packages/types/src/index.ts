@@ -1,6 +1,7 @@
 import { Database } from './database.types';
 
 export * from './database.types';
+export * from './api-types';
 
 export type PlayersRow = Database['public']['Tables']['players']['Row'];
 export type MapsRow = Database['public']['Tables']['maps']['Row'];
@@ -28,7 +29,7 @@ export enum MatchStatus {
 export interface MatchesJoined extends Omit<MatchesRow, 'channel' | 'server' | 'status'> {
   maps: Array<MapsRow>;
   players: Array<PlayersRow>;
-  channel: DiscordChannelsRow;
+  channel: DiscordChannelsRow | null;
   teams: Array<{ player_id: string; team: string | null; captain: boolean }>;
   server: ServersRow | null;
   status: MatchStatus;

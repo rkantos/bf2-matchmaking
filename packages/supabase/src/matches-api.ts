@@ -107,7 +107,8 @@ export default (client: SupabaseClient<Database>) => ({
       .from('match_players')
       .update(values)
       .eq('match_id', matchId)
-      .eq('player_id', playerId),
+      .eq('player_id', playerId)
+      .select(),
 
   createMatchMaps: (match_id: number, ...maps: Array<number>) =>
     client.from('match_maps').insert(maps.map((mapId) => ({ match_id, map_id: mapId }))),

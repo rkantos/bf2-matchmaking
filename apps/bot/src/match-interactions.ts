@@ -1,16 +1,16 @@
-import { APIUser } from 'discord-api-types/v10';
 import { error, info } from '@bf2-matchmaking/logging';
 import { client, verifySingleResult, verifyResult } from '@bf2-matchmaking/supabase';
 import { findCaptain, getCurrentTeam, isAssignedTeam } from '@bf2-matchmaking/utils';
 import { getMatchEmbed } from '@bf2-matchmaking/discord';
 import { MatchStatus } from '@bf2-matchmaking/types';
+import { APIUser, User } from 'discord.js';
 
 export const getOrCreatePlayer = async ({
   id,
   username,
   discriminator,
   avatar,
-}: APIUser) => {
+}: User | APIUser) => {
   const { error, data } = await client().getPlayer(id);
   if (error) {
     info('getOrCreatePlayer', `Inserting Player <${username}> with id ${id}`);
@@ -30,12 +30,10 @@ export const getMatchInfoByChannel = async (channelId: string) => {
   const match = await client()
     .getStagingMatchByChannelId(channelId)
     .then(verifySingleResult);
-  return {
-    embed: getMatchEmbed(match),
-  };
+  return getMatchEmbed(match);
 };
 
-export const addPlayer = async (channelId: string, user: APIUser) => {
+export const addPlayer = async (channelId: string, user: User | APIUser) => {
   const match = await client()
     .getOpenMatchByChannelId(channelId)
     .then(verifySingleResult);
@@ -45,7 +43,7 @@ export const addPlayer = async (channelId: string, user: APIUser) => {
   }
 };
 
-export const removePlayer = async (channelId: string, user: APIUser) => {
+export const removePlayer = async (channelId: string, user: User | APIUser) => {
   const match = await client()
     .getOpenMatchByChannelId(channelId)
     .then(verifySingleResult);

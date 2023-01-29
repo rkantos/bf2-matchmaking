@@ -1,4 +1,3 @@
-import Eris, { Message, PossiblyUncachedTextableChannel } from 'eris';
 import { error, info } from '@bf2-matchmaking/logging';
 import {
   addPlayer,
@@ -7,11 +6,14 @@ import {
   removePlayer,
 } from './match-interactions';
 import { client, verifyResult } from '@bf2-matchmaking/supabase';
+import { getDiscordClient } from './client';
+import { sendChannelMessage } from '@bf2-matchmaking/discord';
+import { Message } from 'discord.js';
 
-export const initDiscordGateway = async (discordClient: Eris.Client) => {
+export const initMessageListener = async () => {
   const channels = await client().getChannels().then(verifyResult);
   const channelMap = new Map(channels.map(({ channel_id, id }) => [channel_id, id]));
-
+  const discordClient = await getDiscordClient();
   discordClient.on('messageCreate', async (msg) => {
     if (!channelMap.has(msg.channel.id)) {
       return;
@@ -19,7 +21,7 @@ export const initDiscordGateway = async (discordClient: Eris.Client) => {
     try {
       const result = await parseMessage(msg);
       if (result) {
-        await discordClient.createMessage(msg.channel.id, result);
+        await sendChannelMessage(msg.channel.id, result);
       }
     } catch (e) {
       if (e instanceof Error) {
@@ -33,7 +35,7 @@ export const initDiscordGateway = async (discordClient: Eris.Client) => {
   });
 };
 
-const parseMessage = (msg: Message<PossiblyUncachedTextableChannel>) => {
+const parseMessage = (msg: Message) => {
   switch (msg.content.split(' ')[0]) {
     case '!who':
       return onWho(msg);
@@ -44,21 +46,22 @@ const parseMessage = (msg: Message<PossiblyUncachedTextableChannel>) => {
     case '!pick':
       return onPick(msg);
     case '!help':
-      return 'Commands: `!who`, `--`, `++`, `!pick <@user>`';
+      return { content: 'Commands: `!who`, `--`, `++`, `!pick <@user>`' };
     default:
       return Promise.resolve();
   }
 };
 
-const onWho = async (msg: Message<PossiblyUncachedTextableChannel>) => {
+const onWho = async (msg: Message) => {
   info(
     'discord-gateway',
     `Received command <${msg.content}> for channel <${msg.channel.id}>`
   );
-  return getMatchInfoByChannel(msg.channel.id);
+  const embed = await getMatchInfoByChannel(msg.channel.id);
+  return { embeds: [embed] };
 };
 
-const onLeave = async (msg: Message<PossiblyUncachedTextableChannel>) => {
+const onLeave = async (msg: Message) => {
   info(
     'discord-gateway',
     `Received command <${msg.content}> for channel <${msg.channel.id}>`
@@ -66,23 +69,22 @@ const onLeave = async (msg: Message<PossiblyUncachedTextableChannel>) => {
   await removePlayer(msg.channel.id, msg.author);
 };
 
-const onJoin = async (msg: Message<PossiblyUncachedTextableChannel>) => {
+const onJoin = async (msg: Message) => {
   info(
     'discord-gateway',
     `Received command <${msg.content}> for channel <${msg.channel.id}>`
   );
   await addPlayer(msg.channel.id, msg.author);
 };
-const onPick = async (
-  msg: Message<PossiblyUncachedTextableChannel>
-): Promise<string | undefined> => {
+const onPick = async (msg: Message) => {
   info(
     'discord-gateway',
     `Received command <${msg.content}> for channel <${msg.channel.id}>`
   );
-  const playerId = msg.mentions[0]?.id || msg.content.split(' ')[1];
+  const playerId = msg.mentions.users.first()?.id || msg.content.split(' ')[1];
   if (!playerId) {
-    return 'No player mentioned';
+    return { content: 'No player mentioned' };
   }
-  return pickMatchPlayer(msg.channel.id, msg.author.id, playerId);
+  const feedbackMessage = await pickMatchPlayer(msg.channel.id, msg.author.id, playerId);
+  return { content: feedbackMessage };
 };

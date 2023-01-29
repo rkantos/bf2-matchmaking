@@ -15,8 +15,15 @@ const logger = createLogger({
   format: combine(timestamp(), APP_FORMAT, colorize()),
   transports: TRANSPORTS,
 });
-export const error = (label: string, message: string) =>
-  logger.log({ level: 'error', label, message });
+export const error = (label: string, error: unknown) => {
+  if (error instanceof Error) {
+    logger.log({ level: 'error', label, message: error.message });
+  } else if (typeof error === 'string') {
+    logger.log({ level: 'error', label, message: error });
+  } else {
+    logger.log({ level: 'error', label, message: JSON.stringify(error) });
+  }
+};
 export const warn = (label: string, message: string) =>
   logger.log({ level: 'warn', label, message });
 export const info = (label: string, message: string) =>

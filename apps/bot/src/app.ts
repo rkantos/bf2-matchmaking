@@ -1,7 +1,7 @@
 import 'dotenv/config';
-import express from 'express';
+import express, { NextFunction, Request } from 'express';
 import { InteractionResponseType } from 'discord-interactions';
-import { getOption } from './utils';
+import { errorHandler, getOption, VerifyDiscordRequest } from './utils';
 import invariant from 'tiny-invariant';
 import {
   HasGuildCommands,
@@ -12,19 +12,23 @@ import {
 } from './commands';
 import {
   APIInteraction,
-  InteractionType,
   ApplicationCommandType,
+  InteractionType,
 } from 'discord-api-types/v10';
-import { initDiscordGateway } from './discord-gateway';
 import {
   addPlayer,
   getMatchInfoByChannel,
   pickMatchPlayer,
   removePlayer,
 } from './match-interactions';
-import { VerifyDiscordRequest } from '@bf2-matchmaking/discord';
-import { sendMessage } from './discord-client';
+import { getMatchEmbed, sendChannelMessage } from '@bf2-matchmaking/discord';
 import { client, verifySingleResult } from '@bf2-matchmaking/supabase';
+import { isDiscordMatch, PostMatchEventRequestBody } from './types';
+import { initMessageListener } from './message-listener';
+import { addChannel, removeChannel } from './member-listener';
+import { ApiError, ApiErrorType } from '@bf2-matchmaking/types';
+import { error } from '@bf2-matchmaking/logging';
+import { handleMatchDraft, handleMatchSummon } from './match-events';
 
 // Create an express app
 const app = express();
@@ -34,20 +38,31 @@ const PORT = process.env.PORT || 5001;
 invariant(process.env.PUBLIC_KEY, 'PUBLIC_KEY not defined');
 app.use(express.json({ verify: VerifyDiscordRequest(process.env.PUBLIC_KEY) }));
 
-interface MatchEventBody {
-  event: 'Summon';
-  matchId: number;
-}
-app.post('/match_events', async (req, res) => {
-  const { event, matchId } = req.body as MatchEventBody;
-  console.log(req.body);
-  if (event === 'Summon') {
-    console.log('summ');
-    const match = await client().getMatch(matchId).then(verifySingleResult);
-    await sendMessage(match);
+initMessageListener();
+
+app.post(
+  '/api/match_events',
+  async (req: Request<{}, {}, PostMatchEventRequestBody>, res, next) => {
+    try {
+      const { event, matchId } = req.body;
+      const match = await client().getMatch(matchId).then(verifySingleResult);
+      if (!isDiscordMatch(match)) {
+        throw new ApiError(ApiErrorType.NoMatchDiscordChannel);
+      }
+
+      if (event === 'Summon') {
+        await handleMatchSummon(match);
+      }
+      if (event === 'Draft') {
+        await handleMatchDraft(match);
+      }
+      res.end();
+    } catch (e) {
+      error('match_events', e);
+      next(e);
+    }
   }
-  res.end();
-});
+);
 
 /**
  * Interactions endpoint URL where Discord will send HTTP requests
@@ -127,6 +142,8 @@ app.post('/interactions', async (req, res) => {
   }
   res.end();
 });
+
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log('Listening on port', PORT);

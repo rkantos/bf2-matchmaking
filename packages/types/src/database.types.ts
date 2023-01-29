@@ -16,6 +16,7 @@ export interface Database {
           id: number
           name: string
           server_id: string
+          staging_channel: string | null
           uri: string
         }
         Insert: {
@@ -24,6 +25,7 @@ export interface Database {
           id?: number
           name: string
           server_id: string
+          staging_channel?: string | null
           uri: string
         }
         Update: {
@@ -32,6 +34,7 @@ export interface Database {
           id?: number
           name?: string
           server_id?: string
+          staging_channel?: string | null
           uri?: string
         }
       }

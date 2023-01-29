@@ -1,5 +1,6 @@
-import { DiscordRequest } from '@bf2-matchmaking/discord';
+import { getCommands, postCommand } from '@bf2-matchmaking/discord';
 import { APIApplicationCommand } from 'discord-api-types/v10';
+import { error, info } from '@bf2-matchmaking/logging';
 
 export async function HasGuildCommands(
   appId: string,
@@ -17,41 +18,30 @@ async function HasGuildCommand(
   guildId: string,
   command: Partial<APIApplicationCommand>
 ) {
-  // API endpoint to get and post guild commands
-  const endpoint = `applications/${appId}/guilds/${guildId}/commands`;
+  const { data, error: err } = await getCommands(appId, guildId);
 
-  try {
-    const res = await DiscordRequest(endpoint, { method: 'GET' });
-    const data = (await res.json()) as Array<Partial<APIApplicationCommand>>;
-
-    if (data) {
-      const installedNames = data.map((c) => c['name']);
-      // This is just matching on the name, so it's not good for updates
-      if (!installedNames.includes(command['name'])) {
-        console.log(`Installing "${command['name']}"`);
-        InstallGuildCommand(appId, guildId, command);
-      } else {
-        console.log(`"${command['name']}" command already installed`);
-      }
+  if (data) {
+    const installedNames = data.map((c) => c.name);
+    if (!installedNames.some((c) => c === command.name)) {
+      info('HasGuildCommand', `Installing "${command.name}"`);
+      await InstallGuildCommand(appId, guildId, command);
+    } else {
+      info('HasGuildCommand', `"${command.name}" command already installed`);
     }
-  } catch (err) {
-    console.error(err);
+  }
+  if (err) {
+    error('HasGuildCommand', err);
   }
 }
 
-// Installs a command
 export async function InstallGuildCommand(
   appId: string,
   guildId: string,
   command: Partial<APIApplicationCommand>
 ) {
-  // API endpoint to get and post guild commands
-  const endpoint = `applications/${appId}/guilds/${guildId}/commands`;
-  // install command
-  try {
-    await DiscordRequest(endpoint, { method: 'POST', body: command });
-  } catch (err) {
-    console.error(err);
+  const { error: err } = await postCommand(appId, guildId, command);
+  if (err) {
+    error('InstallGuildCommand', err);
   }
 }
 
