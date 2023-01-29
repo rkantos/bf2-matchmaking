@@ -6,6 +6,9 @@
   "engines": {
     "node": ">=19.0.0"
   },
+  "scripts": {
+    "verify": "tsc --noEmit"
+  },
   "dependencies": {
     "@bf2-matchmaking/logging": "*",
     "@bf2-matchmaking/types": "*",

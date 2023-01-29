@@ -1,5 +1,6 @@
 import { info, warn } from '@bf2-matchmaking/logging';
 import {
+  isDiscordMatch,
   MatchesJoined,
   MatchPlayersRow,
   MatchStatus,
@@ -11,12 +12,13 @@ import {
   sendMatchJoinMessage,
   sendMatchLeaveMessage,
 } from './message-service';
+import { assignMatchPlayerTeams } from '@bf2-matchmaking/utils';
 
 export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) => {
   info('handleInsertedMatchPlayer', `Player ${matchPlayer.player_id} joined.`);
   const match = await client().getMatch(matchPlayer.match_id).then(verifySingleResult);
 
-  if (match.channel) {
+  if (isDiscordMatch(match)) {
     await sendMatchJoinMessage(matchPlayer, match);
   }
 
@@ -25,9 +27,9 @@ export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) =>
       'handleInsertedMatchPlayer',
       `Player ${matchPlayer.player_id} joined a not open match(status="${match.status}").`
     );
-  } else if (match.players.length === match.size && match.pick === 'captain') {
+  } else if (match.players.length === match.size) {
     info('handleInsertedMatchPlayer', `Setting match ${match.id} status to "drafting".`);
-    await setMatchStatusDrafting(match);
+    await setMatchStatus(match, MatchStatus.Summoning);
   } else if (match.players.length > match.size) {
     warn(
       'handleInsertedMatchPlayer',
@@ -41,32 +43,9 @@ export const handleUpdatedMatchPlayer = async (
   payload: WebhookPostgresUpdatePayload<MatchPlayersRow>
 ) => {
   if (isPickEvent(payload)) {
-    info(
-      'handleUpdatedMatchPlayer',
-      `Player ${payload.record.player_id} joined team ${payload.record.team}.`
-    );
-    const match = await client()
-      .getMatch(payload.record.match_id)
-      .then(verifySingleResult);
-
-    if (match.status !== MatchStatus.Drafting) {
-      warn(
-        'handleUpdatedMatchPlayer',
-        `Player ${payload.record.player_id} joined team for match not drafting(status="${match.status}").`
-      );
-    } else if (isFullMatch(match)) {
-      info('handleUpdatedMatchPlayer', `Setting match ${match.id} status to "started".`);
-      await setMatchStatusOngoing(match);
-      const { data: config } = await client().getMatchConfigByChannelId(
-        match.channel.channel_id
-      );
-      if (config) {
-        info('handleUpdatedMatchPlayer', `Creating new match with config ${config.id}`);
-        await client().services.createMatchFromConfig(config);
-      }
-    } else if (match.channel && !payload.record.captain) {
-      await sendMatchDraftingMessage(match);
-    }
+    await handlePlayerPicked(payload);
+  } else if (isReadyEvent(payload)) {
+    await handlePlayerReady(payload);
   }
 };
 
@@ -76,15 +55,13 @@ export const handleDeletedMatchPlayer = async (
   info('handleDeletedMatchPlayer', `Player ${oldMatchPlayer.player_id} left.`);
 
   const match = await client().getMatch(oldMatchPlayer.match_id).then(verifySingleResult);
-  if (match.channel) {
+  if (isDiscordMatch(match)) {
     await sendMatchLeaveMessage(oldMatchPlayer, match);
   }
 };
 
-const setMatchStatusDrafting = async (match: MatchesJoined) => {
-  await client()
-    .updateMatch(match.id, { status: MatchStatus.Drafting })
-    .then(verifyResult);
+const setMatchStatus = async (match: MatchesJoined, status: MatchStatus) => {
+  await client().updateMatch(match.id, { status }).then(verifyResult);
 };
 
 const setMatchStatusOngoing = async (match: MatchesJoined) => {
@@ -99,7 +76,59 @@ const setMatchStatusOngoing = async (match: MatchesJoined) => {
 const isPickEvent = (payload: WebhookPostgresUpdatePayload<MatchPlayersRow>) =>
   payload.old_record.team === null &&
   (payload.record.team === 'a' || payload.record.team === 'b');
+const isReadyEvent = (payload: WebhookPostgresUpdatePayload<MatchPlayersRow>) =>
+  !payload.old_record.ready && payload.record.ready;
 
 const isFullMatch = (match: MatchesJoined) =>
   match.teams.filter((player) => player.team === 'a' || player.team === 'b').length ===
   match.size;
+
+const isReadyMatch = (match: MatchesJoined) =>
+  match.teams.every((player) => player.ready);
+
+const handlePlayerPicked = async (
+  payload: WebhookPostgresUpdatePayload<MatchPlayersRow>
+) => {
+  info(
+    'handleUpdatedMatchPlayer',
+    `Player ${payload.record.player_id} joined team ${payload.record.team}.`
+  );
+  const match = await client().getMatch(payload.record.match_id).then(verifySingleResult);
+
+  if (match.status !== MatchStatus.Drafting) {
+    warn(
+      'handleUpdatedMatchPlayer',
+      `Player ${payload.record.player_id} joined team for match not drafting(status="${match.status}").`
+    );
+  } else if (isFullMatch(match)) {
+    info('handleUpdatedMatchPlayer', `Setting match ${match.id} status to "started".`);
+    await setMatchStatusOngoing(match);
+    const { data: config } = await client().getMatchConfigByChannelId(
+      match.channel?.channel_id
+    );
+    if (config) {
+      info('handleUpdatedMatchPlayer', `Creating new match with config ${config.id}`);
+      await client().services.createMatchFromConfig(config);
+    }
+  } else if (isDiscordMatch(match) && !payload.record.captain) {
+    await sendMatchDraftingMessage(match);
+  }
+};
+
+const handlePlayerReady = async (
+  payload: WebhookPostgresUpdatePayload<MatchPlayersRow>
+) => {
+  const match = await client().getMatch(payload.record.match_id).then(verifySingleResult);
+  if (isReadyMatch(match)) {
+    if (match.pick === 'captain') {
+      await setMatchStatus(match, MatchStatus.Drafting);
+    } else {
+      await Promise.all(
+        assignMatchPlayerTeams(match.players).map(({ playerId, team }) =>
+          client().updateMatchPlayer(match.id, playerId, { team })
+        )
+      );
+      await setMatchStatus(match, MatchStatus.Ongoing);
+    }
+  }
+};

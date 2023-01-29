@@ -1,8 +1,8 @@
 import { ActionFunction, json, LoaderFunction, redirect } from '@remix-run/node';
 import invariant from 'tiny-invariant';
-import { assignMatchPlayerTeams } from '~/utils/match-utils';
 import { remixClient } from '@bf2-matchmaking/supabase';
 import { MatchStatus } from '@bf2-matchmaking/types';
+import { assignMatchPlayerTeams } from '@bf2-matchmaking/utils';
 
 const getMaps = () => {
   const mapIds = new Set<number>();

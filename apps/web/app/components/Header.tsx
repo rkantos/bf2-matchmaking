@@ -2,6 +2,7 @@ import React, { FC } from 'react';
 import { NavLink, useNavigate } from '@remix-run/react';
 import { useSupabaseClient } from '@supabase/auth-helpers-react';
 import { useUser } from '@supabase/auth-helpers-react';
+import { usePlayer } from '~/state/PlayerContext';
 
 const authRedirect =
   process.env.NODE_ENV === 'production'
@@ -11,6 +12,7 @@ const authRedirect =
 const Header: FC = () => {
   const supabase = useSupabaseClient();
   const user = useUser();
+  const { player } = usePlayer();
   const navigate = useNavigate();
 
   return (
@@ -39,6 +41,7 @@ const Header: FC = () => {
               Rounds
             </NavLink>
           </li>
+          {player && <li>{player.full_name}</li>}
           {user && (
             <li>
               <button

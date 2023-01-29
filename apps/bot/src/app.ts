@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express, { NextFunction, Request } from 'express';
+import express, { Request } from 'express';
 import { InteractionResponseType } from 'discord-interactions';
 import { errorHandler, getOption, VerifyDiscordRequest } from './utils';
 import invariant from 'tiny-invariant';
@@ -21,12 +21,14 @@ import {
   pickMatchPlayer,
   removePlayer,
 } from './match-interactions';
-import { getMatchEmbed, sendChannelMessage } from '@bf2-matchmaking/discord';
 import { client, verifySingleResult } from '@bf2-matchmaking/supabase';
-import { isDiscordMatch, PostMatchEventRequestBody } from './types';
 import { initMessageListener } from './message-listener';
-import { addChannel, removeChannel } from './member-listener';
-import { ApiError, ApiErrorType } from '@bf2-matchmaking/types';
+import {
+  ApiError,
+  ApiErrorType,
+  isDiscordMatch,
+  PostMatchEventRequestBody,
+} from '@bf2-matchmaking/types';
 import { error } from '@bf2-matchmaking/logging';
 import { handleMatchDraft, handleMatchSummon } from './match-events';
 

@@ -10,7 +10,7 @@ interface Props {
   currentTeam: string;
 }
 
-export const Drafting: FC<Props> = ({ currentPicker, currentTeam }) => {
+export const DraftingContainer: FC<Props> = ({ currentPicker, currentTeam }) => {
   const { match } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const submit = useSubmit();
@@ -83,4 +83,4 @@ export const Drafting: FC<Props> = ({ currentPicker, currentTeam }) => {
   );
 };
 
-export default Drafting;
+export default DraftingContainer;

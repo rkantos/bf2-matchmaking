@@ -1,9 +1,13 @@
 import { client, verifyResult, verifySingleResult } from '@bf2-matchmaking/supabase';
 import { info } from '@bf2-matchmaking/logging';
-import { shuffleArray } from './utils';
-import { assignMatchPlayerTeams } from 'web/app/utils/match-utils';
-import { MatchesJoined, MatchesRow, MatchStatus } from '@bf2-matchmaking/types';
+import {
+  isDiscordMatch,
+  MatchesJoined,
+  MatchesRow,
+  MatchStatus,
+} from '@bf2-matchmaking/types';
 import { sendMatchDraftingMessage, sendMatchInfoMessage } from './message-service';
+import { assignMatchPlayerTeams, shuffleArray } from '@bf2-matchmaking/utils';
 
 export const handleInsertedMatch = (match: MatchesRow) => {
   info('handleInsertedMatch', `New match ${match.id}`);
@@ -26,10 +30,14 @@ export const handleUpdatedMatch = async (
       const matchWithCaptains = await client()
         .getMatch(match.id)
         .then(verifySingleResult);
-      await sendMatchDraftingMessage(matchWithCaptains);
+      if (isDiscordMatch(matchWithCaptains)) {
+        await sendMatchDraftingMessage(matchWithCaptains);
+      }
     }
   } else {
-    await sendMatchInfoMessage(matchJoined);
+    if (isDiscordMatch(matchJoined)) {
+      await sendMatchInfoMessage(matchJoined);
+    }
   }
 };
 

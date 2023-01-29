@@ -1,6 +1,7 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "pipeline": {
+    "verify": {},
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".cache/**", "dist/**", "build/**"]

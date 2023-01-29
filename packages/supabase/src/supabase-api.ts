@@ -45,7 +45,7 @@ export default (client: SupabaseClient<Database>) => ({
     client
       .from('match_configs')
       .select<'*, channel(*)', MatchConfigsJoined>('*, channel(*)'),
-  getMatchConfigByChannelId: (channelId: string) =>
+  getMatchConfigByChannelId: (channelId?: string) =>
     client
       .from('match_configs')
       .select<'*, channel(*)', MatchConfigsJoined>('*, channel(*)')

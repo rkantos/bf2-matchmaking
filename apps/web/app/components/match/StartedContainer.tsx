@@ -2,8 +2,9 @@ import { useLoaderData } from '@remix-run/react';
 import { loader } from '~/routes/matches/$matchId';
 import { PlayersRow } from '@bf2-matchmaking/types';
 import RoundsList from '~/components/match/RoundsList';
+import { FC } from 'react';
 
-export default function Ongoing() {
+const StartedContainer: FC = () => {
   const { match } = useLoaderData<typeof loader>();
 
   const isTeam = (team: string) => (player: PlayersRow) =>
@@ -55,4 +56,6 @@ export default function Ongoing() {
       <RoundsList />
     </div>
   );
-}
+};
+
+export default StartedContainer;

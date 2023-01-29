@@ -1,16 +1,22 @@
-import { createContext, FC, PropsWithChildren, useContext } from 'react';
-import { PlayersRow } from '@bf2-matchmaking/types';
+import { createContext, FC, PropsWithChildren, useContext, useMemo } from 'react';
+import { MatchesJoined, PlayersRow } from '@bf2-matchmaking/types';
 import invariant from 'tiny-invariant';
 
 interface PlayerContextValue {
   player: PlayersRow | null;
+  isMatchPlayer: (match: MatchesJoined) => boolean;
 }
-const PlayerContext = createContext<PlayerContextValue>({ player: null });
+const PlayerContext = createContext<PlayerContextValue>({} as any);
 interface Props {
   player: PlayersRow | null;
 }
 export const PlayerContextProvider: FC<PropsWithChildren<Props>> = ({ children, player }) => {
-  return <PlayerContext.Provider value={{ player }}>{children}</PlayerContext.Provider>;
+  const isMatchPlayer = (match: MatchesJoined) =>
+    player ? match.players.some((p) => p.id === player.id) : false;
+
+  const contextValue = useMemo(() => ({ player, isMatchPlayer }), [player, isMatchPlayer]);
+
+  return <PlayerContext.Provider value={contextValue}>{children}</PlayerContext.Provider>;
 };
 
 export const usePlayer = () => {

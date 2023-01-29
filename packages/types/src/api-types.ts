@@ -19,3 +19,8 @@ export class ApiError extends Error {
     }
   }
 }
+
+export interface PostMatchEventRequestBody {
+  event: 'Summon' | 'Draft';
+  matchId: number;
+}

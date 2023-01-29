@@ -1,6 +1,6 @@
 import { addChannel, removeChannel } from './member-listener';
 import { getMatchEmbed, sendChannelMessage } from '@bf2-matchmaking/discord';
-import { DiscordMatch } from './types';
+import { DiscordMatch } from '@bf2-matchmaking/types';
 
 export const handleMatchSummon = async (match: DiscordMatch) => {
   if (match.channel.staging_channel) {

@@ -1,5 +1,3 @@
-import { PlayersRow } from '@bf2-matchmaking/types';
-
 export const shuffleArray = <T = unknown>(array: Array<T>) => {
   const clonedArray = [...array];
   for (let i = clonedArray.length - 1; i > 0; i--) {
@@ -8,9 +6,3 @@ export const shuffleArray = <T = unknown>(array: Array<T>) => {
   }
   return clonedArray;
 };
-
-export const assignMatchPlayerTeams = (players: Array<PlayersRow>) =>
-  shuffleArray(players).map((player, i) => ({
-    playerId: player.id,
-    team: i % 2 === 1 ? 'a' : 'b',
-  }));

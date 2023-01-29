@@ -39,6 +39,9 @@
   .leave-button {
     @apply inline-block bg-rose-700 hover:bg-rose-500 text-white font-semibold hover:text-white py-2 px-4 border border-rose-700 rounded;
   }
+  .ready-button {
+    @apply inline-block bg-emerald-400 hover:bg-emerald-300 text-black font-bold text-xl w-80 p-6 border-2 border-black rounded;
+  }
 }
 
 @layer base {

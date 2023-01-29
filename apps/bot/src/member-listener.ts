@@ -1,8 +1,7 @@
 import { getDiscordClient } from './client';
-import { ApiError, ApiErrorType } from '@bf2-matchmaking/types';
+import { ApiError, ApiErrorType, DiscordMatch } from '@bf2-matchmaking/types';
 import { info } from '@bf2-matchmaking/logging';
 import { client } from '@bf2-matchmaking/supabase';
-import { DiscordMatch } from './types';
 
 const matchChannelsMap = new Map<string, DiscordMatch>();
 

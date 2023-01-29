@@ -8,78 +8,52 @@ import {
   MatchStatus,
 } from '@bf2-matchmaking/types';
 
+const MATCHES_JOINED_QUERY =
+  '*, players(*), maps(*), channel(*), teams:match_players(*), server(*)';
+
 export default (client: SupabaseClient<Database>) => ({
   createMatch: (values: MatchesInsert) =>
     client
       .from('matches')
       .insert([values])
-      .select<
-        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)',
-        MatchesJoined
-      >(
-        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)'
-      )
+      .select<typeof MATCHES_JOINED_QUERY, MatchesJoined>(MATCHES_JOINED_QUERY)
       .single(),
   getMatches: () => client.from('matches').select('*'),
   getOpenMatches: () =>
     client
       .from('matches')
-      .select<
-        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)',
-        MatchesJoined
-      >(
-        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)'
-      )
+      .select<typeof MATCHES_JOINED_QUERY, MatchesJoined>(MATCHES_JOINED_QUERY)
       .eq('status', MatchStatus.Open),
   getOpenMatchesByChannel: (channel: number) =>
     client
       .from('matches')
-      .select<
-        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)',
-        MatchesJoined
-      >(
-        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)'
-      )
+      .select<typeof MATCHES_JOINED_QUERY, MatchesJoined>(MATCHES_JOINED_QUERY)
       .eq('status', MatchStatus.Open)
       .eq('channel.id', channel),
   getMatch: (matchId: number | undefined) =>
     client
       .from('matches')
-      .select<
-        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)',
-        MatchesJoined
-      >(
-        '*, players(*), maps(*), channel(*), teams:match_players(player_id, team, captain), server(*)'
-      )
+      .select<typeof MATCHES_JOINED_QUERY, MatchesJoined>(MATCHES_JOINED_QUERY)
       .eq('id', matchId)
       .single(),
   getOpenMatchByChannelId: (channelId: string) =>
     client
       .from('matches')
-      .select<
-        '*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)',
-        MatchesJoined
-      >('*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)')
+      .select<typeof MATCHES_JOINED_QUERY, MatchesJoined>(MATCHES_JOINED_QUERY)
       .eq('channel.channel_id', channelId)
       .or('status.eq.open')
       .single(),
   getDraftingMatchByChannelId: (channelId: string) =>
     client
       .from('matches')
-      .select<
-        '*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)',
-        MatchesJoined
-      >('*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)')
+      .select<typeof MATCHES_JOINED_QUERY, MatchesJoined>(MATCHES_JOINED_QUERY)
       .eq('channel.channel_id', channelId)
       .or(`status.eq.${MatchStatus.Drafting}`)
       .single(),
   getStagingMatchByChannelId: (channelId: string) =>
     client
       .from('matches')
-      .select<
-        '*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)',
-        MatchesJoined
-      >('*, players(*), channel!inner(*), teams:match_players(player_id, team, captain)')
+      .select<typeof MATCHES_JOINED_QUERY, MatchesJoined>(MATCHES_JOINED_QUERY)
       .eq('channel.channel_id', channelId)
       .or(
         `status.eq.${MatchStatus.Open},status.eq.${MatchStatus.Summoning},status.eq.${MatchStatus.Drafting}`

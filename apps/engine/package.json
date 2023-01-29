@@ -6,7 +6,8 @@
     "build": "rimraf ./build && esbuild src/app.ts --bundle --platform=node --outfile=build/app.js --external:express",
     "start": "node build/app.js",
     "dev-nodemon": "nodemon",
-    "dev-tunnel": "lt --port 5004 --subdomain bf2-matchmaking"
+    "dev-tunnel": "lt --port 5004 --subdomain bf2-matchmaking",
+    "verify": "tsc --noEmit"
   },
   "engines": {
     "node": "18"
@@ -23,10 +24,11 @@
     "typescript": "^4.9.4"
   },
   "dependencies": {
-    "@bf2-matchmaking/discord": "^1.0.0",
+    "@bf2-matchmaking/discord": "*",
     "@bf2-matchmaking/logging": "*",
     "@bf2-matchmaking/supabase": "*",
-    "@bf2-matchmaking/types": "^1.0.0",
+    "@bf2-matchmaking/types": "*",
+    "@bf2-matchmaking/utils": "*",
     "dotenv": "^16.0.3",
     "express": "^4.18.2"
   }
