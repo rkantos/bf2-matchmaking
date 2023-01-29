@@ -7,6 +7,7 @@ module.exports = {
     '@bf2-matchmaking/supabase',
     '@bf2-matchmaking/logging',
     '@bf2-matchmaking/types',
+    '@bf2-matchmaking/utils',
   ],
   watchPaths: ['../../packages/**/*'],
   // appDirectory: "app",
