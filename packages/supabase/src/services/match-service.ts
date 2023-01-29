@@ -36,14 +36,12 @@ export default (api: ReturnType<typeof supabaseApi>) => ({
 
     if (!match) {
       const { draft, size, channel, map_draft } = config;
-      const newMatch = await api
-        .createMatch({
-          pick: draft,
-          size,
-          channel: channel.id,
-          map_draft,
-        })
-        .then(verifySingleResult);
+      const { data: newMatch } = await api.createMatch({
+        pick: draft,
+        size,
+        channel: channel.id,
+        map_draft,
+      });
       return [config, newMatch];
     }
 

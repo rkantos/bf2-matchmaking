@@ -44,7 +44,7 @@ export interface MatchConfigsJoined extends Omit<MatchConfigsRow, 'channel'> {
   channel: DiscordChannelsRow;
 }
 
-export type QuickMatch = [MatchConfigsJoined, MatchesJoined];
+export type QuickMatch = [MatchConfigsJoined, MatchesJoined | null];
 
 export interface DiscordMatch extends MatchesJoined {
   channel: DiscordChannelsRow;

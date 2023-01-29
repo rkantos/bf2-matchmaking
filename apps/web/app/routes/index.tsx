@@ -51,7 +51,9 @@ export default function Index() {
             <QuickMatchSection
               config={matchConfig}
               match={match}
-              hasJoined={match.players.some((matchPlayer) => matchPlayer.id === player?.id)}
+              hasJoined={
+                match?.players.some((matchPlayer) => matchPlayer.id === player?.id) || false
+              }
             />
           </li>
         ))}

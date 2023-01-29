@@ -5,7 +5,7 @@ import Action from '~/components/form/Action';
 
 interface Props {
   config: MatchConfigsJoined;
-  match?: MatchesJoined;
+  match: MatchesJoined | null;
 
   hasJoined: boolean;
 }
