@@ -22,7 +22,10 @@ export const handleUpdatedMatch = async (
     `Match ${match.id} updated. ${oldMatch.status} -> ${match.status}`
   );
   const matchJoined = await client().getMatch(match.id).then(verifySingleResult);
-  if (oldMatch.status === MatchStatus.Open && match.status === MatchStatus.Drafting) {
+  if (
+    oldMatch.status === MatchStatus.Summoning &&
+    match.status === MatchStatus.Drafting
+  ) {
     if (match.pick === 'random') {
       await setRandomTeams(matchJoined);
     } else {

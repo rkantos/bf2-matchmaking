@@ -3,6 +3,7 @@ import { Dialog } from '@headlessui/react';
 import { Form, useLoaderData } from '@remix-run/react';
 import { loader } from '~/routes/matches/$matchId';
 import { usePlayer } from '~/state/PlayerContext';
+import { MatchStatus } from '@bf2-matchmaking/types';
 
 export const SummonedDialog: FC = () => {
   const { match } = useLoaderData<typeof loader>();
@@ -13,7 +14,9 @@ export const SummonedDialog: FC = () => {
   }
 
   const isSummoned =
-    isMatchPlayer(match) && match.teams.some((p) => p.player_id === player.id && !p.ready);
+    match.status === MatchStatus.Summoning &&
+    isMatchPlayer(match) &&
+    match.teams.some((p) => p.player_id === player.id && !p.ready);
 
   return (
     <Dialog open={isSummoned} onClose={() => {}}>

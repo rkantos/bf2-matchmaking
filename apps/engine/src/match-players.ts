@@ -84,7 +84,7 @@ const isFullMatch = (match: MatchesJoined) =>
   match.size;
 
 const isReadyMatch = (match: MatchesJoined) =>
-  match.teams.every((player) => player.ready);
+  match.status === MatchStatus.Summoning && match.teams.every((player) => player.ready);
 
 const handlePlayerPicked = async (
   payload: WebhookPostgresUpdatePayload<MatchPlayersRow>
@@ -120,15 +120,6 @@ const handlePlayerReady = async (
 ) => {
   const match = await client().getMatch(payload.record.match_id).then(verifySingleResult);
   if (isReadyMatch(match)) {
-    if (match.pick === 'captain') {
-      await setMatchStatus(match, MatchStatus.Drafting);
-    } else {
-      await Promise.all(
-        assignMatchPlayerTeams(match.players).map(({ playerId, team }) =>
-          client().updateMatchPlayer(match.id, playerId, { team })
-        )
-      );
-      await setMatchStatus(match, MatchStatus.Ongoing);
-    }
+    await setMatchStatus(match, MatchStatus.Drafting);
   }
 };
