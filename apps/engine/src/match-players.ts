@@ -9,10 +9,10 @@ import {
 import { client, verifyResult, verifySingleResult } from '@bf2-matchmaking/supabase';
 import {
   sendMatchDraftingMessage,
+  sendMatchInfoMessage,
   sendMatchJoinMessage,
   sendMatchLeaveMessage,
 } from './message-service';
-import { assignMatchPlayerTeams } from '@bf2-matchmaking/utils';
 
 export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) => {
   info('handleInsertedMatchPlayer', `Player ${matchPlayer.player_id} joined.`);
@@ -101,7 +101,7 @@ const handlePlayerPicked = async (
       `Player ${payload.record.player_id} joined team for match not drafting(status="${match.status}").`
     );
   } else if (isFullMatch(match)) {
-    info('handleUpdatedMatchPlayer', `Setting match ${match.id} status to "started".`);
+    info('handleUpdatedMatchPlayer', `Setting match ${match.id} status to "ongoing".`);
     await setMatchStatusOngoing(match);
     const { data: config } = await client().getMatchConfigByChannelId(
       match.channel?.channel_id
@@ -121,5 +121,7 @@ const handlePlayerReady = async (
   const match = await client().getMatch(payload.record.match_id).then(verifySingleResult);
   if (isReadyMatch(match)) {
     await setMatchStatus(match, MatchStatus.Drafting);
+  } else if (isDiscordMatch(match)) {
+    await sendMatchInfoMessage(match);
   }
 };

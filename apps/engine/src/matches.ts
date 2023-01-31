@@ -98,7 +98,7 @@ const isDraftingUpdate = ({
   record,
   old_record,
 }: WebhookPostgresUpdatePayload<MatchesRow>) =>
-  record.status === MatchStatus.Summoning && old_record.status === MatchStatus.Drafting;
+  record.status === MatchStatus.Drafting && old_record.status === MatchStatus.Summoning;
 const isClosedUpdate = ({ record }: WebhookPostgresUpdatePayload<MatchesRow>) =>
   record.status === MatchStatus.Closed;
 
