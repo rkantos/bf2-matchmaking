@@ -12,6 +12,7 @@
   "dependencies": {
     "@bf2-matchmaking/logging": "*",
     "@bf2-matchmaking/types": "*",
+    "@bf2-matchmaking/utils": "*",
     "@discordjs/rest": "^1.5.0",
     "discord-api-types": "^0.37.28",
     "discord-interactions": "^3.2.0",
