@@ -5,6 +5,7 @@ import {
   MatchesJoined,
   MatchesRow,
   MatchStatus,
+  WebhookPostgresUpdatePayload,
 } from '@bf2-matchmaking/types';
 import { sendMatchDraftingMessage, sendMatchInfoMessage } from './message-service';
 import { assignMatchPlayerTeams, shuffleArray } from '@bf2-matchmaking/utils';
@@ -14,27 +15,35 @@ export const handleInsertedMatch = (match: MatchesRow) => {
 };
 
 export const handleUpdatedMatch = async (
-  match: MatchesRow,
-  oldMatch: Partial<MatchesRow>
+  payload: WebhookPostgresUpdatePayload<MatchesRow>
 ) => {
   info(
     'handleUpdatedMatch',
-    `Match ${match.id} updated. ${oldMatch.status} -> ${match.status}`
+    `Match ${payload.record.id} updated. ${payload.old_record.status} -> ${payload.record.status}`
   );
-  const matchJoined = await client().getMatch(match.id).then(verifySingleResult);
-  if (
-    oldMatch.status === MatchStatus.Summoning &&
-    match.status === MatchStatus.Drafting
-  ) {
-    if (match.pick === 'random') {
+  const matchJoined = await client().getMatch(payload.record.id).then(verifySingleResult);
+  if (isDraftingUpdate(payload)) {
+    if (matchJoined.pick === 'random') {
       await setRandomTeams(matchJoined);
     } else {
       await setMatchCaptains(matchJoined);
       const matchWithCaptains = await client()
-        .getMatch(match.id)
+        .getMatch(payload.record.id)
         .then(verifySingleResult);
       if (isDiscordMatch(matchWithCaptains)) {
         await sendMatchDraftingMessage(matchWithCaptains);
+      }
+    }
+  } else if (isClosedUpdate(payload) || isDeletedUpdate(payload)) {
+    const { data: config } = await client().getMatchConfigByChannelId(
+      matchJoined.channel?.channel_id
+    );
+    if (config) {
+      const { data } = await client().getStagingMatchesByChannelId(
+        config.channel.channel_id
+      );
+      if (!data || data.length === 0) {
+        await client().services.createMatchFromConfig(config);
       }
     }
   } else {
@@ -84,3 +93,14 @@ const setMatchCaptains = async (match: MatchesJoined) => {
     })
     .then(verifyResult);
 };
+
+const isDraftingUpdate = ({
+  record,
+  old_record,
+}: WebhookPostgresUpdatePayload<MatchesRow>) =>
+  record.status === MatchStatus.Summoning && old_record.status === MatchStatus.Drafting;
+const isClosedUpdate = ({ record }: WebhookPostgresUpdatePayload<MatchesRow>) =>
+  record.status === MatchStatus.Closed;
+
+const isDeletedUpdate = ({ record }: WebhookPostgresUpdatePayload<MatchesRow>) =>
+  record.status === MatchStatus.Deleted;

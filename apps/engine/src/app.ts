@@ -39,7 +39,7 @@ app.post(
           break;
         }
         case WEBHOOK_POSTGRES_CHANGES_TYPE.UPDATE: {
-          await handleUpdatedMatch(req.body.record, req.body.old_record);
+          await handleUpdatedMatch(req.body);
           break;
         }
         case WEBHOOK_POSTGRES_CHANGES_TYPE.DELETE: {
@@ -75,7 +75,7 @@ app.post(
           break;
         }
         case WEBHOOK_POSTGRES_CHANGES_TYPE.DELETE: {
-          handleDeletedMatchPlayer(req.body.old_record);
+          await handleDeletedMatchPlayer(req.body.old_record);
           break;
         }
       }

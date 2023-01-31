@@ -50,15 +50,14 @@ export default (client: SupabaseClient<Database>) => ({
       .eq('channel.channel_id', channelId)
       .or(`status.eq.${MatchStatus.Drafting}`)
       .single(),
-  getStagingMatchByChannelId: (channelId: string) =>
+  getStagingMatchesByChannelId: (channelId: string) =>
     client
       .from('matches')
       .select<typeof MATCHES_JOINED_QUERY, MatchesJoined>(MATCHES_JOINED_QUERY)
       .eq('channel.channel_id', channelId)
       .or(
         `status.eq.${MatchStatus.Open},status.eq.${MatchStatus.Summoning},status.eq.${MatchStatus.Drafting}`
-      )
-      .single(),
+      ),
   updateMatch: (matchId: number | undefined, values: MatchesUpdate) =>
     client.from('matches').update(values).eq('id', matchId),
 
