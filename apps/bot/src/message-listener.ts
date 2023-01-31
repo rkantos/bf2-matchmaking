@@ -66,7 +66,7 @@ const onLeave = async (msg: Message) => {
     'discord-gateway',
     `Received command <${msg.content}> for channel <${msg.channel.id}>`
   );
-  await removePlayer(msg.channel.id, msg.author);
+  return removePlayer(msg.channel.id, msg.author);
 };
 
 const onJoin = async (msg: Message) => {
@@ -74,7 +74,7 @@ const onJoin = async (msg: Message) => {
     'discord-gateway',
     `Received command <${msg.content}> for channel <${msg.channel.id}>`
   );
-  await addPlayer(msg.channel.id, msg.author);
+  return addPlayer(msg.channel.id, msg.author);
 };
 const onPick = async (msg: Message) => {
   info(

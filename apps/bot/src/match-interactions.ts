@@ -39,9 +39,11 @@ export const addPlayer = async (channelId: string, user: User | APIUser) => {
     .getOpenMatchByChannelId(channelId)
     .then(verifySingleResult);
   const player = await getOrCreatePlayer(user);
-  if (match.status === MatchStatus.Open) {
+
+  if (match.status !== MatchStatus.Open) {
     return { content: 'Match is not currently open.' };
   }
+
   await client().createMatchPlayer(match.id, player.id).then(verifyResult);
 };
 
@@ -50,9 +52,12 @@ export const removePlayer = async (channelId: string, user: User | APIUser) => {
     .getOpenMatchByChannelId(channelId)
     .then(verifySingleResult);
   const player = await getOrCreatePlayer(user);
-  if (match.status === MatchStatus.Open) {
-    await client().deleteMatchPlayer(match.id, player.id).then(verifyResult);
+
+  if (match.status !== MatchStatus.Open) {
+    return { content: 'Can only leave Open matches.' };
   }
+
+  await client().deleteMatchPlayer(match.id, player.id).then(verifyResult);
 };
 
 export const pickMatchPlayer = async (

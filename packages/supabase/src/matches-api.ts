@@ -41,7 +41,7 @@ export default (client: SupabaseClient<Database>) => ({
       .from('matches')
       .select<typeof MATCHES_JOINED_QUERY, MatchesJoined>(MATCHES_JOINED_QUERY)
       .eq('channel.channel_id', channelId)
-      .or('status.eq.open')
+      .or(`status.eq.${MatchStatus.Open}`)
       .single(),
   getDraftingMatchByChannelId: (channelId: string) =>
     client
