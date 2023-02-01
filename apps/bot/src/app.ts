@@ -29,7 +29,7 @@ import {
   isDiscordMatch,
   PostMatchEventRequestBody,
 } from '@bf2-matchmaking/types';
-import { error } from '@bf2-matchmaking/logging';
+import { error, info } from '@bf2-matchmaking/logging';
 import { handleMatchDraft, handleMatchSummon } from './match-events';
 
 // Create an express app
@@ -47,6 +47,7 @@ app.post(
   async (req: Request<{}, {}, PostMatchEventRequestBody>, res, next) => {
     try {
       const { event, matchId } = req.body;
+      info('/api/match_events', `Received event ${event} for match ${matchId}`);
       const match = await client().getMatch(matchId).then(verifySingleResult);
       if (!isDiscordMatch(match)) {
         throw new ApiError(ApiErrorType.NoMatchDiscordChannel);
