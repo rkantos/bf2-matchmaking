@@ -17,7 +17,7 @@ export const getOption = (
   return option?.value;
 };
 
-const WHITELIST = ['/api/match_events'];
+const WHITELIST = ['/api/match_events', '/health'];
 export const VerifyDiscordRequest = (clientKey: string) => {
   return function (req: Request, res: any, buf: any, encoding: any) {
     if (WHITELIST.includes(req.url)) {

@@ -48,7 +48,15 @@ export const handleDeletedMatch = (oldMatch: Partial<MatchesRow>) => {
 
 export const handleMatchSummon = async (match: MatchesJoined) => {
   if (isDiscordMatch(match) && match.channel.staging_channel) {
-    const { error: err } = await api.bot().postMatchEvent(match.id, MatchEvent.Summon);
+    try {
+      const { error: err } = await api.bot().postMatchEvent(match.id, MatchEvent.Summon);
+      if (err) {
+        error('handleMatchSummon', err);
+      }
+    } catch (err) {
+      error('handleMatchSummon', err);
+    }
+
     const { data: members } = await getMembers(match.channel.server_id);
     if (members) {
       await Promise.all(
@@ -57,18 +65,19 @@ export const handleMatchSummon = async (match: MatchesJoined) => {
         )
       );
     }
-    if (err) {
-      error('handleMatchSummon', err);
-    }
   }
 };
 
 export const handleMatchDraft = async (match: MatchesJoined) => {
-  if (isDiscordMatch(match) && match.channel.staging_channel) {
-    const { error: err } = await api.bot().postMatchEvent(match.id, MatchEvent.Summon);
-    if (err) {
-      error('handleMatchDraft', err);
+  try {
+    if (isDiscordMatch(match) && match.channel.staging_channel) {
+      const { error: err } = await api.bot().postMatchEvent(match.id, MatchEvent.Summon);
+      if (err) {
+        error('handleMatchDraft', err);
+      }
     }
+  } catch (err) {
+    error('handleMatchDraft', err);
   }
 
   if (match.pick === 'random') {

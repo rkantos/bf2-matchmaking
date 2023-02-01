@@ -145,6 +145,10 @@ app.post('/interactions', async (req, res) => {
   res.end();
 });
 
+app.get('/health', (req, res) => {
+  res.status(200).send('Ok');
+});
+
 app.use(errorHandler);
 
 app.listen(PORT, () => {
