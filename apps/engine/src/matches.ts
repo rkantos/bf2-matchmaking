@@ -56,15 +56,6 @@ export const handleMatchSummon = async (match: MatchesJoined) => {
     } catch (err) {
       error('handleMatchSummon', err);
     }
-
-    const { data: members } = await getMembers(match.channel.server_id);
-    if (members) {
-      await Promise.all(
-        members.map((member) =>
-          client().updateMatchPlayer(match.id, member.user?.id, { ready: true })
-        )
-      );
-    }
   }
 };
 

@@ -1,14 +1,17 @@
-import { addChannel, removeChannel } from './member-listener';
-import { getMatchEmbed, sendChannelMessage } from '@bf2-matchmaking/discord';
+import { addChannel, getVoiceMembers, removeChannel } from './member-listener';
 import { DiscordMatch } from '@bf2-matchmaking/types';
+import { client } from '@bf2-matchmaking/supabase';
 
 export const handleMatchSummon = async (match: DiscordMatch) => {
   if (match.channel.staging_channel) {
     await addChannel(match.channel.staging_channel, match);
-    await sendChannelMessage(match.channel.channel_id, {
-      embeds: [getMatchEmbed(match)],
-    });
   }
+  const members = await getVoiceMembers(match);
+  await Promise.all(
+    members.map((memberId) =>
+      client().updateMatchPlayer(match.id, memberId, { ready: true })
+    )
+  );
 };
 export const handleMatchDraft = async (match: DiscordMatch) => {
   if (match.channel.staging_channel) {
