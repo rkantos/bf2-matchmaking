@@ -30,7 +30,7 @@ export default (api: ReturnType<typeof supabaseApi>) => ({
   },
   getQuickMatchFromConfig: async (config: MatchConfigsJoined): Promise<QuickMatch> => {
     const openMatches = await api
-      .getOpenMatchesByChannel(config.channel.id)
+      .getStagingMatchesByChannel(config.channel.id)
       .then(verifyResult);
     const match = openMatches.at(0);
 
