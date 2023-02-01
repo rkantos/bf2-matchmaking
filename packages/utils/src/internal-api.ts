@@ -5,6 +5,7 @@ export const bot = () => {
   return {
     postMatchEvent: async (matchId: number, event: MatchEvent) => {
       const res = await fetch(`${basePath}/api/match_events`, {
+        method: 'POST',
         body: JSON.stringify({ matchId, event }),
       });
       if (res.ok) {
