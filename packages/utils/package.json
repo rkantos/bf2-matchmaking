@@ -6,6 +6,9 @@
   "scripts": {
     "verify": "tsc --noEmit"
   },
+  "engines": {
+    "node": "18"
+  },
   "devDependencies": {
     "typescript": "latest"
   }

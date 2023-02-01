@@ -32,7 +32,7 @@ const createSummoningFields = (match: MatchesJoined) =>
         {
           name: 'Ready players',
           value: getPlayersReadyStatus(match)
-            .map(({ name, ready }) => `${name} ${ready ? '✅' : ''}`)
+            .map(({ name, ready }) => `${ready ? '✅' : '❌'}  ${name}`)
             .join('\n'),
         },
       ]

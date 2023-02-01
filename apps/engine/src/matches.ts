@@ -1,14 +1,17 @@
 import { client, verifyResult, verifySingleResult } from '@bf2-matchmaking/supabase';
-import { info } from '@bf2-matchmaking/logging';
+import { error, info } from '@bf2-matchmaking/logging';
 import {
+  DiscordMatch,
   isDiscordMatch,
   MatchesJoined,
   MatchesRow,
+  MatchEvent,
   MatchStatus,
   WebhookPostgresUpdatePayload,
 } from '@bf2-matchmaking/types';
 import { sendMatchDraftingMessage, sendMatchInfoMessage } from './message-service';
-import { assignMatchPlayerTeams, shuffleArray } from '@bf2-matchmaking/utils';
+import { api, assignMatchPlayerTeams, shuffleArray } from '@bf2-matchmaking/utils';
+import { getMembers } from '@bf2-matchmaking/discord';
 
 export const handleInsertedMatch = (match: MatchesRow) => {
   info('handleInsertedMatch', `New match ${match.id}`);
@@ -22,39 +25,76 @@ export const handleUpdatedMatch = async (
     `Match ${payload.record.id} updated. ${payload.old_record.status} -> ${payload.record.status}`
   );
   const matchJoined = await client().getMatch(payload.record.id).then(verifySingleResult);
+  if (isSummoningUpdate(payload)) {
+    return handleMatchSummon(matchJoined);
+  }
   if (isDraftingUpdate(payload)) {
-    if (matchJoined.pick === 'random') {
-      await setRandomTeams(matchJoined);
-    } else {
-      await setMatchCaptains(matchJoined);
-      const matchWithCaptains = await client()
-        .getMatch(payload.record.id)
-        .then(verifySingleResult);
-      if (isDiscordMatch(matchWithCaptains)) {
-        await sendMatchDraftingMessage(matchWithCaptains);
-      }
-    }
-  } else if (isClosedUpdate(payload) || isDeletedUpdate(payload)) {
-    const { data: config } = await client().getMatchConfigByChannelId(
-      matchJoined.channel?.channel_id
-    );
-    if (config) {
-      const { data } = await client().getStagingMatchesByChannelId(
-        config.channel.channel_id
-      );
-      if (!data || data.length === 0) {
-        await client().services.createMatchFromConfig(config);
-      }
-    }
-  } else {
-    if (isDiscordMatch(matchJoined)) {
-      await sendMatchInfoMessage(matchJoined);
-    }
+    return handleMatchDraft(matchJoined);
+  }
+  if (
+    isDiscordMatch(matchJoined) &&
+    (isClosedUpdate(payload) || isDeletedUpdate(payload))
+  ) {
+    return handleMatchClosed(matchJoined);
+  }
+  if (isDiscordMatch(matchJoined)) {
+    return sendMatchInfoMessage(matchJoined);
   }
 };
 
 export const handleDeletedMatch = (oldMatch: Partial<MatchesRow>) => {
   info('handleDeletedMatch', `Match ${oldMatch.id} removed`);
+};
+
+export const handleMatchSummon = async (match: MatchesJoined) => {
+  if (isDiscordMatch(match) && match.channel.staging_channel) {
+    const { error: err } = await api.bot().postMatchEvent(match.id, MatchEvent.Summon);
+    const { data: members } = await getMembers(match.channel.server_id);
+    if (members) {
+      await Promise.all(
+        members.map((member) =>
+          client().updateMatchPlayer(match.id, member.user?.id, { ready: true })
+        )
+      );
+    }
+    if (err) {
+      error('handleMatchSummon', err);
+    }
+  }
+};
+
+export const handleMatchDraft = async (match: MatchesJoined) => {
+  if (isDiscordMatch(match) && match.channel.staging_channel) {
+    const { error: err } = await api.bot().postMatchEvent(match.id, MatchEvent.Summon);
+    if (err) {
+      error('handleMatchDraft', err);
+    }
+  }
+
+  if (match.pick === 'random') {
+    await setRandomTeams(match);
+  }
+  if (match.pick === 'captain') {
+    await setMatchCaptains(match);
+    const matchWithCaptains = await client().getMatch(match.id).then(verifySingleResult);
+    if (isDiscordMatch(matchWithCaptains)) {
+      await sendMatchDraftingMessage(matchWithCaptains);
+    }
+  }
+};
+
+export const handleMatchClosed = async (match: DiscordMatch) => {
+  const { data: config } = await client().getMatchConfigByChannelId(
+    match.channel.channel_id
+  );
+  if (config) {
+    const { data } = await client().getStagingMatchesByChannelId(
+      config.channel.channel_id
+    );
+    if (!data || data.length === 0) {
+      await client().services.createMatchFromConfig(config);
+    }
+  }
 };
 
 const setRandomTeams = async (match: MatchesJoined) => {
@@ -99,8 +139,20 @@ const isDraftingUpdate = ({
   old_record,
 }: WebhookPostgresUpdatePayload<MatchesRow>) =>
   record.status === MatchStatus.Drafting && old_record.status === MatchStatus.Summoning;
-const isClosedUpdate = ({ record }: WebhookPostgresUpdatePayload<MatchesRow>) =>
-  record.status === MatchStatus.Closed;
 
-const isDeletedUpdate = ({ record }: WebhookPostgresUpdatePayload<MatchesRow>) =>
-  record.status === MatchStatus.Deleted;
+const isSummoningUpdate = ({
+  record,
+  old_record,
+}: WebhookPostgresUpdatePayload<MatchesRow>) =>
+  record.status === MatchStatus.Summoning && old_record.status === MatchStatus.Open;
+const isClosedUpdate = ({
+  record,
+  old_record,
+}: WebhookPostgresUpdatePayload<MatchesRow>) =>
+  record.status === MatchStatus.Closed && old_record.status !== MatchStatus.Closed;
+
+const isDeletedUpdate = ({
+  record,
+  old_record,
+}: WebhookPostgresUpdatePayload<MatchesRow>) =>
+  record.status === MatchStatus.Deleted && old_record.status !== MatchStatus.Deleted;

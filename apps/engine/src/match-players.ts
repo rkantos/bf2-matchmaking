@@ -42,10 +42,11 @@ export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) =>
 export const handleUpdatedMatchPlayer = async (
   payload: WebhookPostgresUpdatePayload<MatchPlayersRow>
 ) => {
+  if (isReadyEvent(payload)) {
+    return handlePlayerReady(payload);
+  }
   if (isPickEvent(payload)) {
-    await handlePlayerPicked(payload);
-  } else if (isReadyEvent(payload)) {
-    await handlePlayerReady(payload);
+    return handlePlayerPicked(payload);
   }
 };
 

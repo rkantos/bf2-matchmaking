@@ -20,7 +20,12 @@ export class ApiError extends Error {
   }
 }
 
+export enum MatchEvent {
+  Summon = 'Summon',
+  Draft = 'Draft',
+}
+
 export interface PostMatchEventRequestBody {
-  event: 'Summon' | 'Draft';
+  event: MatchEvent;
   matchId: number;
 }

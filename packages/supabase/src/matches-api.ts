@@ -73,7 +73,7 @@ export default (client: SupabaseClient<Database>) => ({
 
   updateMatchPlayer: (
     matchId: number,
-    playerId: string,
+    playerId: string | undefined,
     values: Partial<MatchPlayersRow>
   ) =>
     client
