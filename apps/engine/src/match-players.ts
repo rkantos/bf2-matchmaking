@@ -28,8 +28,11 @@ export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) =>
       `Player ${matchPlayer.player_id} joined a not open match(status="${match.status}").`
     );
   } else if (match.players.length === match.size) {
-    info('handleInsertedMatchPlayer', `Setting match ${match.id} status to "drafting".`);
+    info('handleInsertedMatchPlayer', `Setting match ${match.id} status to "summoning".`);
     await setMatchStatus(match, MatchStatus.Summoning);
+    if (isDiscordMatch(match)) {
+      await sendMatchInfoMessage(match);
+    }
   } else if (match.players.length > match.size) {
     warn(
       'handleInsertedMatchPlayer',
