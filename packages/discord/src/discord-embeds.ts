@@ -2,8 +2,9 @@ import { MatchesJoined, MatchStatus } from '@bf2-matchmaking/types';
 import { APIEmbed } from 'discord-api-types/v10';
 import { getPlayersReadyStatus, getTeamPlayers } from '@bf2-matchmaking/utils';
 
-export const getMatchEmbed = (match: MatchesJoined): APIEmbed => ({
+export const getMatchEmbed = (match: MatchesJoined, description?: string): APIEmbed => ({
   title: `Match ${match.id}: ${match.status}`,
+  description,
   fields: getMatchFields(match),
   url: `https://bf2-matchmaking.netlify.app/matches/${match.id}`,
 });
