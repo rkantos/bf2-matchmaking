@@ -18,7 +18,7 @@ export const action: ActionFunction = async ({ request, params }) => {
     invariant(player, 'Could not find player connected to user id.');
     const matchId = params['matchId'] ? parseInt(params['matchId']) : undefined;
     invariant(matchId, 'No matchId');
-    const { error, status } = await client.createMatchPlayer(matchId, player.id);
+    const { error, status } = await client.createMatchPlayer(matchId, player.id, 'web');
 
     if (error) {
       return json(error, { status });

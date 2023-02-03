@@ -44,7 +44,8 @@ export const addPlayer = async (channelId: string, user: User | APIUser) => {
     return { content: 'Match is not currently open.' };
   }
 
-  await client().createMatchPlayer(match.id, player.id).then(verifyResult);
+  await client().createMatchPlayer(match.id, player.id, 'bot').then(verifyResult);
+  return { content: `${player.full_name} joined` };
 };
 
 export const removePlayer = async (channelId: string, user: User | APIUser) => {
@@ -58,6 +59,7 @@ export const removePlayer = async (channelId: string, user: User | APIUser) => {
   }
 
   await client().deleteMatchPlayer(match.id, player.id).then(verifyResult);
+  return { content: `${player.full_name} left` };
 };
 
 export const pickMatchPlayer = async (

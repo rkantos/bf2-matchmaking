@@ -6,23 +6,23 @@ import { getCurrentCaptain } from '@bf2-matchmaking/utils';
 import { error } from '@bf2-matchmaking/logging';
 
 export const sendMatchJoinMessage = async (
-  { player_id }: MatchPlayersRow,
+  { player_id, source }: MatchPlayersRow,
   match: DiscordMatch
 ) => {
   const player = await client().getPlayer(player_id).then(verifySingleResult);
   await sendChannelMessage(match.channel.channel_id, {
-    content: `${player.full_name} joined`,
+    content: source === 'web' ? `${player.full_name} joined` : undefined,
     embeds: [getMatchEmbed(match)],
   });
 };
 
 export const sendMatchLeaveMessage = async (
-  { player_id }: Partial<MatchPlayersRow>,
+  { player_id, source }: Partial<MatchPlayersRow>,
   match: DiscordMatch
 ) => {
   const player = await client().getPlayer(player_id).then(verifySingleResult);
   await sendChannelMessage(match.channel.channel_id, {
-    content: `${player.full_name} left`,
+    content: source === 'web' ? `${player.full_name} left` : undefined,
     embeds: [getMatchEmbed(match)],
   });
 };
