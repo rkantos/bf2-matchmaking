@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import matches from './matches-api';
 import {
+  DiscordChannelsJoined,
   Database,
   MatchConfigsJoined,
   MatchStatus,
@@ -41,6 +42,16 @@ export default (client: SupabaseClient<Database>) => ({
       .lt('created_at', timestampTo)
       .eq('server.ip', serverIp),
   getChannels: () => client.from('discord_channels').select('*'),
+  getChannelsWithStagingMatches: () =>
+    client
+      .from('discord_channels')
+      .select<'*, matches(id, status)', DiscordChannelsJoined>('*, matches(id, status)')
+      .or(
+        `status.eq.${MatchStatus.Open},status.eq.${MatchStatus.Drafting},status.eq.${MatchStatus.Ongoing}`,
+        {
+          foreignTable: 'matches',
+        }
+      ),
   getMatchConfigs: () =>
     client
       .from('match_configs')

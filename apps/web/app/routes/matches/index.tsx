@@ -3,6 +3,8 @@ import invariant from 'tiny-invariant';
 import { Form, Link, useLoaderData } from '@remix-run/react';
 import { isOpen, isStarted } from '~/utils/match-utils';
 import { remixClient } from '@bf2-matchmaking/supabase';
+import { MatchStatus } from '@bf2-matchmaking/types';
+import ChannelListbox from '~/components/channel/ChannelListbox';
 
 export const action = async ({ request }: ActionArgs) => {
   const formData = await request.formData();
@@ -21,7 +23,7 @@ export const action = async ({ request }: ActionArgs) => {
 export const loader = async ({ request }: LoaderArgs) => {
   const client = remixClient(request);
   const { data: matches } = await client.getMatches();
-  const { data: channels } = await client.getChannels();
+  const { data: channels } = await client.getChannelsWithStagingMatches();
   return json({ matches, channels });
 };
 
@@ -52,7 +54,11 @@ export default function Index() {
                 <select className="dropdown" name="channel" defaultValue="">
                   <option value="">None</option>
                   {channels.map((channel) => (
-                    <option key={channel.id} value={channel.id}>
+                    <option
+                      key={channel.id}
+                      value={channel.id}
+                      disabled={channel.matches.length !== 0}
+                    >
                       {channel.name}
                     </option>
                   ))}
