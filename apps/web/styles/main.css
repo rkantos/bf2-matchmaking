@@ -42,6 +42,9 @@
   .ready-button {
     @apply inline-block bg-emerald-400 hover:bg-emerald-300 text-black font-bold text-xl w-80 p-6 border-2 border-black rounded;
   }
+  .ready-button:disabled {
+    @apply bg-gray-300 hover:bg-gray-300 text-gray-700 border-gray-700;
+  }
 }
 
 @layer base {

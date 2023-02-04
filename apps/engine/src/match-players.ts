@@ -13,6 +13,8 @@ import {
   sendMatchJoinMessage,
   sendMatchLeaveMessage,
 } from './message-service';
+import moment from 'moment';
+import { SUMMONING_DURATION } from '@bf2-matchmaking/utils';
 
 export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) => {
   info('handleInsertedMatchPlayer', `Player ${matchPlayer.player_id} joined.`);
@@ -29,10 +31,7 @@ export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) =>
     );
   } else if (match.players.length === match.size) {
     info('handleInsertedMatchPlayer', `Setting match ${match.id} status to "summoning".`);
-    await setMatchStatus(match, MatchStatus.Summoning);
-    if (isDiscordMatch(match)) {
-      await sendMatchInfoMessage(match);
-    }
+    await setMatchSummoning(match);
   } else if (match.players.length > match.size) {
     warn(
       'handleInsertedMatchPlayer',
@@ -63,9 +62,18 @@ export const handleDeletedMatchPlayer = async (
     await sendMatchLeaveMessage(oldMatchPlayer, match);
   }
 };
-
-const setMatchStatus = async (match: MatchesJoined, status: MatchStatus) => {
-  await client().updateMatch(match.id, { status }).then(verifyResult);
+const setMatchSummoning = async (match: MatchesJoined) => {
+  await client()
+    .updateMatch(match.id, {
+      status: MatchStatus.Summoning,
+      ready_at: moment().add(SUMMONING_DURATION, 'ms').toISOString(),
+    })
+    .then(verifyResult);
+};
+const setMatchDrafting = async (match: MatchesJoined) => {
+  await client()
+    .updateMatch(match.id, { status: MatchStatus.Drafting })
+    .then(verifyResult);
 };
 
 const setMatchStatusOngoing = async (match: MatchesJoined) => {
@@ -124,7 +132,7 @@ const handlePlayerReady = async (
 ) => {
   const match = await client().getMatch(payload.record.match_id).then(verifySingleResult);
   if (isReadyMatch(match)) {
-    await setMatchStatus(match, MatchStatus.Drafting);
+    await setMatchDrafting(match);
   } else if (isDiscordMatch(match)) {
     await sendMatchInfoMessage(match);
   }

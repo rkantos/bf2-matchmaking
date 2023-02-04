@@ -35,13 +35,11 @@ export const getMatchInfoByChannel = async (channelId: string) => {
 };
 
 export const addPlayer = async (channelId: string, user: User | APIUser) => {
-  const match = await client()
-    .getOpenMatchByChannelId(channelId)
-    .then(verifySingleResult);
+  const { data: match } = await client().getOpenMatchByChannelId(channelId);
   const player = await getOrCreatePlayer(user);
 
-  if (match.status !== MatchStatus.Open) {
-    return { content: 'Match is not currently open.' };
+  if (!match) {
+    return { content: 'No open match currently in channel' };
   }
 
   await client().createMatchPlayer(match.id, player.id, 'bot').then(verifyResult);

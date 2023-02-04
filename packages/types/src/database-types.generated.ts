@@ -139,6 +139,7 @@ export interface Database {
           id: number
           map_draft: string
           pick: string
+          ready_at: string | null
           server: string | null
           size: number
           started_at: string | null
@@ -152,6 +153,7 @@ export interface Database {
           id?: number
           map_draft?: string
           pick?: string
+          ready_at?: string | null
           server?: string | null
           size?: number
           started_at?: string | null
@@ -165,6 +167,7 @@ export interface Database {
           id?: number
           map_draft?: string
           pick?: string
+          ready_at?: string | null
           server?: string | null
           size?: number
           started_at?: string | null
