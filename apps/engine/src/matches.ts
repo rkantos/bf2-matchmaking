@@ -50,9 +50,9 @@ export const handleDeletedMatch = (oldMatch: Partial<MatchesRow>) => {
 export const handleMatchSummon = async (match: MatchesJoined) => {
   setTimeout(async () => {
     const timedOutMatch = await client().getMatch(match.id).then(verifySingleResult);
-    if (match.status === MatchStatus.Summoning) {
+    if (timedOutMatch.status === MatchStatus.Summoning) {
       await setMatchOpen(timedOutMatch);
-      await removeMatchPlayers(match.teams.filter((player) => !player.ready));
+      await removeMatchPlayers(timedOutMatch.teams.filter((player) => !player.ready));
     }
   }, moment(match.ready_at).diff(moment()));
 
