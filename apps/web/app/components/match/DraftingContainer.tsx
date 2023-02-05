@@ -1,42 +1,21 @@
-import { useLoaderData, useNavigate, useSubmit } from '@remix-run/react';
-import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
-import { FC, useEffect } from 'react';
+import { useLoaderData, useSubmit } from '@remix-run/react';
+import { useUser } from '@supabase/auth-helpers-react';
+import { FC } from 'react';
 import { loader } from '~/routes/matches/$matchId';
-import { PlayersRow } from '@bf2-matchmaking/types';
 import ServerSelection from '~/components/match/ServerSelection';
+import { teamIncludes } from '@bf2-matchmaking/utils';
 
-interface Props {
-  currentPicker?: PlayersRow;
-  currentTeam: string;
-}
-
-export const DraftingContainer: FC<Props> = ({ currentPicker, currentTeam }) => {
-  const { match } = useLoaderData<typeof loader>();
-  const navigate = useNavigate();
+const DraftingContainer: FC = () => {
+  const { match, draftStep } = useLoaderData<typeof loader>();
   const submit = useSubmit();
   const user = useUser();
-  const supabase = useSupabaseClient();
+  const { captain, team, pool } = draftStep;
 
-  const isTeam = (team: string | null) => (player: PlayersRow) =>
-    match.teams.some(({ player_id, team: t }) => player_id === player.id && t === team);
+  const isCurrentCaptain = Boolean(captain && user && captain.user_id === user.id);
 
-  const playerPool = match.players.filter(isTeam(null));
-
-  const canPick = Boolean(currentPicker && user && currentPicker.user_id === user.id);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel('public:match_players')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'match_players' }, () => {
-        navigate('.', { replace: true });
-      })
-      .subscribe();
-    () => channel.unsubscribe();
-  }, [supabase]);
-
-  const assignPlayer = (playerId: string) => () =>
+  const assignPlayer = (playerId: string, playerTeam: 'a' | 'b') => () =>
     submit(
-      { playerId, team: currentTeam },
+      { playerId, team: playerTeam },
       { method: 'post', action: `/matches/${match.id}/assign`, replace: true }
     );
 
@@ -45,11 +24,14 @@ export const DraftingContainer: FC<Props> = ({ currentPicker, currentTeam }) => 
       <section className="section grow">
         <h2 className="text-xl">Player pool:</h2>
         <ul>
-          {playerPool.map((player) => (
+          {pool.map((player) => (
             <li key={player.id}>
               <span>{player.username}</span>
-              {canPick && (
-                <button className="inline-block underline ml-2" onClick={assignPlayer(player.id)}>
+              {team && isCurrentCaptain && (
+                <button
+                  className="inline-block underline ml-2"
+                  onClick={assignPlayer(player.id, team)}
+                >
                   Pick
                 </button>
               )}
@@ -63,7 +45,7 @@ export const DraftingContainer: FC<Props> = ({ currentPicker, currentTeam }) => 
           <div className="mb-2">
             <h3 className="text-lg">Team A</h3>
             <ul>
-              {match.players.filter(isTeam('a')).map((player) => (
+              {match.players.filter(teamIncludes(match, 'a')).map((player) => (
                 <li key={player.id}>{player.username}</li>
               ))}
             </ul>
@@ -71,7 +53,7 @@ export const DraftingContainer: FC<Props> = ({ currentPicker, currentTeam }) => 
           <div>
             <h3 className="text-lg">Team B</h3>
             <ul>
-              {match.players.filter(isTeam('b')).map((player) => (
+              {match.players.filter(teamIncludes(match, 'b')).map((player) => (
                 <li key={player.id}>{player.username}</li>
               ))}
             </ul>

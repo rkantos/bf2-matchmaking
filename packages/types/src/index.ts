@@ -1,3 +1,5 @@
+import { MatchPlayersRow, PlayersRow } from './database-types';
+
 export * from './database-types.generated';
 export * from './api-types';
 export * from './database-types';
@@ -123,4 +125,10 @@ export interface PlayerListItem {
   punished: string;
   timesPunished: string;
   timesForgiven: string;
+}
+
+export interface DraftStep {
+  pool: Array<PlayersRow>;
+  team: 'a' | 'b' | null;
+  captain: PlayersRow | null;
 }

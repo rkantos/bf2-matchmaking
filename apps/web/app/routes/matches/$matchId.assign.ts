@@ -1,7 +1,7 @@
 import { ActionFunction, json, LoaderFunction, redirect } from '@remix-run/node';
 import invariant from 'tiny-invariant';
-import { isAssignedTeam } from '~/utils/match-utils';
 import { remixClient } from '@bf2-matchmaking/supabase';
+import { isAssignedTeam } from '@bf2-matchmaking/utils';
 
 export const loader: LoaderFunction = ({ request, params }) => {
   return redirect(`/matches/${params['matchId']}`);
@@ -19,7 +19,7 @@ export const action: ActionFunction = async ({ request, params }) => {
     const { data: match } = await client.getMatch(matchId);
     invariant(match, 'No match found');
 
-    if (isAssignedTeam(match, playerId)) {
+    if (!isAssignedTeam(match, playerId, null)) {
       throw new Error('Player already assigned');
     }
     const result = await client.updateMatchPlayer(match.id, playerId, { team });

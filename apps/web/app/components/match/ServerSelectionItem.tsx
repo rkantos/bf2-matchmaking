@@ -3,8 +3,8 @@ import { MatchStatus, ServersJoined } from '@bf2-matchmaking/types';
 import { isActive } from '~/utils/servers-utils';
 import { Link, useLoaderData, useSubmit } from '@remix-run/react';
 import { loader } from '~/routes/matches/$matchId';
-import { isCaptain } from '~/utils/match-utils';
 import { useUser } from '@supabase/auth-helpers-react';
+import { isCaptain } from '@bf2-matchmaking/utils';
 
 interface Props {
   server: ServersJoined;

@@ -1,10 +1,8 @@
 import { ActionArgs, json, LoaderArgs, redirect } from '@remix-run/node';
 import invariant from 'tiny-invariant';
 import { Form, Link, useLoaderData } from '@remix-run/react';
-import { isOpen, isStarted } from '~/utils/match-utils';
 import { remixClient } from '@bf2-matchmaking/supabase';
-import { MatchStatus } from '@bf2-matchmaking/types';
-import ChannelListbox from '~/components/channel/ChannelListbox';
+import { isOpen, isStarted } from '@bf2-matchmaking/utils';
 
 export const action = async ({ request }: ActionArgs) => {
   const formData = await request.formData();

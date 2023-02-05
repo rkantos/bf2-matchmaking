@@ -11,5 +11,8 @@
   },
   "devDependencies": {
     "typescript": "latest"
+  },
+  "dependencies": {
+    "@bf2-matchmaking/types": "*"
   }
 }

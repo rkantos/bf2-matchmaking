@@ -1,6 +1,6 @@
 import { error, info } from '@bf2-matchmaking/logging';
 import { client, verifySingleResult, verifyResult } from '@bf2-matchmaking/supabase';
-import { findCaptain, getCurrentTeam, isAssignedTeam } from '@bf2-matchmaking/utils';
+import { getDraftStep, isAssignedTeam } from '@bf2-matchmaking/utils';
 import { getMatchEmbed } from '@bf2-matchmaking/discord';
 import { MatchStatus } from '@bf2-matchmaking/types';
 import { APIUser, User } from 'discord.js';
@@ -68,21 +68,21 @@ export const pickMatchPlayer = async (
   const match = await client()
     .getDraftingMatchByChannelId(channelId)
     .then(verifySingleResult);
-  const currentTeam = getCurrentTeam(match);
-  const captain = findCaptain(captainId, match.teams);
+  const { captain, team } = getDraftStep(match);
 
-  if (!captain) {
-    return 'Only captains can pick';
+  if (!captain || !team) {
+    return 'Can only pick during draft phase.';
   }
 
-  if (captain.team !== currentTeam) {
-    return 'Not your turn to pick';
+  if (captain.id !== captainId) {
+    return `${captain.username} turn to pick`;
   }
+
   if (!isAssignedTeam(match, pickedPlayerId, null)) {
     return 'Player not in available player pool';
   }
   const { error: err } = await client().updateMatchPlayer(match.id, pickedPlayerId, {
-    team: currentTeam,
+    team,
   });
 
   if (err) {

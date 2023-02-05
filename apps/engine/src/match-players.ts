@@ -14,7 +14,7 @@ import {
   sendMatchLeaveMessage,
 } from './message-service';
 import moment from 'moment';
-import { SUMMONING_DURATION } from '@bf2-matchmaking/utils';
+import { getDraftStep, SUMMONING_DURATION } from '@bf2-matchmaking/utils';
 
 export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) => {
   info('handleInsertedMatchPlayer', `Player ${matchPlayer.player_id} joined.`);
@@ -91,10 +91,6 @@ const isPickEvent = (payload: WebhookPostgresUpdatePayload<MatchPlayersRow>) =>
 const isReadyEvent = (payload: WebhookPostgresUpdatePayload<MatchPlayersRow>) =>
   !payload.old_record.ready && payload.record.ready;
 
-const isFullMatch = (match: MatchesJoined) =>
-  match.teams.filter((player) => player.team === 'a' || player.team === 'b').length ===
-  match.size;
-
 const isReadyMatch = (match: MatchesJoined) =>
   match.status === MatchStatus.Summoning && match.teams.every((player) => player.ready);
 
@@ -110,20 +106,24 @@ const handlePlayerPicked = async (
   if (match.status !== MatchStatus.Drafting) {
     warn(
       'handleUpdatedMatchPlayer',
-      `Player ${payload.record.player_id} joined team for match not drafting(status="${match.status}").`
+      `Player ${payload.record.player_id} joined team "${payload.record.team}" for match not in drafting(id="${match.id}", status="${match.status}").`
     );
-  } else if (isFullMatch(match)) {
-    info('handleUpdatedMatchPlayer', `Setting match ${match.id} status to "ongoing".`);
+    return;
+  }
+
+  const { pool, team } = getDraftStep(match);
+  if (pool.length === 1) {
+    return client().updateMatchPlayer(match.id, pool[0].id, { team });
+  }
+
+  if (pool.length === 0) {
+    info('handleUpdatedMatchPlayer', `Setting match ${match.id} status to "Ongoing".`);
     await setMatchStatusOngoing(match);
-    const { data: config } = await client().getMatchConfigByChannelId(
-      match.channel?.channel_id
-    );
-    if (config) {
-      info('handleUpdatedMatchPlayer', `Creating new match with config ${config.id}`);
-      await client().services.createMatchFromConfig(config);
-    }
-  } else if (isDiscordMatch(match) && !payload.record.captain) {
-    await sendMatchDraftingMessage(match);
+    return await handleNextMatch(match);
+  }
+
+  if (isDiscordMatch(match) && !payload.record.captain) {
+    return sendMatchDraftingMessage(match);
   }
 };
 
@@ -135,5 +135,15 @@ const handlePlayerReady = async (
     await setMatchDrafting(match);
   } else if (isDiscordMatch(match)) {
     await sendMatchInfoMessage(match);
+  }
+};
+
+const handleNextMatch = async (match: MatchesJoined) => {
+  const { data: config } = await client().getMatchConfigByChannelId(
+    match.channel?.channel_id
+  );
+  if (config) {
+    info('handleUpdatedMatchPlayer', `Creating new match with config ${config.id}`);
+    await client().services.createMatchFromConfig(config);
   }
 };
