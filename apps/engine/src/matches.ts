@@ -14,8 +14,12 @@ import { sendMatchInfoMessage } from './message-service';
 import { api, assignMatchPlayerTeams, shuffleArray } from '@bf2-matchmaking/utils';
 import moment from 'moment';
 
-export const handleInsertedMatch = (match: MatchesRow) => {
+export const handleInsertedMatch = async (match: MatchesRow) => {
   info('handleInsertedMatch', `New match ${match.id}`);
+  const matchJoined = await client().getMatch(match.id).then(verifySingleResult);
+  if (isDiscordMatch(matchJoined)) {
+    return sendMatchInfoMessage(matchJoined);
+  }
 };
 
 export const handleUpdatedMatch = async (
@@ -25,21 +29,18 @@ export const handleUpdatedMatch = async (
     'handleUpdatedMatch',
     `Match ${payload.record.id} updated. ${payload.old_record.status} -> ${payload.record.status}`
   );
-  const matchJoined = await client().getMatch(payload.record.id).then(verifySingleResult);
+  const match = await client().getMatch(payload.record.id).then(verifySingleResult);
   if (isSummoningUpdate(payload)) {
-    await handleMatchSummon(matchJoined);
+    await handleMatchSummon(match);
   }
   if (isDraftingUpdate(payload)) {
-    return await handleMatchDraft(matchJoined);
+    return await handleMatchDraft(match);
   }
-  if (
-    isDiscordMatch(matchJoined) &&
-    (isClosedUpdate(payload) || isDeletedUpdate(payload))
-  ) {
-    await handleMatchClosed(matchJoined);
+  if (isDiscordMatch(match) && (isClosedUpdate(payload) || isDeletedUpdate(payload))) {
+    await handleMatchClosed(match);
   }
-  if (isDiscordMatch(matchJoined)) {
-    return sendMatchInfoMessage(matchJoined);
+  if (isDiscordMatch(match)) {
+    return sendMatchInfoMessage(match);
   }
 };
 
