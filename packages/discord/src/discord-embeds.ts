@@ -8,6 +8,7 @@ import {
   getTimeLeft,
 } from '@bf2-matchmaking/utils';
 import { stringify } from 'querystring';
+import moment from 'moment';
 
 export const getMatchEmbed = (match: MatchesJoined, description?: string): APIEmbed => ({
   title: `Match ${match.id}: ${match.status}`,
@@ -18,8 +19,7 @@ export const getMatchEmbed = (match: MatchesJoined, description?: string): APIEm
 
 const getMatchDescription = (match: MatchesJoined): string | undefined => {
   if (match.status === MatchStatus.Summoning && match.ready_at) {
-    const timeLeft = getTimeLeft(match.ready_at);
-    return `Ready check ends in: ${getDurationString(timeLeft)}`;
+    return `Ready check ends in: <t:${moment(match.ready_at).unix()}:R>`;
   }
   if (match.status === MatchStatus.Drafting) {
     const { captain } = getDraftStep(match);
