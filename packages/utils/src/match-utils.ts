@@ -24,8 +24,11 @@ export const getTeamCaptain = (match: MatchesJoined, team: string): PlayersRow |
   return match.players.find(({ id }) => id === captain.player_id) || null;
 };
 export const getCurrentTeam = (poolSize: number): 'a' | 'b' | null => {
-  if (poolSize <= 1) {
+  if (poolSize === 0) {
     return null;
+  }
+  if (poolSize === 1) {
+    return 'a';
   }
   if (poolSize === 2) {
     return 'b';
@@ -39,7 +42,7 @@ export const teamIncludes =
 export const getDraftStep = (match: MatchesJoined): DraftStep => {
   const pool = match.players.filter(teamIncludes(match, null));
   const team = getCurrentTeam(pool.length);
-  const captain = team ? getTeamCaptain(match, team) : null;
+  const captain = team && pool.length > 1 ? getTeamCaptain(match, team) : null;
   return { pool, team, captain };
 };
 
