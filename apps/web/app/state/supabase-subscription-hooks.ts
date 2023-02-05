@@ -7,7 +7,22 @@ import {
   RealtimePostgresUpdatePayload,
 } from '@supabase/supabase-js';
 
-export const useSubscribeMatch = (
+export const useSubscribeMatchInsert = (
+  callback: (payload: RealtimePostgresInsertPayload<MatchesRow>) => void
+) => {
+  const supabase = useSupabaseClient<Database>();
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:matches')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'matches' }, callback)
+      .subscribe();
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [supabase]);
+};
+
+export const useSubscribeMatchUpdate = (
   callback: (payload: RealtimePostgresUpdatePayload<MatchesRow>) => void
 ) => {
   const supabase = useSupabaseClient<Database>();

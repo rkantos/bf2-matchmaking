@@ -1,14 +1,33 @@
 import { MatchesJoined, MatchStatus } from '@bf2-matchmaking/types';
 import { APIEmbed } from 'discord-api-types/v10';
-import { getPlayersReadyStatus, getTeamPlayers } from '@bf2-matchmaking/utils';
+import {
+  getDraftStep,
+  getDurationString,
+  getPlayersReadyStatus,
+  getTeamPlayers,
+  getTimeLeft,
+} from '@bf2-matchmaking/utils';
+import { stringify } from 'querystring';
 
 export const getMatchEmbed = (match: MatchesJoined, description?: string): APIEmbed => ({
   title: `Match ${match.id}: ${match.status}`,
-  description,
+  description: description || getMatchDescription(match),
   fields: getMatchFields(match),
   url: `https://bf2-matchmaking.netlify.app/matches/${match.id}`,
 });
-export const getMatchFields = (match: MatchesJoined) =>
+
+const getMatchDescription = (match: MatchesJoined): string | undefined => {
+  if (match.status === MatchStatus.Summoning && match.ready_at) {
+    const timeLeft = getTimeLeft(match.ready_at);
+    return `Ready check ends in: ${getDurationString(timeLeft)}`;
+  }
+  if (match.status === MatchStatus.Drafting) {
+    const { captain } = getDraftStep(match);
+    return captain ? `${captain.username} is picking` : undefined;
+  }
+};
+
+const getMatchFields = (match: MatchesJoined) =>
   createCurrentPlayersFields(match)
     .concat(createSummoningFields(match))
     .concat(createPoolFields(match))

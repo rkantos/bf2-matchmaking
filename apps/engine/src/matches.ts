@@ -10,7 +10,7 @@ import {
   MatchStatus,
   WebhookPostgresUpdatePayload,
 } from '@bf2-matchmaking/types';
-import { sendMatchDraftingMessage, sendMatchInfoMessage } from './message-service';
+import { sendMatchInfoMessage } from './message-service';
 import { api, assignMatchPlayerTeams, shuffleArray } from '@bf2-matchmaking/utils';
 import moment from 'moment';
 
@@ -30,7 +30,7 @@ export const handleUpdatedMatch = async (
     await handleMatchSummon(matchJoined);
   }
   if (isDraftingUpdate(payload)) {
-    await handleMatchDraft(matchJoined);
+    return await handleMatchDraft(matchJoined);
   }
   if (
     isDiscordMatch(matchJoined) &&
@@ -87,7 +87,7 @@ export const handleMatchDraft = async (match: MatchesJoined) => {
     await setMatchCaptains(match);
     const matchWithCaptains = await client().getMatch(match.id).then(verifySingleResult);
     if (isDiscordMatch(matchWithCaptains)) {
-      await sendMatchDraftingMessage(matchWithCaptains);
+      await sendMatchInfoMessage(matchWithCaptains);
     }
   }
 };

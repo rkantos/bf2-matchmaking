@@ -8,7 +8,6 @@ import {
 } from '@bf2-matchmaking/types';
 import { client, verifyResult, verifySingleResult } from '@bf2-matchmaking/supabase';
 import {
-  sendMatchDraftingMessage,
   sendMatchInfoMessage,
   sendMatchJoinMessage,
   sendMatchLeaveMessage,
@@ -20,24 +19,28 @@ export const handleInsertedMatchPlayer = async (matchPlayer: MatchPlayersRow) =>
   info('handleInsertedMatchPlayer', `Player ${matchPlayer.player_id} joined.`);
   const match = await client().getMatch(matchPlayer.match_id).then(verifySingleResult);
 
-  if (isDiscordMatch(match)) {
-    await sendMatchJoinMessage(matchPlayer, match);
-  }
-
   if (match.status !== MatchStatus.Open) {
     warn(
       'handleInsertedMatchPlayer',
       `Player ${matchPlayer.player_id} joined a not open match(status="${match.status}").`
     );
-  } else if (match.players.length === match.size) {
+  }
+
+  if (match.players.length === match.size) {
     info('handleInsertedMatchPlayer', `Setting match ${match.id} status to "summoning".`);
-    await setMatchSummoning(match);
-  } else if (match.players.length > match.size) {
+    return await setMatchSummoning(match);
+  }
+
+  if (match.players.length > match.size) {
     warn(
       'handleInsertedMatchPlayer',
       `Player ${matchPlayer.player_id} joined full match ${match.id}. Removing player.`
     );
-    client().deleteMatchPlayer(match.id, matchPlayer.player_id);
+    return client().deleteMatchPlayer(match.id, matchPlayer.player_id);
+  }
+
+  if (isDiscordMatch(match)) {
+    return await sendMatchJoinMessage(matchPlayer, match);
   }
 };
 
@@ -58,8 +61,9 @@ export const handleDeletedMatchPlayer = async (
   info('handleDeletedMatchPlayer', `Player ${oldMatchPlayer.player_id} left.`);
 
   const match = await client().getMatch(oldMatchPlayer.match_id).then(verifySingleResult);
+
   if (isDiscordMatch(match)) {
-    await sendMatchLeaveMessage(oldMatchPlayer, match);
+    return await sendMatchLeaveMessage(oldMatchPlayer, match);
   }
 };
 const setMatchSummoning = async (match: MatchesJoined) => {
@@ -123,7 +127,7 @@ const handlePlayerPicked = async (
   }
 
   if (isDiscordMatch(match) && !payload.record.captain) {
-    return sendMatchDraftingMessage(match);
+    return sendMatchInfoMessage(match);
   }
 };
 

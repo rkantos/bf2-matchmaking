@@ -1,11 +1,16 @@
 import { ErrorBoundaryComponent, json, LoaderArgs } from '@remix-run/node';
-import { Link, useLoaderData } from '@remix-run/react';
+import { Link, useLoaderData, useNavigate } from '@remix-run/react';
 import { remixClient, verifyResult } from '@bf2-matchmaking/supabase';
 import QuickMatchSection from '~/components/match/QuickMatchSection';
 import { usePlayer } from '~/state/PlayerContext';
+import {
+  useSubscribeMatchInsert,
+  useSubscribeMatchUpdate,
+} from '~/state/supabase-subscription-hooks';
 
 export const loader = async ({ request }: LoaderArgs) => {
   const client = remixClient(request);
+
   try {
     const configs = await client.getMatchConfigs().then(verifyResult);
     const quickMatches = await Promise.all(configs.map(client.services.getQuickMatchFromConfig));
@@ -32,6 +37,11 @@ const authRedirect =
 export default function Index() {
   const { player } = usePlayer();
   const { quickMatches } = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
+
+  useSubscribeMatchInsert(() => {
+    navigate('.', { replace: true });
+  });
 
   if (!quickMatches) {
     return (

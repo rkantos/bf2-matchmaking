@@ -9,7 +9,7 @@ import MatchActions from '~/components/match/MatchActions';
 import { remixClient } from '@bf2-matchmaking/supabase';
 import { MatchStatus } from '@bf2-matchmaking/types';
 import {
-  useSubscribeMatch,
+  useSubscribeMatchUpdate,
   useSubscribeMatchPlayer,
   useSubscribeRounds,
 } from '~/state/supabase-subscription-hooks';
@@ -40,7 +40,7 @@ export default function Index() {
     navigate('.', { replace: true });
   });
 
-  useSubscribeMatch(() => {
+  useSubscribeMatchUpdate(() => {
     navigate('.', { replace: true });
   });
 
