@@ -2,12 +2,9 @@ import { MatchesJoined, MatchStatus } from '@bf2-matchmaking/types';
 import { APIEmbed } from 'discord-api-types/v10';
 import {
   getDraftStep,
-  getDurationString,
   getPlayersReadyStatus,
   getTeamPlayers,
-  getTimeLeft,
 } from '@bf2-matchmaking/utils';
-import { stringify } from 'querystring';
 import moment from 'moment';
 
 export const getMatchEmbed = (match: MatchesJoined, description?: string): APIEmbed => ({
@@ -19,7 +16,7 @@ export const getMatchEmbed = (match: MatchesJoined, description?: string): APIEm
 
 const getMatchDescription = (match: MatchesJoined): string | undefined => {
   if (match.status === MatchStatus.Summoning && match.ready_at) {
-    return `Ready check ends in: <t:${moment(match.ready_at).unix()}:R>`;
+    return `Ready check ends <t:${moment(match.ready_at).unix()}:R>`;
   }
   if (match.status === MatchStatus.Drafting) {
     const { captain } = getDraftStep(match);

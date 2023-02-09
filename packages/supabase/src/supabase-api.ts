@@ -15,6 +15,7 @@ export default (client: SupabaseClient<Database>) => ({
   ...matches(client),
   getPlayerByUserId: (userId?: string) =>
     client.from('players').select('*').eq('user_id', userId).single(),
+  getPlayers: () => client.from('players').select('*'),
   getPlayer: (playerId: string | undefined) =>
     client.from('players').select('*').eq('id', playerId).single(),
   createPlayer: (player: PlayersInsert) =>
@@ -67,4 +68,5 @@ export default (client: SupabaseClient<Database>) => ({
   searchMap: (map: string) => client.from('maps').select().textSearch('name', `'${map}'`),
   upsertServer: (ip: string, name: string) =>
     client.from('servers').upsert({ ip, name }).select().single(),
+  getMatchAdmins: () => client.from('admin_roles').select('*').eq('match_admin', true),
 });

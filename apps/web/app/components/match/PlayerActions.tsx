@@ -8,29 +8,17 @@ interface Props {
   user: User;
 }
 
-const MatchActions: FC<Props> = ({ match, user }) => {
-  const playerCount = match.players.length;
+const PlayerActions: FC<Props> = ({ match, user }) => {
   const hasJoined = match.players.some((player) => player.user_id === user.id);
-  const hasUnpickedPlayers = match.teams.some(({ team }) => team === null);
 
   return (
-    <div className="flex gap-2">
+    <div className="section grow flex gap-2 h-min">
       {match.status === MatchStatus.Open && hasJoined && (
         <Action action="./leave" name="Leave match" />
       )}
       {match.status === MatchStatus.Open && !hasJoined && (
         <Action action="./join" name="Join match" />
       )}
-      {match.status === MatchStatus.Open && match.pick === 'random' && (
-        <Action action="./start" name="Start match" disabled={playerCount < match.size} />
-      )}
-      {match.status === MatchStatus.Open && match.pick === 'captain' && (
-        <Action action="./drafting" name="Start drafting" disabled={playerCount < match.size} />
-      )}
-      {match.status === MatchStatus.Drafting && (
-        <Action action="./start" name="Start match" disabled={hasUnpickedPlayers} />
-      )}
-      {match.status === MatchStatus.Ongoing && <Action action="./close" name="Close match" />}
     </div>
   );
 };
@@ -48,4 +36,4 @@ const Action: FC<ActionProps> = ({ action, name, disabled }) => (
   </Form>
 );
 
-export default MatchActions;
+export default PlayerActions;

@@ -1,7 +1,7 @@
 import React, { FC } from 'react';
 import { MatchConfigsJoined, MatchesJoined } from '@bf2-matchmaking/types';
 import { Link } from '@remix-run/react';
-import Action from '~/components/form/Action';
+import ActionButton from '~/components/form/ActionButton';
 
 interface Props {
   config: MatchConfigsJoined;
@@ -21,17 +21,17 @@ const QuickMatchSection: FC<Props> = ({ config, match, hasJoined }) => {
       }`}
     >
       <h2 className="text-xl mb-4">{config.name}</h2>
-      <Action
+      <ActionButton
         className="join-button mb-4"
         disabled={hasJoined}
         action={`/matches/${match?.id}/join`}
       >
         {hasJoined ? 'Waiting for players...' : 'Join'}
-      </Action>
+      </ActionButton>
       {hasJoined && (
-        <Action className="leave-button mb-4" action={`/matches/${match?.id}/leave`}>
+        <ActionButton className="leave-button mb-4" action={`/matches/${match?.id}/leave`}>
           Leave
-        </Action>
+        </ActionButton>
       )}
       <div className="flex justify-between gap-4 w-full">
         {match && (

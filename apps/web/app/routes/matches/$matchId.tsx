@@ -1,11 +1,9 @@
 import { json, LoaderArgs } from '@remix-run/node';
 import invariant from 'tiny-invariant';
 import { useLoaderData, useNavigate } from '@remix-run/react';
-import { useUser } from '@supabase/auth-helpers-react';
 import DraftingContainer from '~/components/match/DraftingContainer';
 import StagingContainer from '~/components/match/StagingContainer';
 import StartedContainer from '~/components/match/StartedContainer';
-import MatchActions from '~/components/match/MatchActions';
 import { remixClient } from '@bf2-matchmaking/supabase';
 import { MatchStatus } from '@bf2-matchmaking/types';
 import {
@@ -14,6 +12,8 @@ import {
   useSubscribeRounds,
 } from '~/state/supabase-subscription-hooks';
 import { getDraftStep } from '@bf2-matchmaking/utils';
+import AdminActions from '~/components/admin/MatchAdminPanel';
+import { usePlayer } from '~/state/PlayerContext';
 
 export const loader = async ({ request, params }: LoaderArgs) => {
   const client = remixClient(request);
@@ -23,8 +23,9 @@ export const loader = async ({ request, params }: LoaderArgs) => {
   invariant(match, 'Match not found');
   const rounds = await client.services.getMatchRounds(match);
   const draftStep = getDraftStep(match);
+  const { data: matchAdmins } = await client.getMatchAdmins();
   return json(
-    { match, servers, rounds, draftStep },
+    { match, servers, rounds, draftStep, matchAdmins },
     {
       headers: client.response.headers,
     }
@@ -32,9 +33,13 @@ export const loader = async ({ request, params }: LoaderArgs) => {
 };
 
 export default function Index() {
-  const { match, draftStep } = useLoaderData<typeof loader>();
+  const { match, draftStep, matchAdmins } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
-  const user = useUser();
+  const { player } = usePlayer();
+
+  const isAdmin = Boolean(
+    player && matchAdmins && matchAdmins.some((admin) => admin.player_id === player.id)
+  );
 
   useSubscribeMatchPlayer(() => {
     navigate('.', { replace: true });
@@ -67,7 +72,7 @@ export default function Index() {
         {match.status === MatchStatus.Ongoing && <StartedContainer />}
         {match.status === MatchStatus.Closed && <StartedContainer />}
       </div>
-      {user && <MatchActions match={match} user={user} />}
+      {isAdmin && <AdminActions match={match} />}
     </article>
   );
 }

@@ -15,6 +15,9 @@
   .section {
     @apply bg-white p-4 border-4 border-amber-400 hover:border-amber-300;
   }
+  .section > h2 {
+    @apply text-xl mb-4;
+  }
   .outline-button {
     @apply inline-block bg-transparent hover:bg-emerald-500 text-emerald-800 font-semibold hover:text-white py-2 px-4 border border-emerald-500 hover:border-transparent rounded;
   }

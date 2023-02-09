@@ -8,6 +8,7 @@ export type RoundsRow = Database['public']['Tables']['rounds']['Row'];
 export type ServersRow = Database['public']['Tables']['servers']['Row'];
 export type DiscordChannelsRow = Database['public']['Tables']['discord_channels']['Row'];
 export type MatchConfigsRow = Database['public']['Tables']['match_configs']['Row'];
+export type AdminRolesRow = Database['public']['Tables']['admin_roles']['Row'];
 
 export type PlayersInsert = Database['public']['Tables']['players']['Insert'];
 export type RoundsInsert = Database['public']['Tables']['rounds']['Insert'];

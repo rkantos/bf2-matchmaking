@@ -36,6 +36,9 @@ export const handleUpdatedMatch = async (
   if (isDraftingUpdate(payload)) {
     return await handleMatchDraft(match);
   }
+  if (isReopenUpdate(payload)) {
+    return await handleMatchReopen(match);
+  }
   if (isDiscordMatch(match) && (isClosedUpdate(payload) || isDeletedUpdate(payload))) {
     await handleMatchClosed(match);
   }
@@ -48,12 +51,26 @@ export const handleDeletedMatch = (oldMatch: Partial<MatchesRow>) => {
   info('handleDeletedMatch', `Match ${oldMatch.id} removed`);
 };
 
+export const handleMatchReopen = (match: MatchesJoined) => {
+  info('handleMatchReopen', `Match ${match.id} reopened`);
+
+  return Promise.all(
+    match.teams.map(({ player_id, match_id }) =>
+      client().updateMatchPlayer(match_id, player_id, {
+        team: null,
+        captain: false,
+        ready: false,
+      })
+    )
+  );
+};
+
 export const handleMatchSummon = async (match: MatchesJoined) => {
   setTimeout(async () => {
     const timedOutMatch = await client().getMatch(match.id).then(verifySingleResult);
     if (timedOutMatch.status === MatchStatus.Summoning) {
-      await setMatchOpen(timedOutMatch);
       await removeMatchPlayers(timedOutMatch.teams.filter((player) => !player.ready));
+      await setMatchOpen(timedOutMatch);
     }
   }, moment(match.ready_at).diff(moment()));
 
@@ -168,6 +185,16 @@ const isSummoningUpdate = ({
   old_record,
 }: WebhookPostgresUpdatePayload<MatchesRow>) =>
   record.status === MatchStatus.Summoning && old_record.status === MatchStatus.Open;
+
+const isReopenUpdate = ({
+  record,
+  old_record,
+}: WebhookPostgresUpdatePayload<MatchesRow>) =>
+  record.status === MatchStatus.Open &&
+  (old_record.status === MatchStatus.Summoning ||
+    old_record.status === MatchStatus.Drafting ||
+    old_record.status === MatchStatus.Ongoing);
+
 const isClosedUpdate = ({
   record,
   old_record,

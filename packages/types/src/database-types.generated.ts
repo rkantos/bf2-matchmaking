@@ -9,6 +9,26 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      admin_roles: {
+        Row: {
+          created_at: string
+          match_admin: boolean
+          player_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          match_admin?: boolean
+          player_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          match_admin?: boolean
+          player_id?: string
+          updated_at?: string
+        }
+      }
       discord_channels: {
         Row: {
           channel_id: string
