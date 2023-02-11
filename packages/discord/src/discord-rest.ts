@@ -8,6 +8,7 @@ import {
 } from 'discord-api-types/v10';
 import invariant from 'tiny-invariant';
 import { error } from '@bf2-matchmaking/logging';
+import { RESTDeleteAPIChannelMessageResult } from 'discord-api-types/rest/v10/channel';
 
 invariant(process.env.DISCORD_TOKEN, 'process.env.DISCORD_TOKEN not defined');
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
@@ -46,6 +47,19 @@ const getDiscordRoute = async <T>(
   }
 };
 
+const deleteDiscordRoute = async <T>(
+  route: `/${string}`,
+  options?: RequestData
+): Promise<SuccessResponse<T> | ErrorResponse> => {
+  try {
+    const data = (await rest.delete(route, options)) as T;
+    return { data, error: null };
+  } catch (e) {
+    error('deleteDiscordRoute', e);
+    return { data: null, error: e };
+  }
+};
+
 export const sendChannelMessage = (
   channelId: string,
   body: RESTPostAPIChannelMessageJSONBody
@@ -53,6 +67,11 @@ export const sendChannelMessage = (
   postDiscordRoute<RESTPostAPIChannelMessageResult>(Routes.channelMessages(channelId), {
     body,
   });
+
+export const removeChannelMessage = (channelId: string, messageId: string) =>
+  deleteDiscordRoute<RESTDeleteAPIChannelMessageResult>(
+    Routes.channelMessage(channelId, messageId)
+  );
 
 export const getMembers = (guildId: string) =>
   getDiscordRoute<Array<APIGuildMember>>(`${Routes.guildMembers(guildId)}?limit=1000`);
