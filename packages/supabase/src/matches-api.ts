@@ -6,6 +6,7 @@ import {
   MatchesUpdate,
   MatchPlayersRow,
   MatchStatus,
+  PlayersRow,
 } from '@bf2-matchmaking/types';
 
 const MATCHES_JOINED_QUERY =
@@ -78,7 +79,15 @@ export default (client: SupabaseClient<Database>) => ({
       .delete()
       .eq('match_id', matchId)
       .eq('player_id', playerId),
-
+  deleteMatchPlayers: (matchId: number, players: Array<MatchPlayersRow>) =>
+    client
+      .from('match_players')
+      .delete()
+      .eq('match_id', matchId)
+      .in(
+        'player_id',
+        players.map((mp) => mp.player_id)
+      ),
   updateMatchPlayer: (
     matchId: number,
     playerId: string | undefined,
@@ -89,6 +98,20 @@ export default (client: SupabaseClient<Database>) => ({
       .update(values)
       .eq('match_id', matchId)
       .eq('player_id', playerId)
+      .select(),
+  updateMatchPlayers: (
+    matchId: number,
+    players: Array<{ player_id: string }>,
+    values: Partial<MatchPlayersRow>
+  ) =>
+    client
+      .from('match_players')
+      .update(values)
+      .eq('match_id', matchId)
+      .in(
+        'player_id',
+        players.map((mp) => mp.player_id)
+      )
       .select(),
 
   createMatchMaps: (match_id: number, ...maps: Array<number>) =>

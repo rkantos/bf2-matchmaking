@@ -43,3 +43,5 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     res.status(500).send(err);
   }
 };
+
+export const toMatchPlayerId = (memberId: string) => ({ player_id: memberId });

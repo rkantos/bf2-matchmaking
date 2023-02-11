@@ -6,13 +6,13 @@ import {
   MatchesJoined,
   MatchesRow,
   MatchEvent,
-  MatchPlayersRow,
   MatchStatus,
   WebhookPostgresUpdatePayload,
 } from '@bf2-matchmaking/types';
 import { sendMatchInfoMessage } from './message-service';
 import { api, assignMatchPlayerTeams, shuffleArray } from '@bf2-matchmaking/utils';
 import moment from 'moment';
+import { raw } from 'express';
 
 export const handleInsertedMatch = async (match: MatchesRow) => {
   info('handleInsertedMatch', `New match ${match.id}`);
@@ -51,26 +51,26 @@ export const handleDeletedMatch = (oldMatch: Partial<MatchesRow>) => {
   info('handleDeletedMatch', `Match ${oldMatch.id} removed`);
 };
 
-export const handleMatchReopen = (match: MatchesJoined) => {
+export const handleMatchReopen = async (match: MatchesJoined) => {
   info('handleMatchReopen', `Match ${match.id} reopened`);
-
-  return Promise.all(
-    match.teams.map(({ player_id, match_id }) =>
-      client().updateMatchPlayer(match_id, player_id, {
-        team: null,
-        captain: false,
-        ready: false,
-      })
-    )
-  );
+  await client().updateMatchPlayers(match.id, match.teams, {
+    team: null,
+    captain: false,
+    ready: false,
+  });
 };
 
 export const handleMatchSummon = async (match: MatchesJoined) => {
+  info('handleMatchSummon', `Match ${match.id} is summoning`);
   setTimeout(async () => {
     const timedOutMatch = await client().getMatch(match.id).then(verifySingleResult);
     if (timedOutMatch.status === MatchStatus.Summoning) {
-      await removeMatchPlayers(timedOutMatch.teams.filter((player) => !player.ready));
-      await setMatchOpen(timedOutMatch);
+      info('handleMatchSummon', `Match ${match.id} timed out while summoning`);
+      await client().deleteMatchPlayers(
+        timedOutMatch.id,
+        timedOutMatch.teams.filter((player) => !player.ready)
+      );
+      await reopenMatch(timedOutMatch);
     }
   }, moment(match.ready_at).diff(moment()));
 
@@ -89,7 +89,7 @@ export const handleMatchSummon = async (match: MatchesJoined) => {
 export const handleMatchDraft = async (match: MatchesJoined) => {
   try {
     if (isDiscordMatch(match) && match.channel.staging_channel) {
-      const { error: err } = await api.bot().postMatchEvent(match.id, MatchEvent.Summon);
+      const { error: err } = await api.bot().postMatchEvent(match.id, MatchEvent.Draft);
       if (err) {
         error('handleMatchDraft', err);
       }
@@ -125,25 +125,24 @@ export const handleMatchClosed = async (match: DiscordMatch) => {
 };
 
 const setRandomTeams = async (match: MatchesJoined) => {
-  await Promise.all(
-    assignMatchPlayerTeams(match.players).map(({ playerId, team }) =>
-      client().updateMatchPlayer(match.id, playerId, { team })
-    )
+  const matchPlayers = assignMatchPlayerTeams(match.players);
+  client().updateMatchPlayers(
+    match.id,
+    matchPlayers.filter((mp) => mp.team === 'a'),
+    { team: 'a' }
+  );
+  client().updateMatchPlayers(
+    match.id,
+    matchPlayers.filter((mp) => mp.team === 'b'),
+    { team: 'b' }
   );
 };
 
-const setMatchOpen = async (match: MatchesJoined) => {
+const reopenMatch = async (match: MatchesJoined) => {
   await client()
     .updateMatch(match.id, { status: MatchStatus.Open, ready_at: null })
     .then(verifyResult);
 };
-
-const removeMatchPlayers = (players: Array<MatchPlayersRow>) =>
-  Promise.all(
-    players.map(({ player_id, match_id }) =>
-      client().deleteMatchPlayer(match_id, player_id)
-    )
-  );
 
 const setMatchCaptains = async (match: MatchesJoined) => {
   const shuffledPlayers = shuffleArray(

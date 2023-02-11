@@ -15,6 +15,7 @@ const MatchAdminPanel: FC<Props> = ({ match }) => {
 
   return (
     <article className="section">
+      <p className="font-bold text-red-600 text-xl mb-2">Warning: Highly experimental!</p>
       <h2>Admin panel</h2>
       <section className="flex gap-2 mb-6">
         {match.status === MatchStatus.Open && (

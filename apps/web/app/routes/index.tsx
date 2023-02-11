@@ -3,10 +3,7 @@ import { Link, useLoaderData, useNavigate } from '@remix-run/react';
 import { remixClient, verifyResult } from '@bf2-matchmaking/supabase';
 import QuickMatchSection from '~/components/match/QuickMatchSection';
 import { usePlayer } from '~/state/PlayerContext';
-import {
-  useSubscribeMatchInsert,
-  useSubscribeMatchUpdate,
-} from '~/state/supabase-subscription-hooks';
+import { useSubscribeMatchInsert } from '~/state/supabase-subscription-hooks';
 
 export const loader = async ({ request }: LoaderArgs) => {
   const client = remixClient(request);
@@ -28,11 +25,6 @@ export const loader = async ({ request }: LoaderArgs) => {
     }
   }
 };
-
-const authRedirect =
-  process.env.NODE_ENV === 'production'
-    ? 'https://bf2-matchmaking.netlify.app/matches/'
-    : 'http://localhost:5003/matches/';
 
 export default function Index() {
   const { player } = usePlayer();
