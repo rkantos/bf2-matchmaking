@@ -1,14 +1,17 @@
 import { error, info } from '@bf2-matchmaking/logging';
-import {
-  addPlayer,
-  getMatchInfoByChannel,
-  pickMatchPlayer,
-  removePlayer,
-} from './match-interactions';
+import { addPlayer, pickMatchPlayer, removePlayer } from './match-interactions';
 import { client, verifyResult } from '@bf2-matchmaking/supabase';
 import { getDiscordClient } from './client';
-import { sendChannelMessage } from '@bf2-matchmaking/discord';
+import {
+  editChannelMessage,
+  getChannelMessages,
+  getMatchEmbed,
+  removeChannelMessage,
+  removeExistingMatchEmbeds,
+  sendChannelMessage,
+} from '@bf2-matchmaking/discord';
 import { Message } from 'discord.js';
+import { isMatchTitle } from '@bf2-matchmaking/discord/src/embed-utils';
 
 export const initMessageListener = async () => {
   const channels = await client().getChannels().then(verifyResult);
@@ -57,8 +60,18 @@ const onWho = async (msg: Message) => {
     'discord-gateway',
     `Received command <${msg.content}> for channel <${msg.channel.id}>`
   );
-  const embed = await getMatchInfoByChannel(msg.channel.id);
-  return { embeds: [embed] };
+  const { data: matches, error: err } = await client().getStagingMatchesByChannelId(
+    msg.channel.id
+  );
+
+  if (err) {
+    error('onWho', err);
+    return { content: 'Failed to get match statuses' };
+  }
+
+  removeExistingMatchEmbeds(msg.channel.id, matches);
+  const embeds = matches.map((match) => getMatchEmbed(match));
+  return { embeds };
 };
 
 const onLeave = async (msg: Message) => {

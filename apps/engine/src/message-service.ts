@@ -1,11 +1,9 @@
 import { DiscordMatch, MatchPlayersRow } from '@bf2-matchmaking/types';
-import { sendChannelMessage, removeChannelMessage } from '@bf2-matchmaking/discord';
+import { sendChannelMessage, removeExistingMatchEmbeds } from '@bf2-matchmaking/discord';
 import { getMatchEmbed } from '@bf2-matchmaking/discord';
 import { client, verifySingleResult } from '@bf2-matchmaking/supabase';
 import { RESTPostAPIChannelMessageJSONBody } from 'discord-api-types/v10';
 import { info } from '@bf2-matchmaking/logging';
-
-const matchMessageMap = new Map<number, string>();
 
 export const sendMatchJoinMessage = async (
   { player_id, source }: MatchPlayersRow,
@@ -46,22 +44,6 @@ const replaceChannelMessage = async (
   body: RESTPostAPIChannelMessageJSONBody
 ) => {
   info('replaceChannelMessage', `Replacing match message for match ${match.id}`);
-  if (matchMessageMap.has(match.id)) {
-    info(
-      'replaceChannelMessage',
-      `Removing message { matchId: ${match.id}, channelId: ${
-        match.channel.channel_id
-      }, messageId: ${matchMessageMap.get(match.id)}`
-    );
-    removeChannelMessage(match.channel.channel_id, matchMessageMap.get(match.id)!);
-  }
-  const { data } = await sendChannelMessage(match.channel.channel_id, body);
-
-  if (data) {
-    info(
-      'replaceChannelMessage',
-      `Storing message { matchId: ${match.id}, messageId: ${data.id}`
-    );
-    matchMessageMap.set(match.id, data.id);
-  }
+  removeExistingMatchEmbeds(match.channel.channel_id, [match]);
+  await sendChannelMessage(match.channel.channel_id, body);
 };

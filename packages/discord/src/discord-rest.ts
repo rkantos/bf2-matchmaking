@@ -5,6 +5,9 @@ import {
   RESTPostAPIChannelMessageJSONBody,
   RESTPostAPIChannelMessageResult,
   APIApplicationCommand,
+  RESTGetAPIChannelMessagesResult,
+  RESTPatchAPIChannelMessageJSONBody,
+  RESTPatchAPIChannelMessageResult,
 } from 'discord-api-types/v10';
 import invariant from 'tiny-invariant';
 import { error } from '@bf2-matchmaking/logging';
@@ -60,6 +63,24 @@ const deleteDiscordRoute = async <T>(
   }
 };
 
+const patchDiscordRoute = async <T>(
+  route: `/${string}`,
+  options?: RequestData
+): Promise<SuccessResponse<T> | ErrorResponse> => {
+  try {
+    const data = (await rest.patch(route, options)) as T;
+    return { data, error: null };
+  } catch (e) {
+    error('patchDiscordRoute', e);
+    return { data: null, error: e };
+  }
+};
+
+export const getChannelMessages = (channelId: string) =>
+  getDiscordRoute<RESTGetAPIChannelMessagesResult>(
+    `${Routes.channelMessages(channelId)}?limit=50`
+  );
+
 export const sendChannelMessage = (
   channelId: string,
   body: RESTPostAPIChannelMessageJSONBody
@@ -67,6 +88,16 @@ export const sendChannelMessage = (
   postDiscordRoute<RESTPostAPIChannelMessageResult>(Routes.channelMessages(channelId), {
     body,
   });
+
+export const editChannelMessage = (
+  channelId: string,
+  messageId: string,
+  body: RESTPatchAPIChannelMessageJSONBody
+) =>
+  patchDiscordRoute<RESTPatchAPIChannelMessageResult>(
+    Routes.channelMessage(channelId, messageId),
+    { body }
+  );
 
 export const removeChannelMessage = (channelId: string, messageId: string) =>
   deleteDiscordRoute<RESTDeleteAPIChannelMessageResult>(

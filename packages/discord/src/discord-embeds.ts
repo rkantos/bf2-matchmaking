@@ -6,9 +6,10 @@ import {
   getTeamPlayers,
 } from '@bf2-matchmaking/utils';
 import moment from 'moment';
+import { getEmbedTitle } from './embed-utils';
 
 export const getMatchEmbed = (match: MatchesJoined, description?: string): APIEmbed => ({
-  title: `Match ${match.id}: ${match.status}`,
+  title: getEmbedTitle(match),
   description: description || getMatchDescription(match),
   fields: getMatchFields(match),
   url: `https://bf2-matchmaking.netlify.app/matches/${match.id}`,
