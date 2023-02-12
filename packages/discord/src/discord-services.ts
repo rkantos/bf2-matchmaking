@@ -25,7 +25,7 @@ export const removeExistingMatchEmbeds = async (
       if (embedsWithoutExistingMatches.length === 0) {
         info('removeExistingMatchEmbeds', `Removing channel message ${message.id}`);
         removeChannelMessage(message.channel_id, message.id);
-      } else {
+      } else if (embedsWithoutExistingMatches.length !== message.embeds.length) {
         info('removeExistingMatchEmbeds', `Editing channel message ${message.id}`);
         editChannelMessage(message.channel_id, message.id, {
           embeds: embedsWithoutExistingMatches,

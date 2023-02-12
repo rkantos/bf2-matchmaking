@@ -69,7 +69,7 @@ const onWho = async (msg: Message) => {
     return { content: 'Failed to get match statuses' };
   }
 
-  removeExistingMatchEmbeds(msg.channel.id, matches);
+  await removeExistingMatchEmbeds(msg.channel.id, matches);
   const embeds = matches.map((match) => getMatchEmbed(match));
   return { embeds };
 };
