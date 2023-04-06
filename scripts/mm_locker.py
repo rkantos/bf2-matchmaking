@@ -169,6 +169,8 @@ class Locker( object ):
 			if valid_server_name in self.server_name:
 				max_players = self.server_capacity[valid_server_name]
 				host.rcon_invoke( "sv.numPlayersNeededToStart %s"%max_players )
+			else:
+				host.rcon_invoke( "sv.numPlayersNeededToStart 2" )
 				
 		self.server_start_time = int(time.time())
 		self.player_connected_logged_once = []
