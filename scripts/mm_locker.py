@@ -53,6 +53,10 @@ This is by no means optimium but without the ability to password the server on t
 
 
 ===== History =====
+ v0.6 - 6/6/2023:
+ - debug with  tail -F server/modmanager.log
+ - add default "sv.numPlayersNeededToStart 2" when no player number is defined.
+ - some controlPointName ( flag by flag script ) testing 
  v0.5 - 19/02/2023:
  v0.4 - 19/02/2023:
  - add sv.numPlayersNeededToStart %s"%max_players in init and when mix starts "sv.numPlayersNeededToStart 0"
@@ -154,9 +158,7 @@ class Locker( object ):
 		self.valid_server_names = self.server_capacity.keys()
 		self.streamer_prefix = 'STREAM'
 		
-		host.rcon_invoke("sv.spawnTime 0")
-		host.rcon_invoke("sv.manDownTime 0")
-		host.rcon_invoke("sv.startDelay 60")
+
 		
 		self.game_started_once = False
 
@@ -165,13 +167,28 @@ class Locker( object ):
 			self.server_name = host.rcon_invoke("sv.serverName")
 		except:
 			self.mm.error("Failed to check player name", True)
-		for valid_server_name in self.valid_server_names:
-			if valid_server_name in self.server_name:
-				max_players = self.server_capacity[valid_server_name]
-				host.rcon_invoke( "sv.numPlayersNeededToStart %s"%max_players )
-			else:
+		for server_name in self.valid_server_names:
+				if server_name in self.server_name:
+					self.server_capacity_name = server_name
+				else:
+					self.server_capacity_name = False
+
+
+		if self.server_capacity_name in self.valid_server_names:
+			for valid_server_name in self.valid_server_names:
+				if valid_server_name in self.server_name:
+					max_players = self.server_capacity[valid_server_name]
+					host.rcon_invoke( "sv.numPlayersNeededToStart %s"%max_players )
+					host.rcon_invoke("sv.spawnTime 0")
+					host.rcon_invoke("sv.manDownTime 0")
+					host.rcon_invoke("sv.startDelay 60")
+		elif not self.server_capacity_name in self.valid_server_names:
 				host.rcon_invoke( "sv.numPlayersNeededToStart 2" )
-				
+					host.rcon_invoke("sv.spawnTime 15")
+					host.rcon_invoke("sv.manDownTime 15")
+					host.rcon_invoke("sv.startDelay 30")
+
+
 		self.server_start_time = int(time.time())
 		self.player_connected_logged_once = []
 		self.player_reconnect_dict = {}
