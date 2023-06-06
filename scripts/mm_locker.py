@@ -170,23 +170,21 @@ class Locker( object ):
 		for server_name in self.valid_server_names:
 				if server_name in self.server_name:
 					self.server_capacity_name = server_name
-				else:
-					self.server_capacity_name = False
 
-
-		if self.server_capacity_name in self.valid_server_names:
-			for valid_server_name in self.valid_server_names:
-				if valid_server_name in self.server_name:
-					max_players = self.server_capacity[valid_server_name]
-					host.rcon_invoke( "sv.numPlayersNeededToStart %s"%max_players )
-					host.rcon_invoke("sv.spawnTime 0")
-					host.rcon_invoke("sv.manDownTime 0")
-					host.rcon_invoke("sv.startDelay 60")
-		elif not self.server_capacity_name in self.valid_server_names:
-				host.rcon_invoke( "sv.numPlayersNeededToStart 2" )
-					host.rcon_invoke("sv.spawnTime 15")
-					host.rcon_invoke("sv.manDownTime 15")
-					host.rcon_invoke("sv.startDelay 30")
+		try:
+			if self.server_capacity_name in self.valid_server_names:
+				for valid_server_name in self.valid_server_names:
+					if valid_server_name in self.server_name:
+						max_players = self.server_capacity[valid_server_name]
+						host.rcon_invoke( "sv.numPlayersNeededToStart %s"%max_players )
+						host.rcon_invoke("sv.spawnTime 0")
+						host.rcon_invoke("sv.manDownTime 0")
+						host.rcon_invoke("sv.startDelay 60")
+		except AttributeError:
+			host.rcon_invoke( "sv.numPlayersNeededToStart 2" )
+			host.rcon_invoke("sv.spawnTime 15")
+			host.rcon_invoke("sv.manDownTime 15")
+			host.rcon_invoke("sv.startDelay 30")
 
 
 		self.server_start_time = int(time.time())
