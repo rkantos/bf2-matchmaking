@@ -357,7 +357,7 @@ class KeyhashLocker( object ):
         # Unregister game handlers and do any other
         # other actions to ensure your module no longer affects
         # the game in anyway
-        self.mm.unregisterRconCmdHandler( 'PlayerSpawn' )
+#         self.mm.unregisterRconCmdHandler( 'PlayerSpawn' )
         self.mm.unregisterRconCmdHandler( 'PlayerConnect' )
 
         # Flag as shutdown as there is currently way to:
