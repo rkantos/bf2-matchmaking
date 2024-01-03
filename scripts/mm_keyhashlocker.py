@@ -342,7 +342,7 @@ class KeyhashLocker( object ):
 
         if 0 == self.__state:
             # Register your host handlers here
-            host.registerHandler( 'PlayerSpawn', self.onPlayerSpawn, 1 )
+#             host.registerHandler( 'PlayerSpawn', self.onPlayerSpawn, 1 )
             host.registerHandler( 'PlayerConnect', self.onPlayerConnect, 1)
 
         # Register our rcon command handlers
