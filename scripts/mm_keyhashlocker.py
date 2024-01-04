@@ -85,9 +85,9 @@ class KeyhashLocker( object ):
         self.__cmds = {
             'addPlayer': { 'method': self.addPlayerToList, 'args': '<playername>', 'level': 10 },
             'addPlayerById': { 'method': self.addPlayerToListById, 'args': '<player id>', 'level': 10 },
-            'addKeyhash': { 'method': self.addKeyhashToList, 'args': '<keyhash>', 'level': 10 },
+            'addKeyhash': { 'method': self.addKeyhashToList, 'args': '[<keyhash>|<ip>]', 'level': 10 },
             'removePlayer': { 'method': self.removePlayerFromList, 'args': '<player name>', 'level': 10 },
-            'removeKeyhash': { 'method': self.removePlayerFromListByHash, 'args': '<keyhash>', 'level': 10 },
+            'removeKeyhash': { 'method': self.removePlayerFromListByHash, 'args': '[<keyhash>|<ip>]', 'level': 10 },
             'changeMode': { 'method': self.changeMode, 'args': '[private|semiprivate|public]', 'level': 10 },
             'currentMode': { 'method': self.writeMode, 'level': 10 },
             'numFromList': { 'method': self.writeNumList, 'level': 10 },
@@ -127,28 +127,26 @@ class KeyhashLocker( object ):
 #         pass
     def onPlayerConnect(self, player):
         global knownKeys, mode, scriptName
-        self.Log("onPlayerSpawn 0", "info")
+        self.Log("onPlayerConnect 0", "info")
+        playerKey = mm_utils.get_cd_key_hash(player)
+        playerIP = player.getAddress()[0]
         # private
         if mode == 0:
-            playerKey = mm_utils.get_cd_key_hash(player)
-            if playerKey not in knownKeys:
+            if (playerKey not in knownKeys) or (playerIP not in knownKeys):
 #                 host.rcon_invoke('game.sayAll "%s: Player with key %s was not on the list!"' % (scriptName, playerKey))
                 host.rcon_invoke('game.sayAll "%s: Player %s was not on the list!"' % (scriptName, player.getName()))
                 host.rcon_invoke('admin.kickPlayer %d' % player.index)
 #                 self.mm.banManager().kickPlayer(player, self.__config['kickReason'], self.__config['kickDelay'], self.__config['kickType'])
 #                 host.rcon_invoke( 'exec pb_sv_kick %s 0 %s' % (player.index, self.__config['kickReason']) )
-#                 host.rcon_invoke( 'pb_sv_kick %s 0 %s' % (player.getName(), self.__config['kickReason']) )
-#                 host.rcon_invoke( 'pb_sv_kick rkantos 0 %s' % self.__config['kickReason'] )
-#                 host.rcon_invoke( 'pb_sv_kick rkantos 0 test' )
+#                 host.rcon_invoke( 'pb_sv_kick %s 0 %s' % (player.getName(), self.__config['kickReason']) ))
 #                 self.Log("pb kick??", "info")
     
         # semiprivate
         elif mode == 1:
             # if we're at capacity (new person fills our extra spot)
             if bf2.playerManager.getNumberOfPlayers() == bf2.serverSettings.getMaxPlayers():
-                playerKey = mm_utils.get_cd_key_hash(player)
                 # if he's not on the list, put him back where he came from
-                if playerKey not in knownKeys:
+                if (playerKey not in knownKeys) or (playerIP not in knownKeys):
                     host.rcon_invoke('game.sayAll "%s: Player with key %s kicked: no room for people off the list!"' % (scriptName, playerKey))
                     self.mm.banManager().kickPlayer(player, self.__config['kickReason'], self.__config['kickDelay'], self.__config['kickType'])
                     return
@@ -191,7 +189,8 @@ class KeyhashLocker( object ):
             currPlayers = bf2.playerManager.getPlayers()
             for p in currPlayers:
                 pKey = mm_utils.get_cd_key_hash(p)
-                if not pKey in knownKeys:
+                pIP = p.getAddress()[0]
+                if not (pKey in knownKeys or pIP in knownKeys):
                     host.rcon_invoke('admin.kickPlayer ' + str(p.index))
                    
             mode = 0
@@ -286,7 +285,7 @@ class KeyhashLocker( object ):
     def removePlayerFromListByHash(self, ctx, keyHash):
         """Removes a player from the keylist by keyHash"""
         global fileName, knownKeys
-        playerKey = mm_utils.get_cd_key_hash(player)
+        playerKey = keyHash
         if not playerKey in knownKeys:
             return
         knownKeys.remove(playerKey)
