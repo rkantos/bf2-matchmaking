@@ -6,6 +6,9 @@ path_server="/server/"
 if [ "$2" == "vehicles" ]; then
 	vehicles="BF2_Playerbase_8v8_vehicles"
 	file=$bf2dir$path_server$vehicles.profile
+elif [ "$2" == "bf2top" ]; then
+	bf2top="BF2_Playerbase_bf2top"
+	file=$bf2dir$path_server$bf2top.profile
 else
 	inf="BF2_Playerbase_XX"
 	file=$bf2dir$path_server$inf.profile
@@ -16,12 +19,13 @@ restart () {
 	~bf2/mono-1.1.12.1/bin/mono ~bf2/server/bf2ccd.exe -kill
 
 	if [ "$vehicles" ]; then
-		screen -AdmS bf2server bash -c "~bf2/mono-1.1.12.1/bin/mono ~bf2/server/bf2ccd.exe -showlog -autostart "$vehicles""
+		screen -AdmS bf2server bash -c "~bf2/mono-1.1.12.1/bin/mono ~bf2/server/bf2ccd.exe -showlog -autostart $vehicles"
+	elif [ "$bf2top" ]; then
+		screen -AdmS bf2server bash -c "~bf2/mono-1.1.12.1/bin/mono ~bf2/server/bf2ccd.exe -showlog -autostart $bf2top"
 	else
-		screen -AdmS bf2server bash -c "~bf2/mono-1.1.12.1/bin/mono ~bf2/server/bf2ccd.exe -showlog -autostart "$inf""
+		screen -AdmS bf2server bash -c "~bf2/mono-1.1.12.1/bin/mono ~bf2/server/bf2ccd.exe -showlog -autostart $inf"
 	fi
 }
-
 
 if [ "$#" -ne 2 ]; then
     echo "Usage: $0 file.xml map_name"
