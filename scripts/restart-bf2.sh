@@ -7,7 +7,7 @@ if [ "$2" == "vehicles" ]; then
 	vehicles="BF2_Playerbase_8v8_vehicles"
 	file=$bf2dir$path_server$vehicles.profile
 elif [ "$2" == "bf2top" ]; then
-	bf2top="BF2_Playerbase_bf2top"
+	bf2top="bf2top"
 	file=$bf2dir$path_server$bf2top.profile
 else
 	inf="BF2_Playerbase_XX"
