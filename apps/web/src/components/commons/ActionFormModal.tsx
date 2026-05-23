@@ -7,7 +7,7 @@ interface Props extends PropsWithChildren {
   title: string;
   openBtnLabel: string;
   openBtnSize?: 'btn-sm' | 'btn-md' | 'btn-lg';
-  openBtnKind?: 'btn-primary' | 'btn-secondary' | 'btn-accent';
+  openBtnKind?: 'btn-primary' | 'btn-secondary' | 'btn-accent' | 'btn-error';
   disabled?: boolean;
 }
 

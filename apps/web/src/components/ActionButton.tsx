@@ -3,7 +3,7 @@ import React, { PropsWithChildren, useCallback, useTransition } from 'react';
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
 
-interface Props extends PropsWithChildren {
+export interface ActionButtonProps extends PropsWithChildren {
   formAction: () => Promise<{ data: unknown; error: { message: string } | null }>;
   successMessage: string;
   errorMessage: string;
@@ -26,7 +26,7 @@ export default function ActionButton({
   redirect,
   errorRedirect,
   disabled,
-}: Props) {
+}: ActionButtonProps) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 

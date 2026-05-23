@@ -1,7 +1,7 @@
 import ActionFormModal from '@/components/commons/ActionFormModal';
-import ActionButton from '@/components/ActionButton';
+import ActionButton, { ActionButtonProps } from '@/components/ActionButton';
 
-interface Props {
+interface Props extends ActionButtonProps {
   label: string;
   guard: boolean;
   guardLabel: string;
@@ -22,7 +22,8 @@ export default function GuardedActionButton({
       <ActionFormModal
         title={label}
         openBtnLabel={label}
-        openBtnSize="btn-md"
+        openBtnSize={actionProps.size || 'btn-md'}
+        openBtnKind={actionProps.kind}
         {...actionProps}
       >
         {guardLabel}

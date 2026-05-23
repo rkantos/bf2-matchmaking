@@ -127,14 +127,14 @@ export const ServerApi = {
     await json<AppEngineState>('app:engine:state').delProperty(address.replace('.', ''));
     logServerMessage(address, 'Server reset');
   },
-  restart: async (address: string) => {
+  restart: async (address: string, reboot: boolean = false) => {
     await setServer(address, {
       status: ServerStatus.RESTARTING,
       updatedAt: undefined,
       errorAt: undefined,
     });
     await del([`servers:${address}:info`, `servers:${address}:data`]);
-    logServerMessage(address, 'Server restarting');
+    logServerMessage(address, reboot ? 'Server rebooting' : 'Server restarting');
     Job.create(`reinitialize-${address}`, reinitServer)
       .on('failed', (name, error) => {
         logServerError(address, 'Server reinitialization failed', error);

@@ -2,6 +2,7 @@ import { GameStatus, isConnectedLiveServer } from '@bf2-matchmaking/types';
 import { formatSecToMin, fromSnakeToCapitalized } from '@bf2-matchmaking/utils';
 import { DateTime } from 'luxon';
 import {
+  rebootServer,
   restartServer,
   restartServerInfantry,
   restartServerVehicles,
@@ -28,21 +29,16 @@ export default async function ServerActions({ server, hasAdmin }: Props) {
     'use server';
     return restartServer(server.address);
   }
+  async function rebootServerSA() {
+    'use server';
+    return rebootServer(server.address);
+  }
 
   return (
     <section className="section">
       <Heading server={server} />
       <div className="divider" />
-      <div className="flex gap-2">
-        <GuardedActionButton
-          label="Restart"
-          guard={server.live ? server.live.players.length > 0 : false}
-          guardLabel="Server is populated, are you sure you want to restart?"
-          formAction={restartServerSA}
-          successMessage="Server restarting"
-          errorMessage="Failed to restart server"
-          disabled={!hasAdmin}
-        />
+      <div className="grid grid-cols-2 gap-2">
         <GuardedActionButton
           label="Restart to infantry"
           guard={server.live ? server.live.players.length > 0 : false}
@@ -59,6 +55,27 @@ export default async function ServerActions({ server, hasAdmin }: Props) {
           formAction={restartServerVehiclesSA}
           successMessage="Server restarting with vehicles mode"
           errorMessage="Failed to restart server with vehicles mode"
+          disabled={!hasAdmin}
+        />
+        <GuardedActionButton
+          label="Reboot"
+          kind="btn-error"
+          fit="w-full"
+          guard={server.live ? server.live.players.length > 0 : false}
+          guardLabel="Server is populated, are you sure you want to reboot?"
+          formAction={rebootServerSA}
+          successMessage="Server rebooting"
+          errorMessage="Failed to reboot server"
+          disabled={!hasAdmin}
+        />
+        <GuardedActionButton
+          label="Restart"
+          fit="w-full"
+          guard={server.live ? server.live.players.length > 0 : false}
+          guardLabel="Server is populated, are you sure you want to restart?"
+          formAction={restartServerSA}
+          successMessage="Server restarting"
+          errorMessage="Failed to restart server"
           disabled={!hasAdmin}
         />
       </div>

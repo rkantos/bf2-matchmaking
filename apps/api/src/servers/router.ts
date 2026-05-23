@@ -40,6 +40,8 @@ import { serverGetProfileXmlQueriesSchema } from '@bf2-matchmaking/services/sche
 import { generateProfileXml } from './profile-generator';
 import { ServerInfoStream } from './ServerInfoStream';
 import { addClient, removeClient } from './server-info-broadcaster';
+import { NodeSSH } from 'node-ssh';
+import { assertString } from '@bf2-matchmaking/utils';
 
 export const serversRouter = new Router({
   prefix: '/servers',
@@ -72,6 +74,29 @@ serversRouter.get('/logs', async (ctx: Context) => {
 serversRouter.get('/:address/log', async (ctx: Context) => {
   const streamMessages = await stream(`servers:${ctx.params.address}:log`).readAll(true);
   ctx.body = streamMessages.map(({ message }) => message);
+});
+
+serversRouter.post('/:address/reboot', protect('server_admin'), async (ctx: Context) => {
+  assertString(process.env.SSH_PRIVATE_KEY_B64, 'SSH_PRIVATE_KEY_B64 is not defined');
+
+  const ssh = new NodeSSH();
+  await ssh.connect({
+    host: ctx.params.address,
+    username: 'bf2',
+    privateKey: Buffer.from(process.env.SSH_PRIVATE_KEY_B64, 'base64').toString('utf8'),
+  });
+
+  const result = await ssh.execCommand('sudo reboot');
+
+  ssh.dispose();
+
+  if (result.code === 0) {
+    ctx.body = await ServerApi.restart(ctx.params.address, true);
+  } else {
+    ctx.throw(result.stderr, 502, result);
+  }
+
+  ctx.body = result;
 });
 
 serversRouter.post('/:ip/restart', protect('user'), async (ctx: Context) => {

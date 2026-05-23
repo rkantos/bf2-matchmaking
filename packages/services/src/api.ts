@@ -78,6 +78,8 @@ export const api = {
     getJSON<Array<ServerLogEntry>>(`${servers}/${address}/log`, {
       cache: 'no-store',
     }),
+  postServerReboot: (address: string, token: string) =>
+    postJSON(`${servers}/${address}/reboot`, {}, toBearerRequestInit(token)),
   postServerExec: (address: string, body: PostServerExecRequestBody, token: string) =>
     postJSON<PostServerExecResponseBody>(
       `${servers}/${address}/exec`,

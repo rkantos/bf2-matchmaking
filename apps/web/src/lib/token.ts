@@ -2,7 +2,7 @@
 
 import { supabase } from '@/lib/supabase/supabase-server';
 import { cookies } from 'next/headers';
-import { assertObj } from '@bf2-matchmaking/utils';
+import { assertObj } from '@bf2-matchmaking/utils/assert';
 import { createToken } from '@bf2-matchmaking/auth/token';
 
 export async function getPlayerToken() {
