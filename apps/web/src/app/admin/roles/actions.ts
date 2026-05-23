@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase/supabase-server';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { getValue } from '@bf2-matchmaking/utils/form';
-import { toAsyncError } from '@bf2-matchmaking/utils';
+import { toAsyncError } from '@bf2-matchmaking/utils/async';
 
 export async function setAdminRole(
   role: keyof Omit<AdminRolesRow, 'created_at' & 'user_id' & 'updated_at'>,

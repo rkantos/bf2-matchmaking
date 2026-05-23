@@ -4,7 +4,6 @@ import {
   PollEmoji,
   PickedMatchPlayer,
   MatchConfigsRow,
-  PubobotMatch,
 } from '@bf2-matchmaking/types';
 import { Message, TextChannel } from 'discord.js';
 import { DateTime } from 'luxon';
@@ -15,7 +14,6 @@ import {
 } from '@bf2-matchmaking/discord';
 import { info, logMessage } from '@bf2-matchmaking/logging';
 import { sendLogMessage, sendMessage } from './services/message-service';
-import { wait } from '@bf2-matchmaking/utils';
 import { MessagePoll } from './MessagePoll';
 import { isTeam } from '@bf2-matchmaking/utils';
 import {
@@ -23,6 +21,7 @@ import {
   getUnpickList,
   VALID_DRAFT_CONFIGS,
 } from '../services/draft-service';
+import { wait } from '@bf2-matchmaking/utils/async';
 
 let polls: Array<[number, MessagePoll]> = [];
 function addPoll(matchId: number, poll: MessagePoll) {

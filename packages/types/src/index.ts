@@ -129,6 +129,7 @@ interface AsyncSuccessResponse<T> {
 
 export interface AsyncError {
   message: string;
+  properties?: Record<string, string | number | boolean | null>;
 }
 export interface AsyncErrorResponse {
   error: AsyncError;

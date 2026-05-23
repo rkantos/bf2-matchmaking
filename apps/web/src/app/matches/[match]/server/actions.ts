@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase/supabase-server';
 import { cookies } from 'next/headers';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { createServerInstance, generateServers } from '@bf2-matchmaking/server';
-import { wait } from '@bf2-matchmaking/utils';
+import { wait } from '@bf2-matchmaking/utils/async';
 import { logErrorMessage, logMessage } from '@bf2-matchmaking/logging';
 
 export async function addGeneratedServer(values: GeneratedServersInsert) {

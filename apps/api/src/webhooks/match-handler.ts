@@ -1,5 +1,5 @@
 import { MatchesRow } from '@bf2-matchmaking/types';
-import { retry, wait } from '@bf2-matchmaking/utils';
+import { retry, wait } from '@bf2-matchmaking/utils/async';
 import { client } from '@bf2-matchmaking/supabase';
 import { logErrorMessage, logMessage } from '@bf2-matchmaking/logging';
 import { Instance } from '@bf2-matchmaking/types/platform';

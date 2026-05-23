@@ -1,3 +1,6 @@
+import { AsyncErrorResponse } from '@bf2-matchmaking/types';
+import { parseError } from './error';
+
 export async function retry<T>(fn: () => Promise<T>, retries: number = 5): Promise<T> {
   try {
     return await fn();
@@ -12,4 +15,8 @@ export async function retry<T>(fn: () => Promise<T>, retries: number = 5): Promi
 
 export function wait(seconds: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+}
+
+export function toAsyncError(e: unknown): AsyncErrorResponse {
+  return { data: null, error: { message: parseError(e) } };
 }

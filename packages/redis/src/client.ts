@@ -1,5 +1,5 @@
 import { createClient } from 'redis';
-import { wait } from '@bf2-matchmaking/utils';
+import { wait } from '@bf2-matchmaking/utils/async';
 
 export function createNewClient(name: string) {
   return createClient({ url: process.env.REDIS_URL, name: name || 'default_client' })

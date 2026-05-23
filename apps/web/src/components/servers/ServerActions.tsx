@@ -93,7 +93,7 @@ function Heading({ server }: { server: LiveServer }) {
       <p>{`Updated: ${
         server.updatedAt ? DateTime.fromISO(server.updatedAt).toFormat('TTT') : '-'
       }`}</p>
-      {isConnectedLiveServer(server) && (
+      {isConnectedLiveServer(server) ? (
         <>
           <p>{`Game status: ${getKeyName(server.live.currentGameStatus)}`}</p>
           <p>{`Map: ${fromSnakeToCapitalized(server.live.currentMapName)}`}</p>
@@ -101,6 +101,8 @@ function Heading({ server }: { server: LiveServer }) {
           <p>{`Time left: ${formatSecToMin(server.live.timeLeft)}`}</p>
           <p>{`No Vehicles: ${server.data.noVehicles ? 'Yes' : 'No'}`}</p>
         </>
+      ) : (
+        <p>{`Server status: ${server.status}`}</p>
       )}
     </div>
   );

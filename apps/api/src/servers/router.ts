@@ -42,6 +42,8 @@ import { ServerInfoStream } from './ServerInfoStream';
 import { addClient, removeClient } from './server-info-broadcaster';
 import { NodeSSH } from 'node-ssh';
 import { assertString } from '@bf2-matchmaking/utils';
+import { parseError } from '@bf2-matchmaking/services/error';
+import { executeSSHCommand } from '../lib/ssh.ts';
 
 export const serversRouter = new Router({
   prefix: '/servers',
@@ -77,26 +79,16 @@ serversRouter.get('/:address/log', async (ctx: Context) => {
 });
 
 serversRouter.post('/:address/reboot', protect('server_admin'), async (ctx: Context) => {
-  assertString(process.env.SSH_PRIVATE_KEY_B64, 'SSH_PRIVATE_KEY_B64 is not defined');
+  const result = await executeSSHCommand(ctx.params.address, 'sudo reboot');
 
-  const ssh = new NodeSSH();
-  await ssh.connect({
-    host: ctx.params.address,
-    username: 'bf2',
-    privateKey: Buffer.from(process.env.SSH_PRIVATE_KEY_B64, 'base64').toString('utf8'),
-  });
-
-  const result = await ssh.execCommand('sudo reboot');
-
-  ssh.dispose();
-
-  if (result.code === 0) {
+  if (result.data === 'ok') {
     ctx.body = await ServerApi.restart(ctx.params.address, true);
-  } else {
-    ctx.throw(result.stderr, 502, result);
+    return;
   }
-
-  ctx.body = result;
+  if (result.error) {
+    ctx.throw(result.error.message, 502, result.error.properties);
+  }
+  ctx.throw(500);
 });
 
 serversRouter.post('/:ip/restart', protect('user'), async (ctx: Context) => {
