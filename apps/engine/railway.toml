@@ -1,11 +1,11 @@
 [build]
 builder = "railpack"
-buildCommand = "npm run build -w api"
-watchPatterns = ["apps/api", "packages"]
+buildCommand = "npm run build -w engine"
+watchPatterns = ["apps/engine", "packages"]
 providers = ["node"]
 
 [deploy]
-startCommand = "NPM_CONFIG_LOGLEVEL=verbose npm run start -w api"
+startCommand = "NPM_CONFIG_LOGLEVEL=verbose npm run start -w engine"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
