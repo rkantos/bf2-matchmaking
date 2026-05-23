@@ -2,6 +2,7 @@ import { GameStatus, isConnectedLiveServer } from '@bf2-matchmaking/types';
 import { formatSecToMin, fromSnakeToCapitalized } from '@bf2-matchmaking/utils';
 import { DateTime } from 'luxon';
 import {
+  restartServer,
   restartServerInfantry,
   restartServerVehicles,
 } from '@/app/servers/[server]/actions';
@@ -23,12 +24,25 @@ export default async function ServerActions({ server, hasAdmin }: Props) {
     'use server';
     return restartServerVehicles(server.address);
   }
+  async function restartServerSA() {
+    'use server';
+    return restartServer(server.address);
+  }
 
   return (
     <section className="section">
       <Heading server={server} />
       <div className="divider" />
       <div className="flex gap-2">
+        <GuardedActionButton
+          label="Restart"
+          guard={server.live ? server.live.players.length > 0 : false}
+          guardLabel="Server is populated, are you sure you want to restart?"
+          formAction={restartServerSA}
+          successMessage="Server restarting"
+          errorMessage="Failed to restart server"
+          disabled={!hasAdmin}
+        />
         <GuardedActionButton
           label="Restart to infantry"
           guard={server.live ? server.live.players.length > 0 : false}

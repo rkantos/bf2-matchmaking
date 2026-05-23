@@ -1,10 +1,10 @@
 import { LiveServer } from '@bf2-matchmaking/types/server';
 import GuardedActionButton from '@/components/commons/GuardedActionButton';
 import {
+  restartServer,
   restartServerInfantry,
   restartServerVehicles,
 } from '@/app/servers/[server]/actions';
-import { restartServer } from '@/app/matches/[match]/actions';
 import { revalidatePath } from 'next/cache';
 import { toFetchError } from '@bf2-matchmaking/utils';
 import { RCON_ONLY_SERVERS } from '@/constants';

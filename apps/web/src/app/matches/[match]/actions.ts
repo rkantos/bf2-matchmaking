@@ -204,11 +204,6 @@ export async function restartRound(matchId: number, serverIp: string) {
   return result;
 }
 
-export async function restartServer(serverIp: string) {
-  const token = await getPlayerToken();
-  return await api.postServerExec(serverIp, { cmd: 'quit' }, token);
-}
-
 export async function setTeams(match: MatchesJoined, serverIp: string) {
   const playersResult = await internalApi.live().getServerPlayerList(serverIp);
   if (playersResult.error) {

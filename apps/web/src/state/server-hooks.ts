@@ -1,10 +1,10 @@
 'use-client';
 
+import { restartServer } from '@/app/servers/[server]/actions';
 import { LiveServer } from '@bf2-matchmaking/types/server';
 import { FetchResult } from '@bf2-matchmaking/types';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { restartServer } from '@/app/matches/[match]/actions';
 
 export function useServerRestart(
   matchId: number,

@@ -57,6 +57,11 @@ export async function restartRound(address: string) {
   return result;
 }
 
+export async function restartServer(serverIp: string) {
+  const token = await getPlayerToken();
+  return await api.postServerExec(serverIp, { cmd: 'quit' }, token);
+}
+
 export async function restartServerInfantry(ip: string) {
   const token = await getPlayerToken();
   const result = await api.postServerRestart(

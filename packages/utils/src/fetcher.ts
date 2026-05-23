@@ -14,6 +14,9 @@ const parseError = (error: any): FetchError => {
   if (typeof error === 'string') {
     return { message: error };
   } else if (typeof error?.message === 'string') {
+    if (typeof error?.cause?.message === 'string') {
+      return { message: `${error.message}: ${error.cause.message}` };
+    }
     return { message: error.message };
   }
   return { message: JSON.stringify(error) };
@@ -131,6 +134,7 @@ export const postJSON = async <T>(
 
     return parseResponse<T>(res);
   } catch (error) {
+    console.error(error);
     return { data: null, error: parseError(error), status: -1, statusText: '' };
   }
 };
