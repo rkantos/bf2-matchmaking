@@ -7,7 +7,7 @@
     "dev": "concurrently \"npm:dev-*\"",
     "dev-nodemon": "nodemon",
     "dev-tunnel": "lt --port 5004 --subdomain bf2gg",
-    "build": "rimraf ./build && esbuild --define:process.env.NODE_ENV=\\\"production\\\" src/app.ts --bundle --platform=node --outfile=build/app.js",
+    "build": "rimraf ./build && node esbuild.config.mjs",
     "start": "node build/app.js",
     "verify": "tsc --noEmit"
   },
