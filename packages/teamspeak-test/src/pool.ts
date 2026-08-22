@@ -297,6 +297,41 @@ export function queuedSize() {
  * Serialized against concurrent calls: a slider emits rapid successive values,
  * and overlapping spawns would race on the same identity.
  */
+/** Attempts per client before a resize gives up on it. */
+const CONNECT_ATTEMPTS = 3;
+/** Grows per attempt, to give anti-flood points time to decay. */
+const RETRY_BACKOFF_MS = 3000;
+
+/**
+ * Connect one client, retrying a dropped handshake.
+ *
+ * Anti-flood drops the connection rather than refusing it, so the failure looks
+ * like a timeout and the next attempt usually succeeds immediately - the server
+ * only needed a moment for its points to decay. Retrying here makes that
+ * recovery part of the resize instead of leaving it to a disconnect handler
+ * that may or may not fire, and each attempt builds a fresh client, so nothing
+ * from the dropped one is reused.
+ */
+async function connectWithRetry(spec: TestClientSpec) {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= CONNECT_ATTEMPTS; attempt++) {
+    try {
+      return await connectClient(spec);
+    } catch (e) {
+      lastError = e;
+      if (attempt === CONNECT_ATTEMPTS) break;
+      warn(
+        'TestClientPool',
+        `${spec.nick}: handshake attempt ${attempt}/${CONNECT_ATTEMPTS} failed, retrying: ${
+          e instanceof Error ? e.message : String(e)
+        }`
+      );
+      await wait(RETRY_BACKOFF_MS * attempt);
+    }
+  }
+  throw lastError;
+}
+
 export async function setSize(
   count: number,
   roster: Array<TestClientSpec>
@@ -337,7 +372,7 @@ export async function setSize(
       .filter((spec) => !pool.has(spec.playerId));
     for (const [index, spec] of missingSpecs.entries()) {
       try {
-        const pooled = await connectClient(spec);
+        const pooled = await connectWithRetry(spec);
         pool.set(spec.playerId, pooled);
         info('TestClientPool', `Spawned ${spec.nick} as ${pooled.uid}`);
       } catch (e) {

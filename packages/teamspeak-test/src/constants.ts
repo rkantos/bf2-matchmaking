@@ -22,8 +22,24 @@ export const TEAMSPEAK_ADDR = `${TEAMSPEAK_HOST}:${TEAMSPEAK_VOICE_PORT}`;
 export const TEAMSPEAK_SERVER_PASSWORD =
   process.env.TEAMSPEAK_SERVER_PASSWORD || process.env.TEAMSPEAK_PASSWORD || '';
 
-/** How long a single client gets to complete its handshake. */
-export const CONNECT_TIMEOUT_MS = 45000;
+/**
+ * How long a single client gets to complete its handshake.
+ *
+ * Anti-flood does not refuse a connection, it drops it: the handshake simply
+ * never completes, so this timeout is what the pool waits before giving up and
+ * letting the client reconnect. At 45s that made one dropped handshake cost
+ * three quarters of a minute, while a connection that is going to work
+ * completes in about 100-250ms and the reconnect that follows a drop has been
+ * seen to succeed in 83ms.
+ *
+ * Ten seconds is still two orders of magnitude above a healthy handshake, so a
+ * genuinely slow one is not cut off, while a dropped one is noticed promptly.
+ * Raising TEAMSPEAK_TEST_SPAWN_STAGGER_MS is what avoids the drops themselves.
+ */
+export const CONNECT_TIMEOUT_MS = Math.max(
+  2000,
+  Number(process.env.TEAMSPEAK_TEST_CONNECT_TIMEOUT_MS) || 10_000
+);
 
 /**
  * Delay between spawning clients.
