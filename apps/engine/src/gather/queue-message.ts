@@ -7,10 +7,14 @@ import { getApiBaseUrl } from '@bf2-matchmaking/utils/base-urls';
 /**
  * Mirrors the gather queue into a discord channel.
  *
- * Discord has no way to pin a message to the bottom of a channel, so the only
- * way to keep it in view is to repost: delete the previous message and send a
- * new one, which lands below whatever has been said since. That is disruptive
- * if it happens on every join and leave, hence the interval floor.
+ * Discord has no way to pin a message to the bottom of a channel, so keeping it
+ * in view means reposting: send a replacement, which lands below whatever has
+ * been said since, then delete the old one.
+ *
+ * Only when it has actually been buried, though. While the embed is still the
+ * newest message it is edited in place, which nobody sees as a new message and
+ * so needs no interval floor. The floor applies to reposts alone, since those
+ * push the conversation up.
  *
  * Off unless ENABLE_GATHER_QUEUE_MESSAGE is set. The token is required at
  * import by the discord package, so the rest client is loaded on demand rather
@@ -18,7 +22,7 @@ import { getApiBaseUrl } from '@bf2-matchmaking/utils/base-urls';
  */
 
 const CHANNEL_ID = process.env.GATHER_QUEUE_CHANNEL || '597415520337133571';
-/** Never repost more often than this, however fast the queue changes. */
+/** Floor between reposts. Edits in place are exempt - they add no message. */
 const MIN_REPOST_INTERVAL_MS = 30_000;
 /** How often the queue is compared against what was last posted. */
 const POLL_INTERVAL_MS = 5_000;
@@ -69,7 +73,7 @@ function buildEmbed(view: GatherView, size: number) {
  * What the embed would show, as a comparable string.
  *
  * Compared rather than diffed so that any change worth showing - order, roster,
- * or either connection - triggers exactly one repost.
+ * or either connection - triggers exactly one update, and nothing else does.
  */
 function signature(view: GatherView) {
   return view.players
@@ -94,6 +98,37 @@ async function fetchView(configId: number): Promise<GatherView | null> {
     warn('queueMessage', `Gather ${configId}: could not read queue: ${parseError(e)}`);
     return null;
   }
+}
+
+/**
+ * Whether our message is still the newest in the channel.
+ *
+ * Treats an unreadable channel as "not last": reposting something already at
+ * the bottom is merely noisy, while editing one that has scrolled away hides
+ * the update entirely.
+ */
+async function stillLast(messageId: string) {
+  const { getChannelMessages } = await import('@bf2-matchmaking/discord/rest');
+  const messages = await getChannelMessages(CHANNEL_ID);
+  return messages.data ? messages.data[0]?.id === messageId : false;
+}
+
+async function edit(
+  configId: number,
+  messageId: string,
+  embed: ReturnType<typeof buildEmbed>
+) {
+  const { editChannelMessage } = await import('@bf2-matchmaking/discord/rest');
+  const edited = await editChannelMessage(CHANNEL_ID, messageId, { embeds: [embed] });
+  if (edited.data) {
+    return true;
+  }
+  // Most likely someone deleted it; falling through reposts a fresh one.
+  warn(
+    'queueMessage',
+    `Gather ${configId}: could not edit ${messageId}: ${parseError(edited.error)}`
+  );
+  return false;
 }
 
 async function repost(configId: number, embed: ReturnType<typeof buildEmbed>) {
@@ -129,7 +164,7 @@ export function startQueueMessage(configId: number, size: number) {
   }
 
   let lastSignature: string | null = null;
-  let lastPostedAt = 0;
+  let lastRepostAt = 0;
   let posting = false;
 
   const timer = setInterval(async () => {
@@ -139,16 +174,27 @@ export function startQueueMessage(configId: number, size: number) {
 
     const current = signature(view);
     if (current === lastSignature) return;
-    if (Date.now() - lastPostedAt < MIN_REPOST_INTERVAL_MS) return;
 
     posting = true;
     try {
-      if (await repost(configId, buildEmbed(view, size))) {
+      const embed = buildEmbed(view, size);
+      const previous = await messageStore().get(String(configId));
+
+      // Still the newest message, so nobody has scrolled it away: update it in
+      // place. That costs the channel nothing, so it needs no interval floor
+      // and the queue can stay accurate second to second.
+      if (previous && (await stillLast(previous)) && (await edit(configId, previous, embed))) {
         lastSignature = current;
-        lastPostedAt = Date.now();
+        return;
+      }
+
+      if (Date.now() - lastRepostAt < MIN_REPOST_INTERVAL_MS) return;
+      if (await repost(configId, embed)) {
+        lastSignature = current;
+        lastRepostAt = Date.now();
       }
     } catch (e) {
-      warn('queueMessage', `Gather ${configId}: repost failed: ${parseError(e)}`);
+      warn('queueMessage', `Gather ${configId}: update failed: ${parseError(e)}`);
     } finally {
       posting = false;
     }
