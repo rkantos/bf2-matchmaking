@@ -64,6 +64,7 @@ redirect allowlist.
 - `ENABLE_PLATFORM_ROUTES=false`
 - `ENABLE_PLAYERS_ROUTES=false`
 - `ENABLE_WEBHOOK_ROUTES=false`
+- `CORS_ORIGINS=https://<staging-web-domain>`
 - `TEAMSPEAK_HOST`
 - `TEAMSPEAK_VOICE_PORT`
 - `TEAMSPEAK_SERVER_PASSWORD`

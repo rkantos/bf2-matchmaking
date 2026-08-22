@@ -14,6 +14,12 @@ import { gathersRouter } from './gather/router';
 import { bearerToken } from './auth';
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 5004;
+const allowedOrigins = new Set(
+  (process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
 
 export const rootRouter = new Router();
 rootRouter.get('/health', (ctx) => {
@@ -22,6 +28,21 @@ rootRouter.get('/health', (ctx) => {
 
 const app = new Koa()
   .use(logger())
+  .use(async (ctx, next) => {
+    const origin = ctx.get('Origin');
+    if (origin && allowedOrigins.has(origin)) {
+      ctx.set('Access-Control-Allow-Origin', origin);
+      ctx.set('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-API-Key');
+      ctx.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+      ctx.set('Access-Control-Max-Age', '86400');
+      ctx.vary('Origin');
+    }
+    if (ctx.method === 'OPTIONS') {
+      ctx.status = 204;
+      return;
+    }
+    await next();
+  })
   .use(bodyParser())
   .use(bearerToken())
   .use(cacheRouter.routes())
