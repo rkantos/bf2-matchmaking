@@ -5,13 +5,27 @@ import { api, verify } from '@bf2-matchmaking/utils';
 import Link from 'next/link';
 import { TEAMSPEAK_SERVER_URI } from '@bf2-matchmaking/teamspeak';
 import SearchParamToggle from '@/components/gather/SearchParamToggle';
+import AutoJoinBf2 from '@/components/gather/AutoJoinBf2';
+import { GatherStatus } from '@bf2-matchmaking/types/gather';
 
 interface Props {
   config: MatchConfigsRow;
   serverAddress: string | undefined;
   players: Array<GatherPlayer>;
+  status: GatherStatus;
+  /** Set for the duration of a summon; identifies which one. */
+  summonedAt: string | number | undefined;
+  /** The `auto` search param that the toggle below writes. */
+  autoJoin: boolean;
 }
-export default async function ConnectionsSection({ config, serverAddress, players }: Props) {
+export default async function ConnectionsSection({
+  config,
+  serverAddress,
+  players,
+  status,
+  summonedAt,
+  autoJoin,
+}: Props) {
   const player = await session.getSessionPlayerSafe();
   if (!player) {
     return (
@@ -84,6 +98,12 @@ export default async function ConnectionsSection({ config, serverAddress, player
         </>
       )}
       <SearchParamToggle param="auto" label="Auto join BF2 server" />
+      <AutoJoinBf2
+        enabled={autoJoin}
+        active={status === GatherStatus.Summoning && Boolean(isInQueue) && !isConnectedBf2Server}
+        joinUrl={server?.data?.joinmeDirect}
+        summonKey={String(summonedAt ?? 'none')}
+      />
     </section>
   );
 }

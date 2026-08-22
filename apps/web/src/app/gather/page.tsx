@@ -52,7 +52,14 @@ export default async function Page(props: Props) {
       </div>
       <div className="flex gap-8  mt-8">
         <Suspense fallback={<SectionFallback title="Connections" />}>
-          <ConnectionsSection config={config} serverAddress={state.address} players={players} />
+          <ConnectionsSection
+            config={config}
+            serverAddress={state.address}
+            players={players}
+            status={state.status}
+            summonedAt={state.summonedAt}
+            autoJoin={searchParams.auto !== undefined}
+          />
         </Suspense>
         {draft ? (
           <Suspense fallback={<SectionFallback title="Drafting" />}>
