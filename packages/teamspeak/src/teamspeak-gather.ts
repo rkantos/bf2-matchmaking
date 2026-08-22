@@ -527,16 +527,73 @@ export class TeamSpeakGather extends EventEmitter {
     }
 
     for (const cid of [channel1Id, channel2Id]) {
-      if (!(await adminEditChannelFlags(cid, { temporary: true, semiPermanent: false }))) {
-        const channel = await this.ts.getChannelById(cid);
-        assertObj(channel, `Match channel ${cid} not found`);
-        await channel.edit({
-          channelFlagTemporary: true,
-          channelFlagSemiPermanent: false,
-        });
-      }
+      await this.makeChannelTemporary(cid);
     }
     this.emit('gatherStarted', matchId, team1, team2, this);
+  }
+
+  /**
+   * Let the server delete this channel once the last client leaves.
+   *
+   * Only safe to call after the channel has been populated: a temporary channel
+   * with nobody in it is removed immediately, which is why match channels are
+   * created semi-permanent and flipped here rather than created temporary.
+   *
+   * The admin path needs adminListChannels() to confirm the channel is a match
+   * channel, so it fails wherever the voice client lacks that permission; the
+   * ServerQuery fallback is what actually applies the flags there.
+   */
+  async makeChannelTemporary(cid: string) {
+    if (!(await adminEditChannelFlags(cid, { temporary: true, semiPermanent: false }))) {
+      const channel = await this.ts.getChannelById(cid);
+      assertObj(channel, `Match channel ${cid} not found`);
+      await channel.edit({
+        channelFlagTemporary: true,
+        channelFlagSemiPermanent: false,
+      });
+    }
+  }
+
+  /**
+   * Channel the teams are gathered into once their match is over, named with
+   * the ticket result so the score survives in the channel list.
+   *
+   * Reuses an existing channel of the same name rather than duplicating it, and
+   * resolves the id from ServerQuery by exact name and parent for the same
+   * reason initiateMatchChannels() does: the voice client's create response can
+   * name an unrelated channel.
+   *
+   * Left semi-permanent here. The caller moves players in and then calls
+   * makeChannelTemporary(), so the channel outlives the move but still cleans
+   * itself up once the last player leaves.
+   */
+  async createResultsChannel(name: string): Promise<string | null> {
+    const findChannel = async () =>
+      (await this.ts.channelList()).find(
+        (channel) => channel.name === name && channel.pid === BOT_CHANNEL
+      )?.cid ?? null;
+
+    let cid = await findChannel();
+    if (!cid) {
+      await adminCreateChannel(name, BOT_CHANNEL, { temporary: false });
+      cid = await findChannel();
+    }
+    if (!cid) {
+      await this.ts.channelCreate(name, {
+        cpid: BOT_CHANNEL,
+        channelFlagTemporary: false,
+        channelFlagSemiPermanent: true,
+      });
+      cid = await findChannel();
+    }
+    if (!cid) {
+      return null;
+    }
+
+    // movePlayer() refuses any destination outside the managed subtree.
+    this.#managedChannelIds.add(cid);
+    setAdminManagedChannelIds(this.#managedChannelIds);
+    return cid;
   }
   async removeClientFromQueue(clientUId: string, reason: string) {
     const client = await this.ts.getClientByUid(clientUId);

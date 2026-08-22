@@ -26,7 +26,32 @@ const CONNECT_TIMEOUT_MS = 45000;
 let client: Client | null = null;
 let connecting: Promise<Client | null> | null = null;
 const managedChannelIds = new Set<string>([MANAGED_CHANNEL_ROOT, QUEUE_CHANNEL]);
-const MATCH_CHANNEL_NAME = /^Match \d+ Team [12]$/;
+const MATCH_CHANNEL_NAME =
+  /^Match \d+ (Team [12]|Finished (Team1|T1): \d+ (Team2|T2): \d+)$/;
+
+/** TeamSpeak rejects a channel name longer than this. */
+const MAX_CHANNEL_NAME_LENGTH = 40;
+
+/**
+ * Name of the channel the teams are moved to once a match is over.
+ *
+ * Kept beside MATCH_CHANNEL_NAME because that guard is what allows the admin
+ * client to create and edit it; the two must describe the same names.
+ *
+ * The spelled-out form overflows the length limit as soon as match ids reach
+ * four digits ("Match 4819 Finished Team1: 220 Team2: 110" is 41 characters),
+ * so fall back to the abbreviated form rather than have the server reject it.
+ */
+export function resultsChannelName(
+  matchId: number,
+  team1Tickets: number,
+  team2Tickets: number
+) {
+  const preferred = `Match ${matchId} Finished Team1: ${team1Tickets} Team2: ${team2Tickets}`;
+  return preferred.length <= MAX_CHANNEL_NAME_LENGTH
+    ? preferred
+    : `Match ${matchId} Finished T1: ${team1Tickets} T2: ${team2Tickets}`;
+}
 
 function serverPassword() {
   return (

@@ -1,5 +1,5 @@
 import { info, logErrorMessage, verbose, warn } from '@bf2-matchmaking/logging';
-import { isGatherPlayer, MatchStatus } from '@bf2-matchmaking/types';
+import { isGatherPlayer, MatchesJoined, MatchStatus } from '@bf2-matchmaking/types';
 import { GatherDraftMode, GatherStatus } from '@bf2-matchmaking/types/gather';
 import {
   clearDraft,
@@ -44,6 +44,7 @@ import { stream } from '@bf2-matchmaking/redis/stream';
 import { topic } from '@bf2-matchmaking/redis/topic';
 import { GatherDraftState } from '@bf2-matchmaking/types/gather';
 import { MANAGED_CHANNEL_ROOT } from '@bf2-matchmaking/teamspeak';
+import { resultsChannelName } from '@bf2-matchmaking/teamspeak/admin';
 import {
   client as createSupabaseApi,
   createServiceClient,
@@ -129,6 +130,33 @@ async function initTestQueueSyncListener(
   });
 }
 
+/**
+ * Channel to gather a finished match's players into, named with its result.
+ *
+ * Returns null when the match has no results - a deleted or abandoned match
+ * never produced any - and those players simply go back to the lobby as before.
+ * Also null if the channel could not be created, so teardown degrades to the
+ * old behaviour rather than stranding players in their team channels.
+ */
+async function resultsChannel(match: MatchesJoined, tsGather: TeamSpeakGather) {
+  try {
+    const { data: results } = await serviceClient.getMatchResultsByMatchId(match.id);
+    const team1 = results?.find((result) => result.team.id === match.home_team.id);
+    const team2 = results?.find((result) => result.team.id === match.away_team.id);
+    if (!team1 || !team2) return null;
+
+    return await tsGather.createResultsChannel(
+      resultsChannelName(match.id, team1.tickets, team2.tickets)
+    );
+  } catch (e) {
+    warn(
+      'resultsChannel',
+      `Match ${match.id}: could not create results channel: ${parseError(e)}`
+    );
+    return null;
+  }
+}
+
 async function initMatchTeardownListener(configId: number, tsGather: TeamSpeakGather) {
   await topic('gather:match-teardown').subscribe<{ matchId: number }>(
     async ({ matchId }) => {
@@ -136,11 +164,14 @@ async function initMatchTeardownListener(configId: number, tsGather: TeamSpeakGa
         const match = await matchApi.get(matchId);
         if (!match || match.config.id !== configId) return;
 
+        const destination =
+          (await resultsChannel(match, tsGather)) ?? MANAGED_CHANNEL_ROOT;
+
         let moved = 0;
         for (const player of match.players) {
           if (!player.teamspeak_id) continue;
           try {
-            await tsGather.movePlayer(MANAGED_CHANNEL_ROOT, player.teamspeak_id);
+            await tsGather.movePlayer(destination, player.teamspeak_id);
             moved += 1;
           } catch (e) {
             // Disconnected players require no teardown; they will enter the
@@ -151,9 +182,25 @@ async function initMatchTeardownListener(configId: number, tsGather: TeamSpeakGa
             );
           }
         }
+        if (destination !== MANAGED_CHANNEL_ROOT) {
+          // Only now, with the players inside: a temporary channel nobody has
+          // joined is deleted immediately. When no one could be moved that
+          // deletion is what we want anyway, so this runs either way.
+          try {
+            await tsGather.makeChannelTemporary(destination);
+          } catch (e) {
+            verbose(
+              'initMatchTeardownListener',
+              `Match ${matchId}: could not set results channel temporary: ${parseError(e)}`
+            );
+          }
+        }
+
         info(
           'initMatchTeardownListener',
-          `Match ${matchId}: returned ${moved} player(s) to BF2 Beta`
+          `Match ${matchId}: moved ${moved} player(s) to ${
+            destination === MANAGED_CHANNEL_ROOT ? 'BF2 Beta' : 'the results channel'
+          }`
         );
       } catch (e) {
         logErrorMessage(`Match ${matchId}: TeamSpeak teardown failed`, e);
