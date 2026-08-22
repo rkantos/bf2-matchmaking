@@ -87,3 +87,24 @@ export async function getAdminIdentity(): Promise<AdminIdentity | null> {
   const existing = await store().get(IDENTITY_FIELD);
   return existing ? describe(existing) : null;
 }
+
+let adminUid: string | null = null;
+
+/**
+ * Whether a client is the bot itself.
+ *
+ * The admin client sits in the queue channel so its announcements can be heard,
+ * which puts it where the gather looks for arriving players. It can never be
+ * accepted - that needs a players row with this teamspeak id, which it
+ * deliberately does not have - so every reconciliation pass would otherwise
+ * offer it again, reject it again, and log both.
+ *
+ * Resolved once; while no identity is stored yet the lookup is retried, since
+ * the answer changes as soon as the admin client first connects.
+ */
+export async function isAdminIdentity(clientUId: string) {
+  if (adminUid === null) {
+    adminUid = (await getAdminIdentity())?.uid ?? null;
+  }
+  return adminUid !== null && adminUid === clientUId;
+}

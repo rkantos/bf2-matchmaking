@@ -33,6 +33,7 @@ import { MatchConfigsRow } from '@bf2-matchmaking/types';
 import { list } from '@bf2-matchmaking/redis/list';
 import { gather } from '@bf2-matchmaking/redis/gather';
 import { GatherStatus } from '@bf2-matchmaking/types/gather';
+import { isAdminIdentity } from './admin-identity';
 
 export type GatherInitiatedListener = (
   clientUIds: Array<string>,
@@ -113,6 +114,8 @@ export class TeamSpeakGather extends EventEmitter {
   #clientUidByClid = new Map<string, string>();
   #managedChannelIds = new Set<string>([MANAGED_CHANNEL_ROOT]);
   #summonCheck: Promise<void> = Promise.resolve();
+  /** Clients already told they cannot queue, so they are told only once. */
+  #rejected = new Set<string>();
   constructor(config: MatchConfigsRow, ts: TeamSpeak) {
     super();
     this.config = config;
@@ -158,6 +161,7 @@ export class TeamSpeakGather extends EventEmitter {
       'playerJoining'
     ) as Array<PlayerJoiningListener>;
     for (const clientUId of clientUIDs) {
+      if (await isAdminIdentity(clientUId)) continue;
       // EventEmitter does not await async listeners. Await each recovered
       // player sequentially so only the final accepted slot can fill the queue.
       await Promise.all(
@@ -196,6 +200,7 @@ export class TeamSpeakGather extends EventEmitter {
     ) as Array<PlayerJoiningListener>;
     for (const clientUId of physicalUIds) {
       if (await this.queue.has(clientUId)) continue;
+      if (await isAdminIdentity(clientUId)) continue;
       await Promise.all(
         joiningListeners.map((listener) =>
           Promise.resolve(listener(clientUId, this))
@@ -206,8 +211,15 @@ export class TeamSpeakGather extends EventEmitter {
   #handleClientMoved = async ({ channel, client }: ClientMovedEvent) => {
     this.#clientUidByClid.set(String(client.clid), client.uniqueIdentifier);
 
+    if (await isAdminIdentity(client.uniqueIdentifier)) {
+      return;
+    }
+
     if (channel.cid === QUEUE_CHANNEL) {
       this.emit('playerJoining', client.uniqueIdentifier, this);
+    } else {
+      // Left the channel: a later return should be told again why it failed.
+      this.#rejected.delete(client.uniqueIdentifier);
     }
 
     const queued = await this.queue.has(client.uniqueIdentifier);
@@ -238,6 +250,9 @@ export class TeamSpeakGather extends EventEmitter {
       // Never seen in the queue channel, so cannot have been queued.
       return;
     }
+    // Someone who registers and comes back should be told again if it still
+    // does not work, so leaving the server forgets that they were turned away.
+    this.#rejected.delete(clientUId);
 
     const queued = await this.queue.has(clientUId);
     const status = await this.state.getSafe('status');
@@ -325,6 +340,7 @@ export class TeamSpeakGather extends EventEmitter {
     if (await this.queue.has(clientUId)) {
       return;
     }
+    this.#rejected.delete(clientUId);
     const queueLength = await this.queue.rpush(clientUId);
     this.emit('playerJoined', clientUId, this);
 
@@ -344,7 +360,21 @@ export class TeamSpeakGather extends EventEmitter {
     this.emit('playerLeft', clientUId, this);
     await this.#summonIfReady();
   }
+  /**
+   * Turn a client away, once.
+   *
+   * syncPhysicalQueue re-offers everyone sitting in the channel who is not in
+   * the queue, every few seconds, and someone unregistered never enters it - so
+   * without this they are told to register, and the event log says so, on every
+   * pass for as long as they sit there. Cleared when they leave or are
+   * accepted, so a genuine retry is still reported.
+   */
   async rejectPlayer(clientUId: string, reason: 'tsid' | 'keyhash') {
+    if (this.#rejected.has(clientUId)) {
+      return;
+    }
+    this.#rejected.add(clientUId);
+
     const message =
       reason === 'tsid' ? getRegisterTsIdMessage(clientUId) : getRegisterKeyhashMessage();
 
