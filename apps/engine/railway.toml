@@ -1,6 +1,6 @@
 [build]
 builder = "railpack"
-buildCommand = "npm run build -w engine"
+buildCommand = "npm run build -w engine && bash scripts/install-piper.sh"
 watchPatterns = ["apps/engine/**", "packages/**", "package.json", "package-lock.json"]
 providers = ["node"]
 

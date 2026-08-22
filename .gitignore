@@ -33,3 +33,6 @@ yarn-error.log*
 .vscode/
 .fleet/
 .history/
+
+# fetched at build time by scripts/install-piper.sh, never committed
+vendor
