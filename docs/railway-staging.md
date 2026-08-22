@@ -21,9 +21,9 @@ use the production gather configuration.
 All three application services build from the repository root. Set the Railway
 config paths to:
 
-- web: `/apps/web/railway.toml`
-- api: `/apps/api/railway.toml`
-- engine: `/apps/engine/railway.toml`
+- web: `apps/web/railway.toml`
+- api: `apps/api/railway.toml`
+- engine: `apps/engine/railway.toml`
 
 Set `RAILPACK_NODE_VERSION=22` on all three services and keep each service at
 one replica. Multiple API replicas would each own a different in-memory client
