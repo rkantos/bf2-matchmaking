@@ -18,6 +18,7 @@
     "./schemas/*": "./src/schemas/*",
     "./server": "./src/server/server-service.ts",
     "./server/Server": "./src/server/server-api.ts",
+    "./server/state-api": "./src/server/server-state-api.ts",
     "./server/utils": "./src/server/server-utils.ts",
     "./cache": "./src/cache-service.ts"
   },

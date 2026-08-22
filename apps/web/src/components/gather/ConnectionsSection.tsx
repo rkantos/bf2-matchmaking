@@ -1,7 +1,7 @@
 import { GatherPlayer, MatchConfigsRow } from '@bf2-matchmaking/types';
 import { session } from '@/lib/supabase/supabase-server';
 import { getGuildMember } from '@bf2-matchmaking/discord';
-import { api, assertString, verify } from '@bf2-matchmaking/utils';
+import { api, verify } from '@bf2-matchmaking/utils';
 import Link from 'next/link';
 import { TEAMSPEAK_SERVER_URI } from '@bf2-matchmaking/teamspeak';
 import SearchParamToggle from '@/components/gather/SearchParamToggle';
@@ -12,10 +12,10 @@ interface Props {
   players: Array<GatherPlayer>;
 }
 export default async function ConnectionsSection({ config, serverAddress, players }: Props) {
-  assertString(config.guild, 'Guild ID is not defined in match config');
-
   const player = await session.getSessionPlayer();
-  const { data: guildMember } = await getGuildMember(config.guild, player.id);
+  const guildMember = config.guild
+    ? await getGuildMember(config.guild, player.id).then(({ data }) => data)
+    : null;
 
   const server = serverAddress ? await api.v2.getServer(serverAddress).then(verify) : null;
   const isConnectedBf2Server = server?.live?.players.some(
@@ -29,7 +29,9 @@ export default async function ConnectionsSection({ config, serverAddress, player
     <section className="section">
       <h2>Connections</h2>
       <h3>Discord</h3>
-      {guildMember ? (
+      {!config.guild ? (
+        <p>Discord is not required for this gather.</p>
+      ) : guildMember ? (
         <>
           <p>{guildMember.nick || guildMember.user.global_name || 'unknown'}</p>
           <Link

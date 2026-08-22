@@ -17,6 +17,7 @@ import { stream } from '@bf2-matchmaking/redis/stream';
 import { matchApi, matchService } from '../lib/match';
 import { protect, protectMutation } from '../auth.ts';
 import { topic } from '@bf2-matchmaking/redis/topic';
+import { releaseAuthoritativeServer } from '@bf2-matchmaking/services/server/state-api';
 
 export const matchesRouter = new Router({
   prefix: '/matches',
@@ -24,7 +25,10 @@ export const matchesRouter = new Router({
 
 async function teardownMatch(matchId: number) {
   const address = await ServerApi.findByMatch(matchId);
-  if (address) await ServerApi.reset(address);
+  if (address) {
+    await releaseAuthoritativeServer(matchId, address);
+    await ServerApi.reset(address);
+  }
   await topic('gather:match-teardown').publish({ matchId });
 }
 

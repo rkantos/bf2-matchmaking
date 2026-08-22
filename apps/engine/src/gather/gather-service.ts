@@ -14,6 +14,10 @@ import {
 } from '@bf2-matchmaking/services/server';
 import { createRconsCache } from '@bf2-matchmaking/services/cache';
 import {
+  getAuthoritativeServers,
+  reserveAuthoritativeServer,
+} from '@bf2-matchmaking/services/server/state-api';
+import {
   assertObj,
   assertString,
   SUMMON_POLL_INTERVAL_SECONDS,
@@ -365,6 +369,11 @@ const handleSummonComplete = async (
  * had no equivalent.
  */
 async function startGatherMatch(matchId: number, address: string | null) {
+  if (address) {
+    // Keep the original deployment's server registry authoritative while the
+    // staging queue and test-client state remain on their isolated Redis.
+    await reserveAuthoritativeServer(matchId, address);
+  }
   await matchApi.update(matchId).commit({
     status: MatchStatus.Ongoing,
     started_at: DateTime.now().toISO(),
@@ -505,10 +514,19 @@ async function findGatherServer(exclude?: string) {
             .then(verifyResult)
             .then((rows) => rows.map((row) => row.server))
     );
+    const authoritativeServers = await getAuthoritativeServers();
+    const authoritativeByAddress = new Map(
+      authoritativeServers?.map((server) => [server.address, server]) || []
+    );
     const candidates = await Promise.all(
       configured.map(async (address) => ({
         address,
-        server: occupiedServers.has(address) ? null : await getServerOrInit(address),
+        server:
+          occupiedServers.has(address) ||
+          (authoritativeServers !== null &&
+            authoritativeByAddress.get(address)?.status !== ServerStatus.IDLE)
+            ? null
+            : await getServerOrInit(address),
       }))
     );
     return candidates.find(({ server }) => server?.status === ServerStatus.IDLE)?.address;

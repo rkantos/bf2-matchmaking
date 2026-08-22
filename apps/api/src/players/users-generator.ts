@@ -3,17 +3,11 @@ import { info } from '@bf2-matchmaking/logging';
 import { assertString, isUniqueTupleValue } from '@bf2-matchmaking/utils';
 import { createHash } from 'node:crypto';
 
-assertString(process.env.BF2CC_PASSWORD, 'BF2CC_PASSWORD is undefined');
-const hashedPassword = createHash('md5')
-  .update(process.env.BF2CC_PASSWORD)
-  .digest('hex')
-  .toUpperCase();
-
-assertString(process.env.BF2CC_TEMP_PASSWORD, 'BF2CC_TEMP_PASSWORD is undefined');
-const hashedTempPassword = createHash('md5')
-  .update(process.env.BF2CC_TEMP_PASSWORD)
-  .digest('hex')
-  .toUpperCase();
+function hashedPassword(name: 'BF2CC_PASSWORD' | 'BF2CC_TEMP_PASSWORD') {
+  const password = process.env[name];
+  assertString(password, `${name} is undefined`);
+  return createHash('md5').update(password).digest('hex').toUpperCase();
+}
 
 export function generateMatchUsersXml(match: MatchesJoined) {
   info(
@@ -23,10 +17,11 @@ export function generateMatchUsersXml(match: MatchesJoined) {
   const players = match.players
     .concat(match.home_team.players.map(({ player }) => player))
     .concat(match.away_team.players.map(({ player }) => player));
-  return generateUsersXml(players, hashedTempPassword);
+  return generateUsersXml(players, hashedPassword('BF2CC_TEMP_PASSWORD'));
 }
 
 export function generateUsersXml(players: Array<PlayersRow>, password?: string) {
+  const effectivePassword = password || hashedPassword('BF2CC_PASSWORD');
   const uniquePlayers = players
     .filter((p) => p.keyhash !== null && p.keyhash.length > 1)
     .map<[string, string]>((p) => [p.nick, p.keyhash!])
@@ -36,12 +31,12 @@ export function generateUsersXml(players: Array<PlayersRow>, password?: string) 
 <dsdUsers xmlns="http://bf2cc.com/dsdUsers.xsd">
   <Users>
     <Username>admin</Username>
-    <Password>${password || hashedPassword}</Password>
+    <Password>${effectivePassword}</Password>
     <IsEnabled>true</IsEnabled>
     <Notes>Administrator account</Notes>
     <GroupName>Administrators</GroupName>
   </Users>
-${uniquePlayers.map(getUserElement(password || hashedPassword)).join('\n')}
+${uniquePlayers.map(getUserElement(effectivePassword)).join('\n')}
 ${getGroupProperties()}
 </dsdUsers>
 `;

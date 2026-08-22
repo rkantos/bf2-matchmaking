@@ -36,6 +36,10 @@ import { stream } from '@bf2-matchmaking/redis/stream';
 import { getAllServers } from '@bf2-matchmaking/redis/servers';
 import { ServerLogEntry } from '@bf2-matchmaking/types/server';
 import { serverGetProfileXmlQueriesSchema } from '@bf2-matchmaking/services/schemas/servers.ts';
+import {
+  getAuthoritativeServer,
+  getAuthoritativeServers,
+} from '@bf2-matchmaking/services/server/state-api';
 import { generateProfileXml } from './profile-generator';
 import { ServerInfoStream } from './ServerInfoStream';
 import { addClient, removeClient } from './server-info-broadcaster';
@@ -333,6 +337,11 @@ serversRouter.get('/:address/stream', async (ctx) => {
 });
 
 serversRouter.get('/:ip', async (ctx: Context) => {
+  const authoritative = await getAuthoritativeServer(ctx.params.ip);
+  if (authoritative) {
+    ctx.body = authoritative;
+    return;
+  }
   await updateLiveServer(ctx.params.ip, true);
   const server = await getLiveServer(ctx.params.ip);
   ctx.assert(server, 404, 'Live server not found');
@@ -340,7 +349,7 @@ serversRouter.get('/:ip', async (ctx: Context) => {
 });
 
 serversRouter.get('/', async (ctx) => {
-  ctx.body = await getLiveServers();
+  ctx.body = (await getAuthoritativeServers()) || (await getLiveServers());
 });
 
 serversRouter.get('/:address/profile.xml', async (ctx: Context): Promise<void> => {
