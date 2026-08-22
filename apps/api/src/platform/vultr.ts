@@ -4,26 +4,30 @@ import { Instance, Plan, Region, StartupScript } from '@bf2-matchmaking/types/pl
 import { info, logMessage } from '@bf2-matchmaking/logging';
 import { VULTR } from './constants';
 
-assertString(process.env.VULTR_API_KEY, 'VULTR_API_KEY is not set.');
+let client: ReturnType<typeof Vultr.initialize> | null = null;
 
-const client = Vultr.initialize({
-  apiKey: process.env.VULTR_API_KEY,
-  rateLimit: 600,
-});
+function getClient() {
+  assertString(process.env.VULTR_API_KEY, 'VULTR_API_KEY is not set.');
+  client ??= Vultr.initialize({
+    apiKey: process.env.VULTR_API_KEY,
+    rateLimit: 600,
+  });
+  return client;
+}
 
 export async function deleteStartupScript(name: string) {
-  const { startup_scripts } = (await client.startupScripts.listStartupScripts({})) as {
+  const { startup_scripts } = (await getClient().startupScripts.listStartupScripts({})) as {
     startup_scripts: Array<StartupScript>;
   };
 
   const script = startup_scripts.find((s) => s.name === name);
   if (script) {
-    await client.startupScripts.deleteStartupScript({ 'startup-id': script.id });
+    await getClient().startupScripts.deleteStartupScript({ 'startup-id': script.id });
   }
 }
 
 async function createStartupScript(name: string, script: string) {
-  const { startup_script } = await client.startupScripts.createStartupScript({
+  const { startup_script } = await getClient().startupScripts.createStartupScript({
     name,
     script,
   });
@@ -31,7 +35,7 @@ async function createStartupScript(name: string, script: string) {
 }
 
 export async function getServerInstances(matchId?: string) {
-  const { instances } = await client.instances.listInstances({});
+  const { instances } = await getClient().instances.listInstances({});
   assertArray(instances, 'Failed to get instances');
 
   if (matchId) {
@@ -54,7 +58,7 @@ export async function createServerInstance(
   ).toString('base64');
   const script_id = await createStartupScript(serverName, script);
 
-  const { instance } = await client.instances.createInstance({
+  const { instance } = await getClient().instances.createInstance({
     region,
     plan: region === 'sao' ? VULTR.sao_plan : VULTR.plan,
     os_id: VULTR.os_id,
@@ -73,10 +77,10 @@ export async function createServerInstance(
 }
 
 export async function deleteServerInstance(id: string) {
-  return client.instances.deleteInstance({ 'instance-id': id });
+  return getClient().instances.deleteInstance({ 'instance-id': id });
 }
 export async function getInstanceByIp(ip: string): Promise<Instance | null> {
-  const { instances } = await client.instances.listInstances({});
+  const { instances } = await getClient().instances.listInstances({});
   assertArray(instances, 'Failed to get instances');
 
   const instance = (instances as Array<Instance>).find((i: any) => i.main_ip === ip);
@@ -86,7 +90,7 @@ export async function getInstanceByIp(ip: string): Promise<Instance | null> {
 export function pollInstance(id: string, cb: (instance: Instance) => Promise<boolean>) {
   const interval = setInterval(async () => {
     info('pollInstance', `Polling instance ${id}`);
-    const { instance } = await client.instances.getInstance({ 'instance-id': id });
+    const { instance } = await getClient().instances.getInstance({ 'instance-id': id });
     if (await cb(instance)) {
       info('pollInstance', `Stop polling instance ${id}`);
       clearInterval(interval);
@@ -98,14 +102,14 @@ export function pollInstance(id: string, cb: (instance: Instance) => Promise<boo
 }
 
 export async function getRegions() {
-  const { plans } = await client.plans.listPlans({ type: VULTR.type });
+  const { plans } = await getClient().plans.listPlans({ type: VULTR.type });
   assertArray(plans, 'Failed to get plans');
   const validPlans = (plans as Array<Plan>).filter(
     (p) => p.id === VULTR.plan || p.id === VULTR.sao_plan
   );
   assertObj(validPlans.at(0), 'Failed to find plan');
 
-  const { regions } = await client.regions.listRegions({});
+  const { regions } = await getClient().regions.listRegions({});
   assertObj(regions, 'Failed to get regions');
 
   return (regions as Array<Region>).filter((r) =>
