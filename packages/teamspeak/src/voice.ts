@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
+import { existsSync } from 'node:fs';
 import OpusScript from 'opusscript';
 import { info, warn } from '@bf2-matchmaking/logging';
 import { getAdminClient } from './admin-client';
@@ -11,10 +12,10 @@ import { getAdminClient } from './admin-client';
  * needs their attention - the summon - is the one they are least likely to see.
  * Saying it out loud reaches them where they already are.
  *
- * espeak-ng renders the text and opus encodes it, because TeamSpeak carries
- * voice as opus frames. Both are optional at runtime: without the binary this
- * stays silent rather than failing, since a missing voice line must never take
- * a gather down with it.
+ * espeak-ng or piper renders the text and opus encodes it, because TeamSpeak
+ * carries voice as opus frames. All of it is optional at runtime: without a
+ * working renderer this stays silent rather than failing, since a missing voice
+ * line must never take a gather down with it.
  */
 
 /** TeamSpeak's codec id for opus voice, as opposed to opus music (5). */
@@ -25,12 +26,16 @@ const FRAME_SAMPLES = 960;
 const FRAME_MS = 20;
 const SPEECH_WORDS_PER_MINUTE = process.env.GATHER_VOICE_WPM || '150';
 const VOICE = process.env.GATHER_VOICE_NAME || 'en';
+/** 'espeak' (default) or 'piper'. */
+const VOICE_ENGINE = (process.env.GATHER_VOICE_ENGINE || 'espeak').toLowerCase();
+const PIPER_BIN = process.env.PIPER_BIN || 'piper';
+const PIPER_MODEL = process.env.PIPER_MODEL || '';
 
 let available: boolean | null = null;
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function run(command: string, args: Array<string>): Promise<Buffer> {
+function run(command: string, args: Array<string>, stdin?: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args);
     const stdout: Array<Uint8Array<ArrayBuffer>> = [];
@@ -45,7 +50,32 @@ function run(command: string, args: Array<string>): Promise<Buffer> {
         ? resolve(Buffer.concat(stdout))
         : reject(new Error(`${command} exited ${code}: ${stderr}`))
     );
+    if (stdin !== undefined) {
+      child.stdin.end(stdin);
+    }
   });
+}
+
+/**
+ * Render text to a wav.
+ *
+ * Piper sounds far better than espeak but is a neural model that has to be
+ * installed with its voice file, so which one is used is configuration rather
+ * than a code decision - and espeak stays the default, being a package away.
+ * Both emit 22.05kHz mono, which is what the rest of this file expects.
+ */
+function renderSpeech(text: string) {
+  if (VOICE_ENGINE === 'piper') {
+    return run(PIPER_BIN, ['--model', PIPER_MODEL, '--output_file', '-'], text);
+  }
+  return run('espeak-ng', [
+    '--stdout',
+    '-v',
+    VOICE,
+    '-s',
+    SPEECH_WORDS_PER_MINUTE,
+    text,
+  ]);
 }
 
 /**
@@ -80,13 +110,24 @@ export async function isSpeechAvailable() {
     return available;
   }
   try {
-    await run('espeak-ng', ['--version']);
+    if (VOICE_ENGINE === 'piper') {
+      // A model path is not optional for piper, and a missing one only shows up
+      // as a failed render at the moment it is needed.
+      if (!PIPER_MODEL || !existsSync(PIPER_MODEL)) {
+        throw new Error(`PIPER_MODEL is not a readable file: ${PIPER_MODEL || 'unset'}`);
+      }
+      await run(PIPER_BIN, ['--version']);
+    } else {
+      await run('espeak-ng', ['--version']);
+    }
     available = true;
   } catch (e) {
     available = false;
     warn(
       'voice',
-      'espeak-ng is not installed, gather voice announcements are disabled'
+      `${VOICE_ENGINE} is not usable, gather voice announcements are disabled: ${
+        e instanceof Error ? e.message : String(e)
+      }`
     );
   }
   return available;
@@ -101,7 +142,7 @@ export async function isSpeechAvailable() {
  */
 function decodeWav(buffer: Buffer) {
   if (buffer.length < 12 || buffer.toString('ascii', 0, 4) !== 'RIFF') {
-    throw new Error('espeak-ng did not return a wav');
+    throw new Error(`${VOICE_ENGINE} did not return a wav`);
   }
   let offset = 12;
   let sampleRate = 22_050;
@@ -136,7 +177,7 @@ function decodeWav(buffer: Buffer) {
 /**
  * Resample to 48kHz, linearly.
  *
- * espeak-ng renders at 22.05kHz, which opus does not accept. Linear
+ * Both renderers emit 22.05kHz, which opus does not accept. Linear
  * interpolation is crude for music and inaudible on a synthetic voice, and it
  * avoids carrying a resampler - or ffmpeg - into the image for one short line.
  */
@@ -156,7 +197,7 @@ function resample(samples: Int16Array, from: number, to: number) {
   return out;
 }
 
-/** Average the channels, since espeak can be built to emit stereo. */
+/** Average the channels, in case a renderer emits stereo. */
 function toMono(samples: Int16Array, channels: number) {
   if (channels <= 1) {
     return samples;
@@ -172,14 +213,7 @@ function toMono(samples: Int16Array, channels: number) {
 
 /** Render text to the 20ms opus frames TeamSpeak expects. */
 export async function encodeSpeech(text: string): Promise<Array<Uint8Array>> {
-  const wav = await run('espeak-ng', [
-    '--stdout',
-    '-v',
-    VOICE,
-    '-s',
-    SPEECH_WORDS_PER_MINUTE,
-    text,
-  ]);
+  const wav = await renderSpeech(text);
   const { samples, sampleRate, channels } = decodeWav(wav);
   const pcm = resample(toMono(samples, channels), sampleRate, SAMPLE_RATE);
 
