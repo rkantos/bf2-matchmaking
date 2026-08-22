@@ -13,14 +13,16 @@ interface ARecord extends Cloudflare.DNS.Records.ARecord {
   tags_modified_on?: string;
 }
 
-assertString(process.env.CLOUDFLARE_TOKEN, 'CLOUDFLARE_TOKEN is not set.');
-const client = new Cloudflare({ apiToken: process.env.CLOUDFLARE_TOKEN });
+function getClient() {
+  assertString(process.env.CLOUDFLARE_TOKEN, 'CLOUDFLARE_TOKEN is not set.');
+  return new Cloudflare({ apiToken: process.env.CLOUDFLARE_TOKEN });
+}
 
 export async function getDnsByName(name: string) {
   const hostname = name.endsWith(CLOUDFLARE.zone_name)
     ? name
     : `${name}.${CLOUDFLARE.zone_name}`;
-  const response = await client.dns.records.list({
+  const response = await getClient().dns.records.list({
     zone_id: CLOUDFLARE.zone_id,
     name: { exact: hostname },
     type: 'A',
@@ -29,7 +31,7 @@ export async function getDnsByName(name: string) {
 }
 
 export async function getDnsByIp(ip: string) {
-  const response = await client.dns.records.list({
+  const response = await getClient().dns.records.list({
     zone_id: CLOUDFLARE.zone_id,
     content: { exact: ip },
     type: 'A',
@@ -40,7 +42,7 @@ export async function getDnsByIp(ip: string) {
 export async function createDnsRecord(name: string, ip: string) {
   info('createDnsRecord', `Creating DNS record ${name} for ip ${ip}.`);
   try {
-    const record = (await client.dns.records.create({
+    const record = (await getClient().dns.records.create({
       zone_id: CLOUDFLARE.zone_id,
       name,
       content: ip,
@@ -57,5 +59,5 @@ export async function createDnsRecord(name: string, ip: string) {
 }
 
 export async function deleteDnsRecord(id: string) {
-  return client.dns.records.delete(id, { zone_id: CLOUDFLARE.zone_id });
+  return getClient().dns.records.delete(id, { zone_id: CLOUDFLARE.zone_id });
 }

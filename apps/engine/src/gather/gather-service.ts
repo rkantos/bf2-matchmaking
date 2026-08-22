@@ -9,6 +9,11 @@ import {
 import { DateTime } from 'luxon';
 import { ServerApi } from '@bf2-matchmaking/services/server/Server';
 import {
+  getServerOrInit,
+  updateLiveServer,
+} from '@bf2-matchmaking/services/server';
+import { createRconsCache } from '@bf2-matchmaking/services/cache';
+import {
   assertObj,
   assertString,
   SUMMON_POLL_INTERVAL_SECONDS,
@@ -35,14 +40,24 @@ import { stream } from '@bf2-matchmaking/redis/stream';
 import { topic } from '@bf2-matchmaking/redis/topic';
 import { GatherDraftState } from '@bf2-matchmaking/types/gather';
 import { MANAGED_CHANNEL_ROOT } from '@bf2-matchmaking/teamspeak';
-import { client as createSupabaseApi, verifyResult } from '@bf2-matchmaking/supabase';
+import {
+  client as createSupabaseApi,
+  createServiceClient,
+  verifyResult,
+} from '@bf2-matchmaking/supabase';
 import { ServerStatus } from '@bf2-matchmaking/types/server';
 
 const serviceClient = createSupabaseApi();
+const database = createServiceClient();
 
 export async function initGather(configId: number) {
   try {
     const config = await syncConfig(configId);
+    // A standalone gather deployment has its own Redis and does not run the
+    // production reset-server job. Seed its RCON credentials before resolving
+    // the configured gather servers, then keep their live data fresh for the
+    // staging UI.
+    await createRconsCache();
     const address = await findGatherServer();
     assertString(address, 'No idle server found');
 
@@ -61,6 +76,7 @@ export async function initGather(configId: number) {
       .on('error', (e) => {
         logErrorMessage(`Gather ${configId}: Error`, e);
       });
+    startGatherServerPolling();
 
     // initQueue resets the state to Queueing. Preserve an in-progress (or
     // completed-but-not-yet-applied) captain draft across engine restarts so
@@ -470,13 +486,67 @@ async function findGatherServer(exclude?: string) {
     .filter((address) => address !== exclude);
 
   if (configured.length > 0) {
+    // Redis is deliberately isolated between production and staging, while
+    // match_servers is shared. Excluding servers attached to an ongoing match
+    // prevents the staging gather from selecting a production match server.
+    const ongoingMatches = await serviceClient
+      .getMatchesWithStatus(MatchStatus.Ongoing)
+      .then(verifyResult);
+    const occupiedServers = new Set(
+      ongoingMatches.length === 0
+        ? []
+        : await database
+            .from('match_servers')
+            .select('server')
+            .in(
+              'id',
+              ongoingMatches.map((match) => match.id)
+            )
+            .then(verifyResult)
+            .then((rows) => rows.map((row) => row.server))
+    );
     const candidates = await Promise.all(
-      configured.map(async (address) => ({ address, server: await ServerApi.get(address) }))
+      configured.map(async (address) => ({
+        address,
+        server: occupiedServers.has(address) ? null : await getServerOrInit(address),
+      }))
     );
     return candidates.find(({ server }) => server?.status === ServerStatus.IDLE)?.address;
   }
 
   return ServerApi.findIdle(exclude ? [exclude] : []);
+}
+
+let gatherServerPoll: NodeJS.Timeout | null = null;
+
+function startGatherServerPolling() {
+  if (gatherServerPoll) return;
+  const addresses = (
+    process.env.GATHER_SERVER_ADDRESSES || process.env.GATHER_SERVER_ADDRESS || ''
+  )
+    .split(',')
+    .map((address) => address.trim())
+    .filter(Boolean);
+  if (addresses.length === 0) return;
+
+  const configuredSeconds = Number(process.env.GATHER_SERVER_POLL_SECONDS || 10);
+  const seconds = Number.isFinite(configuredSeconds)
+    ? Math.max(5, configuredSeconds)
+    : 10;
+  gatherServerPoll = setInterval(() => {
+    void Promise.all(
+      addresses.map((address) =>
+        updateLiveServer(address).catch((cause) => {
+          warn(
+            'startGatherServerPolling',
+            `${address}: failed to refresh gather server: ${parseError(cause)}`
+          );
+          return null;
+        })
+      )
+    );
+  }, seconds * 1_000);
+  gatherServerPoll.unref();
 }
 
 async function getGatherPlayer(clientUId: string) {
