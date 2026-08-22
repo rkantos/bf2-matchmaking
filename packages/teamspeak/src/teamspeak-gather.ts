@@ -363,9 +363,10 @@ export class TeamSpeakGather extends EventEmitter {
     // to command throttling and previously delayed this event by minutes when
     // eight clients were notified sequentially.
     this.emit('playersSummoned', server, clients, this);
+    const timeoutMs = await this.getSummonTimeoutMs();
     const notifications = await Promise.allSettled(
       clients.map((clientUId) =>
-        this.messageClient(clientUId, getSummonMessage(server))
+        this.messageClient(clientUId, getSummonMessage(server, timeoutMs))
       )
     );
     const failedNotifications = notifications.filter(
@@ -648,6 +649,26 @@ function getRegisterKeyhashMessage() {
     .web()
     .teamspeakPage()} and rejoin channel.`;
 }
-function getSummonMessage(address: string) {
-  return `Join ${address} within 2 minutes or be removed from the gather.`;
+/**
+ * The summon window in words.
+ *
+ * The slider moves in fifteen second steps between fifteen seconds and five
+ * minutes, so this has to read as well for "45 seconds" as for "3 minutes".
+ */
+export function formatSummonTimeout(timeoutMs: number) {
+  const totalSeconds = Math.round(timeoutMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  if (!minutes) {
+    return `${seconds} seconds`;
+  }
+  const minutePart = `${minutes} minute${minutes === 1 ? '' : 's'}`;
+  return seconds ? `${minutePart} ${seconds} seconds` : minutePart;
+}
+
+function getSummonMessage(address: string, timeoutMs: number) {
+  return `Join ${address} within ${formatSummonTimeout(
+    timeoutMs
+  )} or be removed from the gather.`;
 }
