@@ -6,6 +6,7 @@ import { isString, MatchStatus } from '@bf2-matchmaking/types';
 import { waitForEvent } from './event-stream';
 import { error, info } from '@bf2-matchmaking/logging';
 import { gather } from '@bf2-matchmaking/redis/gather';
+import { del, matchKeys } from '@bf2-matchmaking/redis/generic';
 import {
   DEFAULT_SUMMON_TIMEOUT_MS,
   MAX_SUMMON_TIMEOUT_MS,
@@ -369,6 +370,35 @@ gathersRouter.post(
   ctx.body = await state.set({
     address: ctx.request.body.address,
   });
+  }
+);
+
+/**
+ * Drops cached gather players so the next lookup reads the database again.
+ *
+ * getGatherPlayer() caches by teamspeak id and only misses fall through to the
+ * database. Nothing invalidates it except the register page, so a keyhash or
+ * teamspeak id corrected directly in the database leaves summon verification
+ * matching the old value - and that player can never be recognised as present,
+ * however many times the summon repeats.
+ *
+ * Pass teamspeakIds to clear only those; omit it to clear the lot.
+ */
+gathersRouter.post(
+  '/:config/players/cache/clear',
+  protect('match_admin'),
+  async (ctx: Context) => {
+    const { teamspeakIds } = ctx.request.body ?? {};
+    const keys = Array.isArray(teamspeakIds)
+      ? teamspeakIds.filter(isString).map((id: string) => `gather:players:${id}`)
+      : await matchKeys('gather:players:*');
+
+    const cleared = keys.length ? await del(keys) : 0;
+    info(
+      `POST /gathers/${ctx.params.config}/players/cache/clear`,
+      `Cleared ${cleared} cached gather player(s) by ${ctx.request.user?.nick}`
+    );
+    ctx.body = { cleared, keys };
   }
 );
 
