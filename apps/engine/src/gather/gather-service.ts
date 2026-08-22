@@ -87,7 +87,7 @@ export async function initGather(configId: number) {
       });
     startGatherServerPolling();
     startQueueMessage(configId, config.size);
-    void prepareVoice();
+    void prepareAdminClient();
 
     // initQueue resets the state to Queueing. Preserve an in-progress (or
     // completed-but-not-yet-applied) captain draft across engine restarts so
@@ -362,22 +362,30 @@ async function getConnectedClientUIds(
  * and the client is absent from the channel it is meant to sit in until
  * something happens to want it.
  */
-async function prepareVoice() {
-  if (!environmentFlag('ENABLE_GATHER_VOICE')) {
-    return;
-  }
+async function prepareAdminClient() {
   try {
-    const speech = await isSpeechAvailable();
-    // Connecting is what moves the client into the queue channel.
+    // Connecting is what puts the client in the queue channel, which is where
+    // it belongs whether or not it ever speaks - it manages the match channels
+    // too, and connecting on first use left it absent until something needed
+    // it.
     const client = await getAdminClient();
+    if (!client) {
+      info('prepareAdminClient', 'Admin client unavailable');
+      return;
+    }
+    if (!environmentFlag('ENABLE_GATHER_VOICE')) {
+      info('prepareAdminClient', 'Admin client connected, voice announcements off');
+      return;
+    }
+    const speech = await isSpeechAvailable();
     info(
-      'prepareVoice',
-      `Voice announcements ${
-        speech && client ? 'ready' : 'unavailable'
-      } (espeak-ng: ${speech ? 'yes' : 'no'}, admin client: ${client ? 'yes' : 'no'})`
+      'prepareAdminClient',
+      `Admin client connected, voice announcements ${
+        speech ? 'ready' : 'unavailable'
+      } (espeak-ng: ${speech ? 'yes' : 'no'})`
     );
   } catch (e) {
-    warn('prepareVoice', `Could not prepare voice: ${parseError(e)}`);
+    warn('prepareAdminClient', `Could not prepare admin client: ${parseError(e)}`);
   }
 }
 
