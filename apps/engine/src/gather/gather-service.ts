@@ -40,6 +40,7 @@ import { players } from '../lib/supabase';
 import { parseError } from '@bf2-matchmaking/services/error';
 import { matchApi, matchService } from '../lib/match';
 import { getMatchTeam } from './gather-utils';
+import { startQueueMessage } from './queue-message';
 import { stream } from '@bf2-matchmaking/redis/stream';
 import { topic } from '@bf2-matchmaking/redis/topic';
 import { GatherDraftState } from '@bf2-matchmaking/types/gather';
@@ -82,6 +83,7 @@ export async function initGather(configId: number) {
         logErrorMessage(`Gather ${configId}: Error`, e);
       });
     startGatherServerPolling();
+    startQueueMessage(configId, config.size);
 
     // initQueue resets the state to Queueing. Preserve an in-progress (or
     // completed-but-not-yet-applied) captain draft across engine restarts so
