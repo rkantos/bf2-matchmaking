@@ -90,7 +90,12 @@ function decodeWav(buffer: Buffer) {
       sampleRate = buffer.readUInt32LE(body + 4);
     }
     if (id === 'data') {
-      const samples = new Int16Array(size / 2);
+      // Trust the bytes, not the header. espeak-ng streams to stdout without
+      // knowing the final length, so the size it declares here does not match
+      // what it actually wrote - reading to the declared length runs off the
+      // end of the buffer.
+      const byteLength = Math.min(size, Math.max(0, buffer.length - body));
+      const samples = new Int16Array(Math.floor(byteLength / 2));
       for (let i = 0; i < samples.length; i++) {
         samples[i] = buffer.readInt16LE(body + i * 2);
       }
