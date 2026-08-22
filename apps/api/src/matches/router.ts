@@ -2,7 +2,8 @@ import Router from '@koa/router';
 import { client } from '@bf2-matchmaking/supabase';
 import { isConnectedLiveServer, isNotNull } from '@bf2-matchmaking/types/guards';
 import { MatchStatus } from '@bf2-matchmaking/types/supabase';
-import { info } from '@bf2-matchmaking/logging';
+import { info, warn } from '@bf2-matchmaking/logging';
+import { parseError } from '@bf2-matchmaking/services/error';
 import { getLiveServer, getLiveServerByMatchId } from '../servers/server-service';
 import { createPendingMatch, getLiveMatch, verifyServer } from './match-service';
 import { Context } from 'koa';
@@ -26,7 +27,23 @@ export const matchesRouter = new Router({
 async function teardownMatch(matchId: number) {
   const address = await ServerApi.findByMatch(matchId);
   if (address) {
-    await releaseAuthoritativeServer(matchId, address);
+    // Best effort. The authoritative deployment is a separate app on its own
+    // release cycle, and this route does not exist on main at all, so it
+    // answers 404 - which used to abort the teardown before the local reset
+    // below. Every finished gather match then kept its server marked active,
+    // and once each configured server was pinned to a dead match the next
+    // round had nowhere to start and the gather stalled in Starting.
+    //
+    // Releasing our own server is what the caller actually needs; upstream
+    // state is a courtesy, so failing to reach it must not cost us that.
+    try {
+      await releaseAuthoritativeServer(matchId, address);
+    } catch (e) {
+      warn(
+        'teardownMatch',
+        `Match ${matchId}: could not release ${address} upstream: ${parseError(e)}`
+      );
+    }
     await ServerApi.reset(address);
   }
   await topic('gather:match-teardown').publish({ matchId });
