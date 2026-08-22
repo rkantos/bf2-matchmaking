@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
 import OpusScript from 'opusscript';
 import { info, warn } from '@bf2-matchmaking/logging';
 import { getAdminClient } from './admin-client';
@@ -47,9 +48,35 @@ function run(command: string, args: Array<string>): Promise<Buffer> {
   });
 }
 
-/** Whether espeak-ng is installed. Probed once; the answer cannot change. */
+/**
+ * Whether the wasm opus builds with is actually on disk.
+ *
+ * Checked rather than discovered by failing, because emscripten reports a
+ * missing binary by rejecting its own ready promise - which node treats as an
+ * unhandled rejection and exits on, out of reach of any try/catch around the
+ * constructor. Bundling opusscript into the deployed file caused exactly that
+ * and took the engine down, so the file is confirmed before it is asked for.
+ */
+function hasOpusBinary() {
+  try {
+    createRequire(__filename).resolve('opusscript/build/opusscript_native_wasm.wasm');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Whether anything can be spoken. Probed once; the answer cannot change. */
 export async function isSpeechAvailable() {
   if (available !== null) {
+    return available;
+  }
+  if (!hasOpusBinary()) {
+    available = false;
+    warn(
+      'voice',
+      'opusscript wasm is not reachable, gather voice announcements are disabled'
+    );
     return available;
   }
   try {
