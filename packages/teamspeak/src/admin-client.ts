@@ -65,6 +65,9 @@ async function createClient(): Promise<Client | null> {
 
 /** The connected admin client, or null when unavailable. */
 export async function getAdminClient(): Promise<Client | null> {
+  if (process.env.TEAMSPEAK_ADMIN_DISABLED === 'true') {
+    return null;
+  }
   if (client) {
     return client;
   }

@@ -71,6 +71,7 @@ redirect allowlist.
 - `TEAMSPEAK_QUEUE_CHANNEL=<dedicated staging queue channel id>`
 - `TEAMSPEAK_ADMIN_IDENTITY` (serialized identity from the existing test Redis)
 - `TEAMSPEAK_TEST_IDENTITIES_JSON` (Test0-Test15 player-id to serialized identity map)
+- `TEAMSPEAK_ADMIN_DISABLED=true` (the engine exclusively owns the admin identity)
 - `BF2_TEST_SERVER_PASSWORD=2026`
 - `BF2_TEST_SPAWN_STAGGER_MS=70` (optional)
 - `TEAMSPEAK_TEST_SPAWN_STAGGER_MS=2000` (optional; lower only after checking
