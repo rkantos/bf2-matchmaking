@@ -11,13 +11,15 @@ import {
   getActiveMatchServer,
   getServer,
   getServerData,
+  getServersWithStatus,
   removeServerWithStatus,
+  reserveServerForMatch,
   setServer,
   setServerData,
 } from '@bf2-matchmaking/redis/servers';
 import { disconnect, hasNoVehicles } from '../rcon/bf2-rcon-api';
 import { getServerLocation } from '../external-service';
-import { isNotNull, LogContext, ServersRow } from '@bf2-matchmaking/types';
+import { LogContext, ServersRow } from '@bf2-matchmaking/types';
 import { ServerStatus } from '@bf2-matchmaking/types/server';
 import {
   info,
@@ -95,28 +97,32 @@ export const ServerApi = {
   },
   setMatch: async (address: string, matchId: string | number) => {
     info('Server.setMatch', `Server ${address} assigning to match ${matchId}`);
-    await setServer(address, { status: ServerStatus.ACTIVE, matchId: Number(matchId) });
-    await addActiveMatchServer(address, matchId.toString());
-    await removeServerWithStatus(address, ServerStatus.IDLE);
+    if (!(await reserveServerForMatch(address, matchId))) {
+      const current = await getServer(address);
+      throw new Error(
+        `Server ${address} is not idle and cannot be assigned to match ${matchId}` +
+          (current?.matchId ? ` (already assigned to match ${current.matchId})` : '')
+      );
+    }
     logServerMessage(address, `Assigned to match ${matchId}`);
   },
   findByMatch: async (matchId: string | number) => {
     return getActiveMatchServer(matchId.toString());
   },
-  findIdle: async (): Promise<string | undefined> => {
-    const idleServers = (
-      await Promise.all(
-        [
-          'skasams.bf2.top',
-          'skasberlin.bf2.top',
-          'cphdock.bf2.top',
-          'skascz.bf2.top',
-        ].map(async (address) => {
-          const server = await getServer(address);
-          return server?.status === ServerStatus.IDLE ? address : null;
-        })
-      )
-    ).filter(isNotNull);
+  /**
+   * Pick a random idle server.
+   *
+   * Reads the idle set rather than a fixed list of addresses. The previous
+   * hardcoded list had drifted from reality in both directions: it still probed
+   * cphdock.bf2.top, which no longer exists (producing recurring "Failed to
+   * parse values" warnings for a server with no status), while never offering
+   * breikernl.4e.fi, which is registered and idle.
+   */
+  findIdle: async (excluded: Iterable<string> = []): Promise<string | undefined> => {
+    const excludedSet = new Set(excluded);
+    const idleServers = (await getServersWithStatus(ServerStatus.IDLE)).filter(
+      (address) => !excludedSet.has(address)
+    );
     return idleServers.at(Math.floor(Math.random() * idleServers.length));
   },
   reset: async (address: string) => {

@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '@bf2-matchmaking/utils/base-urls';
+
 export const getEventSource = (url: string): EventSource => {
   const source = new EventSource(url);
   source.addEventListener('error', (event) => {
@@ -6,8 +8,9 @@ export const getEventSource = (url: string): EventSource => {
   return source;
 };
 
-//const basePath = 'http://localhost:5004';
-const basePath = 'https://api.bf2.top';
+// Browser-side: only NEXT_PUBLIC_API_BASE_URL can reach here, since Next inlines
+// NEXT_PUBLIC_-prefixed vars at build time. Defaults to production when unset.
+const basePath = getApiBaseUrl();
 const gathers = `${basePath}/gathers`;
 const servers = `${basePath}/servers`;
 export const api = {

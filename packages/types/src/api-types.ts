@@ -1,7 +1,7 @@
 import { GatherPlayer, MatchesInsert, MatchPlayersInsert } from './database-types';
 import { LiveServerState, PlayerListItem, ServerInfo } from './index';
 import { LiveServer } from './server';
-import { GatherState } from './gather';
+import { GatherDraftMode, GatherDraftState, GatherState } from './gather';
 import { StreamEventReply } from './redis';
 
 export interface SessionUser {
@@ -69,4 +69,23 @@ export interface GetGatherResponse {
   state: GatherState;
   players: Array<GatherPlayer>;
   events: Array<StreamEventReply>;
+  /** Operator-configured summon window in ms; the default when never set. */
+  summonTimeout: number;
+  draftMode: GatherDraftMode;
+  /** Present only while captains are picking. */
+  draft: GatherDraftState | null;
+  testClients: {
+    teamspeak: number;
+    bf2: number;
+  };
+  /** Live connection indicators keyed by players.id. */
+  connections: Record<
+    string,
+    {
+      teamspeak: boolean;
+      bf2: boolean;
+      /** Current Battlefield 2 side reported by the game server ("1" or "2"). */
+      bf2Team?: string;
+    }
+  >;
 }

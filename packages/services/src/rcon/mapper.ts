@@ -39,14 +39,23 @@ export const mapServerInfo = (data?: string | null): ServerInfo | null => {
   };
 };
 
-export const mapListPlayers = (data?: string | null): Array<PlayerListItem> | null =>
-  data
-    ? data
-        .split(/(\r\n|\r|\n)/)
-        .filter((text) => Boolean(text.trim()))
-        .map((playerData) => {
-          const array = playerData.split('\t');
-          return {
+export const mapListPlayers = (data?: string | null): Array<PlayerListItem> | null => {
+  if (!data) return null;
+
+  // bf2cc normally separates players with newlines, but some servers concatenate
+  // their fixed-width records. Parse the protocol's 46 tab-separated columns
+  // instead of relying on line endings so both response forms work.
+  const fields = data
+    .replace(/\r\n|\r|\n/g, '\t')
+    .split('\t')
+    .filter((field) => field.length > 0);
+  const FIELD_COUNT = 46;
+  if (fields.length < FIELD_COUNT || fields.length % FIELD_COUNT !== 0) return null;
+
+  const result: Array<PlayerListItem> = [];
+  for (let offset = 0; offset < fields.length; offset += FIELD_COUNT) {
+    const array = fields.slice(offset, offset + FIELD_COUNT);
+    result.push({
             index: array[0],
             getName: array[1],
             getTeam: array[2],
@@ -93,9 +102,10 @@ export const mapListPlayers = (data?: string | null): Array<PlayerListItem> | nu
             punished: array[43],
             timesPunished: array[44],
             timesForgiven: array[45],
-          };
-        })
-    : null;
+    });
+  }
+  return result;
+};
 
 export function mapMapList(data?: string): Array<string> | null {
   return data

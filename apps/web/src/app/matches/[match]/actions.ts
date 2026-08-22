@@ -138,6 +138,7 @@ export async function closeMatch(matchId: number) {
   });
 
   if (!result.error) {
+    await internalApi.live().postMatchTeardown(matchId);
     revalidatePath(`/matches/${matchId}`);
   }
 

@@ -1,4 +1,6 @@
-const basePath = 'https://bf2.top';
+import { getWebBaseUrl } from './base-urls';
+
+const basePath = getWebBaseUrl();
 
 export const web = {
   basePath,

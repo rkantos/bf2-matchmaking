@@ -1,5 +1,5 @@
 import Router from '@koa/router';
-import { info } from '@bf2-matchmaking/logging';
+import { info, warn } from '@bf2-matchmaking/logging';
 import { handleMatchClosed } from './match-handler';
 import {
   isDiscordConfigsDelete,
@@ -11,12 +11,40 @@ import {
 } from './webhook-utils';
 import { addMatchServer, removeMatchServer } from '@bf2-matchmaking/redis/matches';
 import { MatchStatus } from '@bf2-matchmaking/types';
+import { timingSafeEqual } from 'node:crypto';
+import { Context, Next } from 'koa';
+import { isStrictMutationAuth } from '../auth';
 
 export const webhooksRouter = new Router({
   prefix: '/webhooks',
 });
 
-webhooksRouter.post('/matches', async (ctx) => {
+function verifyWebhookSecret(ctx: Context, next: Next) {
+  const expected = process.env.WEBHOOK_SECRET;
+  if (!expected) {
+    if (isStrictMutationAuth()) {
+      ctx.throw(503, 'Webhook receiver is not configured');
+    }
+    warn(
+      'verifyWebhookSecret',
+      `Allowing legacy unsigned webhook ${ctx.method} ${ctx.path}`
+    );
+    return next();
+  }
+
+  const provided = ctx.get('X-Webhook-Secret');
+  const expectedBytes = new TextEncoder().encode(expected);
+  const providedBytes = new TextEncoder().encode(provided);
+  if (
+    expectedBytes.length !== providedBytes.length ||
+    !timingSafeEqual(expectedBytes, providedBytes)
+  ) {
+    ctx.throw(401, 'Invalid webhook secret');
+  }
+  return next();
+}
+
+webhooksRouter.post('/matches', verifyWebhookSecret, async (ctx) => {
   const { body } = ctx.request;
 
   if (isMatchesUpdate(body)) {
@@ -35,7 +63,7 @@ webhooksRouter.post('/matches', async (ctx) => {
   ctx.body = { message: 'Invalid payload' };
 });
 
-webhooksRouter.post('/match_configs', async (ctx) => {
+webhooksRouter.post('/match_configs', verifyWebhookSecret, async (ctx) => {
   const { body } = ctx.request;
   if (isDiscordConfigsInsert(body) || isDiscordConfigsUpdate(body)) {
     // TODO
@@ -53,7 +81,7 @@ webhooksRouter.post('/match_configs', async (ctx) => {
   ctx.body = { message: 'Invalid payload' };
 });
 
-webhooksRouter.post('/match_servers', async (ctx) => {
+webhooksRouter.post('/match_servers', verifyWebhookSecret, async (ctx) => {
   const { body } = ctx.request;
   if (isMatchServersInsert(body)) {
     info(

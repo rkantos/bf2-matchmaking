@@ -1,5 +1,4 @@
 import Router from '@koa/router';
-import { generateMatchUsersXml } from '../players/users-generator';
 import { client } from '@bf2-matchmaking/supabase';
 import { isConnectedLiveServer, isNotNull } from '@bf2-matchmaking/types/guards';
 import { MatchStatus } from '@bf2-matchmaking/types/supabase';
@@ -16,13 +15,20 @@ import {
 } from '@bf2-matchmaking/services/schemas/matches.ts';
 import { stream } from '@bf2-matchmaking/redis/stream';
 import { matchApi, matchService } from '../lib/match';
-import { protect } from '../auth.ts';
+import { protect, protectMutation } from '../auth.ts';
+import { topic } from '@bf2-matchmaking/redis/topic';
 
 export const matchesRouter = new Router({
   prefix: '/matches',
 });
 
-matchesRouter.post('/close', async (ctx) => {
+async function teardownMatch(matchId: number) {
+  const address = await ServerApi.findByMatch(matchId);
+  if (address) await ServerApi.reset(address);
+  await topic('gather:match-teardown').publish({ matchId });
+}
+
+matchesRouter.post('/close', protectMutation('match_admin'), async (ctx) => {
   const { data: openMatches } = await client().getMatchesWithStatus(MatchStatus.Open);
   if (openMatches && openMatches.length > 0) {
     await client().updateMatches(
@@ -40,11 +46,15 @@ matchesRouter.get('/:id/users.xml', async (ctx: Context): Promise<void> => {
   const { data: match } = await client().getMatch(Number(ctx.params.id));
   ctx.assert(match, 404, 'Match not found.');
 
+  const { generateMatchUsersXml } = await import('../players/users-generator.ts');
   ctx.set('Content-Type', 'text/xml');
   ctx.body = generateMatchUsersXml(match);
 });
 
-matchesRouter.post('/:matchid/results', async (ctx: Context): Promise<void> => {
+matchesRouter.post(
+  '/:matchid/results',
+  protectMutation('match_admin'),
+  async (ctx: Context): Promise<void> => {
   const { data } = await client().getMatch(parseInt(ctx.params.matchid));
   ctx.assert(data, 404, 'Match not found.');
 
@@ -54,15 +64,42 @@ matchesRouter.post('/:matchid/results', async (ctx: Context): Promise<void> => {
 
   const { results, errors } = await matchService.closeMatch(data);
 
+  // Finishing a match ends its server/TeamSpeak lifecycle even when result
+  // validation fails (common for headless tests with no recorded rounds).
+  await teardownMatch(data.id);
+
   if (errors) {
     ctx.throw(400, errors.join(', '), errors);
   }
 
   ctx.status = 201;
   ctx.body = results;
-});
+  }
+);
 
-matchesRouter.post('/:matchid/server', async (ctx: Context): Promise<void> => {
+matchesRouter.post(
+  '/:matchid/teardown',
+  protect('match_admin'),
+  async (ctx: Context): Promise<void> => {
+  const matchId = Number(ctx.params.matchid);
+  const { data: match } = await client().getMatch(matchId);
+  ctx.assert(match, 404, 'Match not found.');
+  ctx.assert(
+    [MatchStatus.Finished, MatchStatus.Closed, MatchStatus.Deleted].includes(
+      match.status
+    ),
+    409,
+    'Only a terminal match can be torn down.'
+  );
+  await teardownMatch(matchId);
+  ctx.status = 204;
+  }
+);
+
+matchesRouter.post(
+  '/:matchid/server',
+  protectMutation('match_admin', 'server_admin'),
+  async (ctx: Context): Promise<void> => {
   const force = `${ctx.query.force}`.toLowerCase() === 'true';
 
   const match = await getLiveMatch(ctx.params.matchid);
@@ -92,7 +129,8 @@ matchesRouter.post('/:matchid/server', async (ctx: Context): Promise<void> => {
   await ServerApi.setMatch(ctx.request.body.address, ctx.params.matchid);
   ctx.body = await getLiveServer(ctx.request.body.address);
   ctx.status = 200;
-});
+  }
+);
 
 matchesRouter.post('/:matchid/start', protect('user'), async (ctx: Context) => {
   const { matchid } = ctx.params;
@@ -142,7 +180,7 @@ matchesRouter.get('/', async (ctx) => {
   ctx.body = keys.map(getLiveMatch).filter(isNotNull);
 });
 
-matchesRouter.post('/', async (ctx: Context) => {
+matchesRouter.post('/', protectMutation('match_admin'), async (ctx: Context) => {
   const { matchValues, matchMaps, matchTeams, matchDraft, servers } =
     matchesPostRequestBodySchema.parse(ctx.request.body);
   const match = await matchApi.create(matchValues);

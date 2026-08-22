@@ -7,7 +7,7 @@ import { ServerStatus } from '@bf2-matchmaking/types/server';
 import { ServerApi } from './server-api';
 import dns from 'dns';
 import { client, verifyResult, verifySingleResult } from '@bf2-matchmaking/supabase';
-import { parseError } from '@bf2-matchmaking/utils';
+import { isDevelopment, parseError } from '@bf2-matchmaking/utils';
 import { set } from '@bf2-matchmaking/redis/set';
 import { hash } from '@bf2-matchmaking/redis/hash';
 import { ServiceError } from '../error';
@@ -24,14 +24,41 @@ export async function createLiveInfo(
     throw new Error(`${address}[${readyState}]: ${error.message}`);
   }
 
-  const { data: players } =
-    serverInfo.connectedPlayers === '0' ? { data: [] } : await getPlayerList(address);
+  const gatherTestAddresses = (
+    process.env.GATHER_SERVER_ADDRESSES || process.env.GATHER_SERVER_ADDRESS || ''
+  )
+    .split(',')
+    .map((configuredAddress) => configuredAddress.trim())
+    .filter(Boolean);
+  const includeInvisibleTestPlayers =
+    isDevelopment() && gatherTestAddresses.includes(address);
+  const playerResult =
+    serverInfo.connectedPlayers === '0' && !includeInvisibleTestPlayers
+      ? { data: [], error: null }
+      : await getPlayerList(address);
+  // A truly empty BF2 server does not answer `bf2cc pl`. For the configured
+  // headless-test server that timeout means empty only when `bf2cc si` also
+  // reports zero; otherwise preserve the normal error/validation behavior.
+  const players =
+    includeInvisibleTestPlayers && serverInfo.connectedPlayers === '0' && playerResult.error
+      ? []
+      : playerResult.data;
 
-  if (!players || players.length !== Number(serverInfo.connectedPlayers)) {
+  if (
+    !players ||
+    (!includeInvisibleTestPlayers &&
+      players.length !== Number(serverInfo.connectedPlayers))
+  ) {
     throw new Error(`${address}[${readyState}]: Invalid live state`);
   }
 
-  const liveInfo = { ...serverInfo, players };
+  const liveInfo = {
+    ...serverInfo,
+    connectedPlayers: includeInvisibleTestPlayers
+      ? String(players.length)
+      : serverInfo.connectedPlayers,
+    players,
+  };
   const res = await setServerLiveInfo(address, liveInfo);
 
   if (shouldLog) {

@@ -2,6 +2,8 @@
   "name": "@bf2-matchmaking/teamspeak",
   "exports": {
     ".": "./src/constants.ts",
+    "./admin": "./src/admin-client.ts",
+    "./admin-identity": "./src/admin-identity.ts",
     "./api": "./src/teamspeak-api.ts",
     "./gather": "./src/teamspeak-gather.ts"
   },
@@ -13,6 +15,7 @@
     "@bf2-matchmaking/logging": "*",
     "@bf2-matchmaking/redis": "*",
     "@bf2-matchmaking/utils": "*",
+    "@honeybbq/teamspeak-client": "^0.2.3",
     "ts3-nodejs-library": "^3.5.1"
   },
   "devDependencies": {

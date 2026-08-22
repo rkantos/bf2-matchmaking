@@ -38,6 +38,12 @@ export default async function MatchActionsCard({ match }: Props) {
       <Card title="Match actions">
         <MatchSetup match={match} />
         <MatchActions match={match} />
+        <Link
+          className="btn btn-outline btn-accent w-fit ml-auto"
+          href={`/matches/${match.id}/server`}
+        >
+          Manage match servers
+        </Link>
       </Card>
     </Suspense>
   );
@@ -59,10 +65,12 @@ async function MatchSetup({ match }: Props) {
   const servers = await supabase(cookieStore).getServers().then(verifyResult);
   const maps = await supabase(cookieStore).getMaps().then(verifyResult);
   const { data: matchServers } = await supabase(cookieStore).getMatchServers(match.id);
+
   async function addServerAction(option: Option) {
     'use server';
     await addMatchServer(match.id, option[0].toString());
   }
+
   async function removeServerAction(option: Option) {
     'use server';
     await removeMatchServer(match.id, option[0].toString());
@@ -72,6 +80,7 @@ async function MatchSetup({ match }: Props) {
     'use server';
     await addMap(match.id, Number(option[0]));
   }
+
   async function removeMapAction(option: Option) {
     'use server';
     await removeMap(match.id, Number(option[0]));

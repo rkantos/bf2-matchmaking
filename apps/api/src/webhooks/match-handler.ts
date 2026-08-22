@@ -9,8 +9,13 @@ import {
   getInstancesByMatchId,
 } from '../platform/platform-service';
 import { ServerApi } from '@bf2-matchmaking/services/server/Server';
+import { topic } from '@bf2-matchmaking/redis/topic';
 
 export async function handleMatchClosed(match: MatchesRow) {
+  const activeAddress = await ServerApi.findByMatch(match.id);
+  if (activeAddress) await ServerApi.reset(activeAddress);
+  await topic('gather:match-teardown').publish({ matchId: match.id });
+
   const instances = await getInstancesByMatchId(match.id);
   if (instances.length > 0) {
     await Promise.all(

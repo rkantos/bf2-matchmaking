@@ -6,6 +6,7 @@ import { Instance } from '@bf2-matchmaking/types/platform';
 import { Context } from 'koa';
 import { DEFAULTS } from './constants';
 import { createServerDns, getDnsRecord, getInstancesByMatchId } from './platform-service';
+import { protectMutation } from '../auth';
 
 export const platformRouter = new Router({
   prefix: '/platform',
@@ -23,7 +24,7 @@ interface ServersRequestBody extends Omit<Request, 'body'> {
   vehicles?: string;
   subDomain?: string;
 }
-platformRouter.post('/servers', async (ctx: Context) => {
+platformRouter.post('/servers', protectMutation('server_admin'), async (ctx: Context) => {
   const { name, region, match, map, vehicles, subDomain } = <ServersRequestBody>(
     ctx.request.body
   );
@@ -70,9 +71,13 @@ platformRouter.get('/servers/:ip', async (ctx: Context) => {
   ctx.body = instance;
 });
 
-platformRouter.post('/servers/:ip/dns', async (ctx: Context) => {
+platformRouter.post(
+  '/servers/:ip/dns',
+  protectMutation('server_admin'),
+  async (ctx: Context) => {
   ctx.body = await createServerDns(ctx.params.ip);
-});
+  }
+);
 
 platformRouter.get('/servers/:id/dns', async (ctx) => {
   ctx.body = await getDnsRecord(ctx.params.id, ctx.query.type);

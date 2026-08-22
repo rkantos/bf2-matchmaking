@@ -28,9 +28,8 @@ import {
 } from './server-service';
 import { updateLiveServer } from '@bf2-matchmaking/services/server';
 import { Context } from 'koa';
-import { protect } from '../auth';
+import { protect, protectMutation } from '../auth';
 import { PostRestartServerRequestBody, ServerRconsRow } from '@bf2-matchmaking/types';
-import { deleteInstance } from '../platform/platform-service';
 import { client } from '@bf2-matchmaking/supabase';
 import { ServerApi } from '@bf2-matchmaking/services/server/Server';
 import { stream } from '@bf2-matchmaking/redis/stream';
@@ -149,7 +148,7 @@ serversRouter.post('/:ip/restart', protect('user'), async (ctx: Context) => {
   ctx.status = 202;
 });
 
-serversRouter.post('/:ip/players/switch', async (ctx) => {
+serversRouter.post('/:ip/players/switch', protectMutation('server_admin'), async (ctx) => {
   ctx.body = { message: 'Not implemented' };
   ctx.status = 501;
 });
@@ -232,6 +231,7 @@ serversRouter.get('/:ip/si', async (ctx: Context) => {
 
 serversRouter.delete('/:address', protect('server_admin'), async (ctx) => {
   const { address } = ctx.params;
+  const { deleteInstance } = await import('../platform/platform-service.ts');
   const server = await client().deleteServer(address);
   const rcon = await client().deleteServerRcon(address);
   const instance = await deleteInstance(address).catch((e) => e);
@@ -247,7 +247,10 @@ serversRouter.delete('/:address', protect('server_admin'), async (ctx) => {
   ctx.body = { server, rcon, instance, redis };
 });
 
-serversRouter.post('/', async (ctx: Context): Promise<void> => {
+serversRouter.post(
+  '/',
+  protectMutation('server_admin'),
+  async (ctx: Context): Promise<void> => {
   const { ip, port, rcon_pw, demo_path } = ctx.request.body;
   const rcon_port = Number(ctx.request.body.rcon_port);
   ctx.assert(rcon_port, 400, 'Missing rcon_port');
@@ -292,7 +295,8 @@ serversRouter.post('/', async (ctx: Context): Promise<void> => {
   ctx.assert(liveServer, 502, 'Failed to create live server');
 
   ctx.body = liveServer;
-});
+  }
+);
 
 serversRouter.get('/:address/stream', async (ctx) => {
   ctx.request.socket.setTimeout(0);

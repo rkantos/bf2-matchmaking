@@ -1,12 +1,12 @@
 [build]
 builder = "railpack"
 buildCommand = "npm run build -w api"
-watchPatterns = ["apps/api", "packages"]
+watchPatterns = ["/apps/api/**", "/packages/**", "/bf2headless.js", "/package.json", "/package-lock.json"]
 providers = ["node"]
 
 [deploy]
 startCommand = "NPM_CONFIG_LOGLEVEL=verbose npm run start -w api"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
-restartPolicyType = "on_failure"
+restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5

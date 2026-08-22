@@ -1,6 +1,7 @@
 export * from './match-utils';
 export * from './player-utils';
 export * from './array-utils';
+export * from './base-urls';
 export * from './internal-api';
 export * from './constants';
 export * from './date-utils';

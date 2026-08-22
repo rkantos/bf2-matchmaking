@@ -8,6 +8,7 @@ import {
 } from '@bf2-matchmaking/types';
 import {
   deleteJSON,
+  getApiBaseUrl,
   getEventSource,
   getJSON,
   postJSON,
@@ -23,8 +24,9 @@ import {
 import { StreamEventReply } from '@bf2-matchmaking/types/redis';
 import { GetMatchLogsResponse, MatchesPostRequestBody } from './schemas/matches';
 
-//const basePath = 'http://localhost:5004';
-const basePath = 'https://api.bf2.top';
+// Override with API_BASE_URL / NEXT_PUBLIC_API_BASE_URL (e.g. http://localhost:5004
+// for local dev); defaults to production when unset.
+const basePath = getApiBaseUrl();
 const gathers = `${basePath}/gathers`;
 const matches = `${basePath}/matches`;
 const servers = `${basePath}/servers`;
@@ -36,9 +38,53 @@ export const api = {
       cache: 'no-store',
     }),
   postGatherServer: (config: number | string, address: string) =>
-    postJSON<number>(`${gathers}/${config}/server`, {
+    postWithApiKeyJSON<number>(`${gathers}/${config}/address`, {
       address,
     }),
+  postGatherSummonTimeout: (
+    config: number | string,
+    summonTimeout: number,
+    token: string
+  ) =>
+    postJSON<{ summonTimeout: number }>(
+      `${gathers}/${config}/summon-timeout`,
+      { summonTimeout },
+      toBearerRequestInit(token)
+    ),
+  postGatherDraftMode: (config: number | string, draftMode: string, token: string) =>
+    postJSON<{ draftMode: string }>(
+      `${gathers}/${config}/draft-mode`,
+      { draftMode },
+      toBearerRequestInit(token)
+    ),
+  postGatherTestClientCount: (
+    config: number | string,
+    kind: 'teamspeak' | 'bf2',
+    count: number,
+    token: string
+  ) =>
+    postJSON<{ count: number }>(
+      `${gathers}/${config}/test-clients/${kind}`,
+      { count },
+      toBearerRequestInit(token)
+    ),
+  postGatherDraftPick: (
+    config: number | string,
+    playerId: string,
+    team: 1 | 2,
+    token: string
+  ) =>
+    postJSON(
+      `${gathers}/${config}/draft/pick`,
+      { playerId, team },
+      toBearerRequestInit(token)
+    ),
+  postGatherDraftUndo: (config: number | string, playerId: string, token: string) =>
+    postJSON<GetGatherResponse>(
+      `${gathers}/${config}/draft/undo`,
+      { playerId },
+      toBearerRequestInit(token)
+    ),
   getGatherEvents: (config: number | string) =>
     getJSON<Array<StreamEventReply>>(`${gathers}/${config}/events`, {
       cache: 'no-store',
@@ -46,7 +92,7 @@ export const api = {
   getGatherEventsStream: (config: number | string, start: string | undefined) =>
     getEventSource(`${gathers}/${config}/events/stream?start=${start}`),
   postMatches: (body: MatchesPostRequestBody) =>
-    postJSON<MatchesJoined>(`${matches}`, body),
+    postWithApiKeyJSON<MatchesJoined>(`${matches}`, body),
   getMatches: () => getJSON<Array<LiveMatch>>(`${matches}`),
   getMatch: (matchId: number) => getJSON<LiveMatch>(`${matches}/${matchId}`),
   postMatchStart: (matchId: number, server: string, token: string) =>
@@ -58,9 +104,10 @@ export const api = {
   getMatchServer: (matchId: number) =>
     getJSON<ConnectedLiveServer>(`${matches}/${matchId}/server`),
   postMatchServer: (matchId: number, address: string, force: boolean) =>
-    postJSON<ConnectedLiveServer>(`${matches}/${matchId}/server?force=${force}`, {
-      address,
-    }),
+    postWithApiKeyJSON<ConnectedLiveServer>(
+      `${matches}/${matchId}/server?force=${force}`,
+      { address }
+    ),
   getMatchLog: (matchId: number) =>
     getJSON<GetMatchLogsResponse>(`${matches}/${matchId}/log`, { cache: 'no-store' }),
   getServers: () =>

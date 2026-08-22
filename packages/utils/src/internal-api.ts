@@ -31,9 +31,10 @@ import {
   ServersLogs,
 } from '@bf2-matchmaking/types/server';
 import { StreamEventReply } from '@bf2-matchmaking/types/redis';
+import { getApiBaseUrl, getWebBaseUrl } from './base-urls';
 
 const web = () => {
-  const basePath = 'https://bf2.top';
+  const basePath = getWebBaseUrl();
   return {
     basePath,
     matchPage: (matchId: number | string, playerId?: string) =>
@@ -48,7 +49,7 @@ const web = () => {
   };
 };
 const live = () => {
-  const basePath = 'https://api.bf2.top';
+  const basePath = getApiBaseUrl();
   const paths = {
     servers: () => '/servers',
     server: (ip: string) => `/servers/${ip}`,
@@ -59,13 +60,14 @@ const live = () => {
     match: (matchId: number) => `/matches/${matchId}`,
     matchServer: (matchId: number) => `/matches/${matchId}/server`,
     matchResults: (matchId: number) => `/matches/${matchId}/results`,
+    matchTeardown: (matchId: number) => `/matches/${matchId}/teardown`,
   };
   return {
     paths,
     postServers: (body: PostServersRequestBody) =>
-      postJSON<LiveServer>(basePath.concat(paths.servers()), body),
+      postWithApiKeyJSON<LiveServer>(basePath.concat(paths.servers()), body),
     postServerPlayersSwitch: (ip: string, body: PostServerPlayersSwitchRequestBody) =>
-      postJSON(basePath.concat(paths.serverPlayersSwitch(ip)), {}),
+      postWithApiKeyJSON(basePath.concat(paths.serverPlayersSwitch(ip)), body),
     getServerPlayerList: (ip: string) =>
       getJSON<Array<PlayerListItem>>(basePath.concat(paths.serverPlayerList(ip)), {
         next: { tags: ['getServerPlayerList'] },
@@ -86,12 +88,14 @@ const live = () => {
     getMatchServer: (matchId: number) =>
       getJSON<ServersRow | null>(basePath.concat(paths.matchServer(matchId))),
     postMatchResults: (matchId: number) =>
-      postJSON(basePath.concat(paths.matchResults(matchId)), {}),
+      postWithApiKeyJSON(basePath.concat(paths.matchResults(matchId)), {}),
+    postMatchTeardown: (matchId: number) =>
+      postWithApiKeyJSON(basePath.concat(paths.matchTeardown(matchId)), {}),
   };
 };
 
 const platform = () => {
-  const basePath = 'https://api.bf2.top/platform';
+  const basePath = `${getApiBaseUrl()}/platform`;
   const paths = {
     servers: () => '/servers',
     server: (ip: string) => `/servers/${ip}`,
@@ -107,7 +111,7 @@ const platform = () => {
       vehicles: string | null,
       subDomain: string
     ) =>
-      postJSON<Instance>(basePath.concat(paths.servers()), {
+      postWithApiKeyJSON<Instance>(basePath.concat(paths.servers()), {
         name,
         region,
         match,
@@ -130,7 +134,7 @@ const platform = () => {
   };
 };
 
-const basePath = 'https://api.bf2.top';
+const basePath = getApiBaseUrl();
 const gathers = `${basePath}/gathers`;
 const matches = `${basePath}/matches`;
 const servers = `${basePath}/servers`;
@@ -142,7 +146,7 @@ const v2 = {
       cache: 'no-store',
     }),
   postGatherServer: (config: number | string, address: string) =>
-    postJSON<number>(`${gathers}/${config}/server`, {
+    postWithApiKeyJSON<number>(`${gathers}/${config}/address`, {
       address,
     }),
   getGatherEvents: (config: number | string) =>
@@ -151,15 +155,17 @@ const v2 = {
     }),
   getGatherEventsStream: (config: number | string, start: string | undefined) =>
     getEventSource(`${gathers}/${config}/events/stream?start=${start}`),
-  postMatch: (body: PostMatchRequestBody) => postJSON<MatchesJoined>(`${matches}`, body),
+  postMatch: (body: PostMatchRequestBody) =>
+    postWithApiKeyJSON<MatchesJoined>(`${matches}`, body),
   getMatches: () => getJSON<Array<LiveMatch>>(`${matches}`),
   getMatch: (matchId: number) => getJSON<LiveMatch>(`${matches}/${matchId}`),
   getMatchServer: (matchId: number) =>
     getJSON<ConnectedLiveServer>(`${matches}/${matchId}/server`),
   postMatchServer: (matchId: number, address: string, force: boolean) =>
-    postJSON<ConnectedLiveServer>(`${matches}/${matchId}/server?force=${force}`, {
-      address,
-    }),
+    postWithApiKeyJSON<ConnectedLiveServer>(
+      `${matches}/${matchId}/server?force=${force}`,
+      { address }
+    ),
   getServers: () =>
     getJSON<Array<LiveServer>>(`${servers}`, {
       next: { revalidate: 60 },

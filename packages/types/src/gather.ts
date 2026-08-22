@@ -4,9 +4,45 @@ import { StreamEventReply } from './redis';
 export enum GatherStatus {
   Queueing = 'Queueing',
   Summoning = 'Summoning',
+  /** Captains are picking teams; only reached when draft mode is 'captains'. */
+  Drafting = 'Drafting',
   Starting = 'Starting',
   Aborting = 'Aborting',
   Failed = 'Failed',
+}
+
+/**
+ * How teams are decided once everyone has been summoned.
+ *
+ * 'elo' builds balanced teams automatically from player ratings and starts the
+ * match immediately. 'captains' pauses on a snake draft run by two randomly
+ * chosen players from the gather.
+ */
+export enum GatherDraftMode {
+  Elo = 'elo',
+  Captains = 'captains',
+}
+
+export interface GatherDraftPlayer {
+  playerId: string;
+  teamspeakId: string;
+  nick: string;
+  rating: number;
+}
+
+export interface GatherDraftState {
+  matchId: number;
+  /** Player ids of the two captains, index 0 leads team 1. */
+  captains: [string, string];
+  /** Player ids still available to pick. */
+  pool: Array<string>;
+  team1: Array<string>;
+  team2: Array<string>;
+  /** Which team picks next. */
+  turn: 1 | 2;
+  /** Zero-based index into the snake pick order. */
+  pickIndex: number;
+  players: Array<GatherDraftPlayer>;
 }
 
 export interface GatherState extends Record<string, string | number | undefined> {
@@ -51,8 +87,8 @@ export type PlayerRejectedGatherEvent = StreamEventReply<
   'playerRejected',
   { clientUId: string; reason: 'tsid' | 'keyhash'; nick: string }
 >;
-export type PlayerKickedGatherEvent = StreamEventReply<
-  'playerKicked',
+export type PlayerRemovedGatherEvent = StreamEventReply<
+  'playerRemoved',
   { clientUId: string; reason: string; nick: string }
 >;
 export type PlayerLeftGatherEvent = StreamEventReply<
@@ -66,6 +102,14 @@ export type PlayersSummonedGatherEvent = StreamEventReply<
 export type SummonCompleteGatherEvent = StreamEventReply<
   'summonComplete',
   { clientUIds: Array<string> }
+>;
+export type DraftStartedGatherEvent = StreamEventReply<
+  'draftStarted',
+  { matchId: number }
+>;
+export type DraftUpdatedGatherEvent = StreamEventReply<
+  'draftUpdated',
+  { matchId: number; pickIndex: number; complete: boolean }
 >;
 export type PlayerMovedGatherEvent = StreamEventReply<
   'playerMoved',
@@ -90,8 +134,10 @@ export type GatherEvent =
   | PlayerRejectedGatherEvent
   | PlayerLeftGatherEvent
   | PlayersSummonedGatherEvent
-  | PlayerKickedGatherEvent
+  | PlayerRemovedGatherEvent
   | SummonCompleteGatherEvent
+  | DraftStartedGatherEvent
+  | DraftUpdatedGatherEvent
   | PlayerMovedGatherEvent
   | GatherStartedGatherEvent
   | NextQueueGatherEvent

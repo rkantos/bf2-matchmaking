@@ -1,42 +1,220 @@
 import { info, logErrorMessage, verbose, warn } from '@bf2-matchmaking/logging';
-import { isGatherPlayer } from '@bf2-matchmaking/types';
+import { isGatherPlayer, MatchStatus } from '@bf2-matchmaking/types';
+import { GatherDraftMode, GatherStatus } from '@bf2-matchmaking/types/gather';
+import {
+  clearDraft,
+  getDraftMode,
+  startCaptainDraft,
+} from '@bf2-matchmaking/services/gather-draft-service';
+import { DateTime } from 'luxon';
 import { ServerApi } from '@bf2-matchmaking/services/server/Server';
-import { assertObj, assertString } from '@bf2-matchmaking/utils';
+import {
+  assertObj,
+  assertString,
+  SUMMON_POLL_INTERVAL_SECONDS,
+} from '@bf2-matchmaking/utils';
+import { wait } from '@bf2-matchmaking/utils/async';
 import { gather } from '@bf2-matchmaking/redis/gather';
 import {
   GatherStartedListener,
+  PlayerLeftListener,
   PlayersSummonedListener,
   TeamSpeakGather,
 } from '@bf2-matchmaking/teamspeak/gather';
 import { syncConfig } from '@bf2-matchmaking/services/config';
-import { getPlayerList, verifyRconResult } from '@bf2-matchmaking/services/rcon';
+import {
+  getPlayerList,
+  switchPlayers,
+  verifyRconResult,
+} from '@bf2-matchmaking/services/rcon';
 import { players } from '../lib/supabase';
 import { parseError } from '@bf2-matchmaking/services/error';
-import { matchService } from '../lib/match';
+import { matchApi, matchService } from '../lib/match';
 import { getMatchTeam } from './gather-utils';
 import { stream } from '@bf2-matchmaking/redis/stream';
+import { topic } from '@bf2-matchmaking/redis/topic';
+import { GatherDraftState } from '@bf2-matchmaking/types/gather';
+import { MANAGED_CHANNEL_ROOT } from '@bf2-matchmaking/teamspeak';
+import { client as createSupabaseApi, verifyResult } from '@bf2-matchmaking/supabase';
+import { ServerStatus } from '@bf2-matchmaking/types/server';
+
+const serviceClient = createSupabaseApi();
 
 export async function initGather(configId: number) {
   try {
     const config = await syncConfig(configId);
-    const address = await ServerApi.findIdle();
+    const address = await findGatherServer();
     assertString(address, 'No idle server found');
 
-    const gather = await TeamSpeakGather.init(config);
-    addEventLogging(gather);
-    await addEventStream(gather);
-    await gather
+    const tsGather = await TeamSpeakGather.init(config);
+    addEventLogging(tsGather);
+    await addEventStream(tsGather);
+    await initDraftCompleteListener(configId, tsGather);
+    await initMatchTeardownListener(configId, tsGather);
+    await initTestQueueSyncListener(configId, tsGather);
+    const configuredGather = tsGather
       .on('playerJoining', handlePlayerJoining)
+      .on('playerLeft', handlePlayerLeftDuringDraft)
       .on('playersSummoned', handlePlayersSummoned)
       .on('summonComplete', handleSummonComplete)
       .on('gatherStarted', handleGatherStarted)
       .on('error', (e) => {
         logErrorMessage(`Gather ${configId}: Error`, e);
-      })
-      .initQueue(address);
+      });
+
+    // initQueue resets the state to Queueing. Preserve an in-progress (or
+    // completed-but-not-yet-applied) captain draft across engine restarts so
+    // the UI and retry path do not silently abandon the selected teams.
+    if (await gather.getDraft(configId).get()) {
+      await tsGather.state.set({ status: GatherStatus.Drafting, address });
+      return;
+    }
+    await configuredGather.initQueue(address);
+    const queueSync = setInterval(() => {
+      void configuredGather.syncPhysicalQueue().catch((cause) =>
+        warn(
+          'syncPhysicalQueue',
+          `Gather ${configId}: failed to reconcile TS queue: ${parseError(cause)}`
+        )
+      );
+    }, 5_000);
+    queueSync.unref();
   } catch (e) {
     logErrorMessage(`Gather ${configId}: Failed to initialize`, e);
   }
+}
+
+async function initTestQueueSyncListener(
+  configId: number,
+  tsGather: TeamSpeakGather
+) {
+  await topic(`gather:${configId}:test-ts-snapshot`).subscribe<{
+    managedClientUIds: Array<string>;
+    queuedClientUIds: Array<string>;
+  }>(async ({ managedClientUIds, queuedClientUIds }) => {
+    const managed = new Set(managedClientUIds);
+    const queued = new Set(queuedClientUIds);
+    const redisQueue = await tsGather.queue.range();
+
+    for (const clientUId of redisQueue) {
+      if (managed.has(clientUId) && !queued.has(clientUId)) {
+        await tsGather.syncPlayerLeft(clientUId);
+      }
+    }
+    for (const clientUId of queuedClientUIds) {
+      if (!(await tsGather.queue.has(clientUId))) {
+        await handlePlayerJoining(clientUId, tsGather);
+      }
+    }
+  });
+}
+
+async function initMatchTeardownListener(configId: number, tsGather: TeamSpeakGather) {
+  await topic('gather:match-teardown').subscribe<{ matchId: number }>(
+    async ({ matchId }) => {
+      try {
+        const match = await matchApi.get(matchId);
+        if (!match || match.config.id !== configId) return;
+
+        let moved = 0;
+        for (const player of match.players) {
+          if (!player.teamspeak_id) continue;
+          try {
+            await tsGather.movePlayer(MANAGED_CHANNEL_ROOT, player.teamspeak_id);
+            moved += 1;
+          } catch (e) {
+            // Disconnected players require no teardown; they will enter the
+            // queue normally when they return to TeamSpeak.
+            verbose(
+              'initMatchTeardownListener',
+              `Match ${matchId}: could not return ${player.nick}: ${parseError(e)}`
+            );
+          }
+        }
+        info(
+          'initMatchTeardownListener',
+          `Match ${matchId}: returned ${moved} player(s) to BF2 Beta`
+        );
+      } catch (e) {
+        logErrorMessage(`Match ${matchId}: TeamSpeak teardown failed`, e);
+      }
+    }
+  );
+}
+
+const cancellingDrafts = new Set<number>();
+
+/**
+ * A captain draft is valid only while every summoned player remains in the
+ * TeamSpeak queue. Cancel the abandoned match and preserve the other queued
+ * clients so they can immediately wait for a replacement player.
+ */
+const handlePlayerLeftDuringDraft: PlayerLeftListener = async (
+  clientUId,
+  tsGather
+) => {
+  const configId = tsGather.config.id;
+  if (cancellingDrafts.has(configId)) return;
+  if ((await tsGather.state.getSafe('status')) !== GatherStatus.Drafting) return;
+
+  const draft = await gather.getDraft(configId).get();
+  if (!draft || !draft.players.some((player) => player.teamspeakId === clientUId)) {
+    return;
+  }
+
+  cancellingDrafts.add(configId);
+  try {
+    // Clear first so a late captain pick cannot publish draft-complete while
+    // the departure is being handled.
+    await clearDraft(configId);
+    await matchApi.remove(draft.matchId, MatchStatus.Deleted);
+    const address = await findGatherServer();
+    assertString(address, 'No gather server configured');
+    await tsGather.nextQueue(address);
+    info(
+      'handlePlayerLeftDuringDraft',
+      `Gather ${configId}: cancelled draft ${draft.matchId} after ${clientUId} left`
+    );
+  } catch (e) {
+    logErrorMessage(`Gather ${configId}: Failed to cancel abandoned draft`, e);
+  } finally {
+    cancellingDrafts.delete(configId);
+  }
+};
+
+async function initDraftCompleteListener(configId: number, tsGather: TeamSpeakGather) {
+  const handle = async (draft: GatherDraftState) => {
+    if (draft.pool.length !== 0) return;
+    try {
+      const address = await tsGather.state.getSafe('address');
+      const teamspeakId = (playerId: string) => {
+        const player = draft.players.find((candidate) => candidate.playerId === playerId);
+        assertObj(player, `Draft player ${playerId} has no TeamSpeak identity`);
+        return player.teamspeakId;
+      };
+      // Moving players out of the queue normally looks like a departure. Mark
+      // this legitimate transition so draft-abandonment handling ignores it.
+      await tsGather.state.set({ status: GatherStatus.Starting });
+      await tsGather.initiateMatchChannels(
+        draft.matchId,
+        draft.team1.map(teamspeakId),
+        draft.team2.map(teamspeakId)
+      );
+      await startGatherMatch(draft.matchId, address);
+      await clearDraft(configId);
+      info('initDraftCompleteListener', `Gather ${configId}: completed draft ${draft.matchId}`);
+    } catch (e) {
+      await tsGather.state.set({ status: GatherStatus.Drafting });
+      logErrorMessage(`Gather ${configId}: Failed to apply completed draft`, e);
+    }
+  };
+
+  await topic(`gather:${configId}:draft-complete`).subscribe(handle);
+
+  // Redis pub/sub is intentionally ephemeral. Recover a completed draft after
+  // an engine restart or one that predates this listener implementation.
+  const existing = await gather.getDraft(configId).get();
+  if (existing?.pool.length === 0) await handle(existing);
 }
 
 const handlePlayerJoining = async (clientUId: string, gather: TeamSpeakGather) => {
@@ -55,20 +233,72 @@ const handlePlayerJoining = async (clientUId: string, gather: TeamSpeakGather) =
     await gather.acceptPlayer(clientUId);
   }
 };
+/**
+ * Which of the summoned players are currently on the BF2 server.
+ *
+ * Returns an empty list rather than throwing when RCON fails: an unreachable
+ * server means nobody can be confirmed present, and swallowing the error here
+ * keeps the poll below alive so the summon can still time out normally instead
+ * of hanging forever.
+ */
+async function getConnectedClientUIds(
+  server: string,
+  clientUIds: Array<string>
+): Promise<Array<string>> {
+  try {
+    const serverPlayers = await getPlayerList(server).then(verifyRconResult);
+    const gatherPlayers = await Promise.all(clientUIds.map(getGatherPlayer));
+
+    return gatherPlayers
+      .filter((gp) => serverPlayers.some((sp) => sp.keyhash === gp.keyhash))
+      .map((p) => p.teamspeak_id);
+  } catch (e) {
+    warn(
+      'getConnectedClientUIds',
+      `${server}: could not read player list, treating as nobody present: ${parseError(e)}`
+    );
+    return [];
+  }
+}
+
+/**
+ * Poll until every summoned player has joined the server, or the summon expires.
+ *
+ * Players are told to join *when this fires*, so a single check would always run
+ * before anyone could possibly have connected - it only ever succeeded when the
+ * players happened to already be on the server. verifySummon also owns the
+ * timeout branch, so without re-invoking it the gather could never fail either,
+ * and would sit in Summoning indefinitely.
+ */
 const handlePlayersSummoned: PlayersSummonedListener = async (
   server,
   clientUIds,
   gather
 ) => {
   try {
-    const serverPlayers = await getPlayerList(server).then(verifyRconResult);
-    const gatherPlayers = await Promise.all(clientUIds.map(getGatherPlayer));
+    while (true) {
+      // Stop if something else moved the gather on (reset, abort, next queue).
+      const status = await gather.state.getSafe('status');
+      if (status !== GatherStatus.Summoning) {
+        verbose(
+          'handlePlayersSummoned',
+          `Gather ${gather.config.id}: no longer summoning (${status}), stopping verification`
+        );
+        return;
+      }
 
-    const connectedClientUIdList = gatherPlayers
-      .filter((gp) => serverPlayers.some((sp) => sp.keyhash === gp.keyhash))
-      .map((p) => p.teamspeak_id);
+      const connectedClientUIdList = await getConnectedClientUIds(server, clientUIds);
+      const result = await gather.verifySummon(connectedClientUIdList);
+      if (result) {
+        verbose(
+          'handlePlayersSummoned',
+          `Gather ${gather.config.id}: summon resolved as ${result}`
+        );
+        return;
+      }
 
-    await gather.verifySummon(connectedClientUIdList);
+      await wait(SUMMON_POLL_INTERVAL_SECONDS);
+    }
   } catch (e) {
     logErrorMessage(`Gather ${gather.config.id}: Failed to summon players`, e);
   }
@@ -80,13 +310,134 @@ const handleSummonComplete = async (
   try {
     const players = await Promise.all(clientUIds.map(getGatherPlayer));
     const match = await matchService.createMatch(players, gather.config);
+
+    if ((await getDraftMode(gather.config.id)) === GatherDraftMode.Captains) {
+      // Hand over to the captains. Channels and match start are deferred until
+      // the draft completes, since teams are not settled yet.
+      await startCaptainDraft(gather.config.id, match.id, players);
+      // summonComplete is emitted before this asynchronous work finishes. A
+      // persisted transition event gives every open /gather page a reliable
+      // point at which router.refresh() can actually read the draft.
+      await stream(`gather:${gather.config.id}:events`).addEvent('draftStarted', {
+        matchId: match.id,
+      });
+      return;
+    }
+
     const team1 = getMatchTeam(match, 1);
     const team2 = getMatchTeam(match, 2);
+    // initiateMatchChannels emits gatherStarted, whose listener immediately
+    // advances the state to the next queue. Preserve this match's server first.
+    const address = await gather.state.getSafe('address');
     await gather.initiateMatchChannels(match.id, team1, team2);
+
+    // Everyone summoned is confirmed on the server and teams are already
+    // decided, so the match is live. Drafting is skipped deliberately: it means
+    // captains are picking, which the ELO path does not do.
+    await startGatherMatch(match.id, address);
   } catch (e) {
     logErrorMessage(`Gather ${gather.config.id}: Failed to complete summon`, e);
   }
 };
+
+/**
+ * Move a gather match from Summoning to Ongoing and bind it to its server.
+ *
+ * Previously nothing advanced a gather match past Summoning: it sat there with
+ * a null started_at and no server attached until the closeOldMatches job swept
+ * it up. The pubobot flow and POST /matches/:id/start both do this; the gather
+ * had no equivalent.
+ */
+async function startGatherMatch(matchId: number, address: string | null) {
+  await matchApi.update(matchId).commit({
+    status: MatchStatus.Ongoing,
+    started_at: DateTime.now().toISO(),
+  });
+
+  if (address) {
+    // Match pages resolve their server from Supabase's match_servers relation;
+    // Redis alone is only enough for the live scheduler.
+    await serviceClient.deleteAllMatchServers(matchId).then(verifyResult);
+    await serviceClient
+      .createMatchServers(matchId, { server: address })
+      .then(verifyResult);
+    await ServerApi.setMatch(address, matchId);
+    await assignBf2Teams(matchId, address).catch((e) =>
+      logErrorMessage(`Match ${matchId}: Failed to assign BF2 teams`, e)
+    );
+  } else {
+    warn('startGatherMatch', `Match ${matchId}: no gather address to bind server to`);
+  }
+
+  matchApi.log(matchId, `Started from gather${address ? ` on ${address}` : ''}`);
+  info('startGatherMatch', `Match ${matchId} set to Ongoing on ${address}`);
+}
+
+/**
+ * Mirror the finalized matchmaking sides onto BF2's team 1/team 2.
+ *
+ * bf2cc switchplayer toggles a player, so only players whose keyhash is on the
+ * wrong side are sent. The command applies after a short delay; re-reading the
+ * player list prevents us from toggling somebody twice based on stale state.
+ */
+export async function assignBf2Teams(matchId: number, address: string) {
+  const match = await matchApi.get(matchId);
+  assertObj(match, `Match ${matchId} not found for BF2 team assignment`);
+  const desiredTeamByKeyhash = new Map(
+    match.teams.flatMap((matchPlayer) => {
+      const player = match.players.find(
+        (candidate) => candidate.id === matchPlayer.player_id
+      );
+      return player?.keyhash
+        ? ([
+            // Match-page home/team 1 starts on BF2's team 2; away/team 2
+            // starts on BF2's team 1. The factions swap on the second round.
+            [player.keyhash, matchPlayer.team === 1 ? '2' : '1'],
+          ] as Array<[string, string]>)
+        : [];
+    })
+  );
+
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const serverPlayers = await getPlayerList(address).then(verifyRconResult);
+    const wrongTeam = serverPlayers.filter((player) => {
+      const desired = desiredTeamByKeyhash.get(player.keyhash);
+      return desired !== undefined && player.getTeam !== desired;
+    });
+    if (wrongTeam.length === 0) {
+      info('assignBf2Teams', `Match ${matchId}: all BF2 players are on their assigned teams`);
+      return;
+    }
+
+    const results = await switchPlayers(
+      address,
+      wrongTeam.map((player) => player.index)
+    );
+    const failed = results.find((result) => result.error);
+    if (failed?.error) {
+      throw new Error(`bf2cc switchplayer failed: ${failed.error.message}`);
+    }
+    info(
+      'assignBf2Teams',
+      `Match ${matchId}: switching ${wrongTeam.length} BF2 player(s), attempt ${attempt}`
+    );
+    await wait(4);
+  }
+
+  const remaining = await getPlayerList(address)
+    .then(verifyRconResult)
+    .then((serverPlayers) =>
+      serverPlayers.filter((player) => {
+        const desired = desiredTeamByKeyhash.get(player.keyhash);
+        return desired !== undefined && player.getTeam !== desired;
+      })
+    );
+  if (remaining.length > 0) {
+    throw new Error(
+      `${remaining.length} BF2 player(s) remained on the wrong team after retries`
+    );
+  }
+}
 
 const handleGatherStarted: GatherStartedListener = async (
   matchId,
@@ -95,13 +446,38 @@ const handleGatherStarted: GatherStartedListener = async (
   gather
 ) => {
   try {
-    const address = await ServerApi.findIdle();
+    const previousAddress = await gather.state.getSafe('address');
+    const address = await findGatherServer(previousAddress ?? undefined);
     assertString(address, 'No idle server found');
     await gather.nextQueue(address);
   } catch (e) {
     logErrorMessage(`Gather ${gather.config.id}: Failed to start next queue`, e);
   }
 };
+
+/**
+ * Select an idle gather server, optionally restricted to an explicit E2E
+ * allowlist. The previous match's address is excluded even before its
+ * asynchronous gatherStarted listener finishes marking that server active.
+ */
+async function findGatherServer(exclude?: string) {
+  const configured = (
+    process.env.GATHER_SERVER_ADDRESSES || process.env.GATHER_SERVER_ADDRESS || ''
+  )
+    .split(',')
+    .map((address) => address.trim())
+    .filter(Boolean)
+    .filter((address) => address !== exclude);
+
+  if (configured.length > 0) {
+    const candidates = await Promise.all(
+      configured.map(async (address) => ({ address, server: await ServerApi.get(address) }))
+    );
+    return candidates.find(({ server }) => server?.status === ServerStatus.IDLE)?.address;
+  }
+
+  return ServerApi.findIdle(exclude ? [exclude] : []);
+}
 
 async function getGatherPlayer(clientUId: string) {
   const cachedPlayer = await gather.getPlayer(clientUId);
@@ -160,9 +536,9 @@ async function addEventStream(ts: TeamSpeakGather) {
   ts.on('playersSummoned', async (address, clientUIds) => {
     await events.addEvent('playersSummoned', { address, clientUIds });
   });
-  ts.on('playerKicked', async (clientUId, reason) => {
+  ts.on('playerRemoved', async (clientUId, reason) => {
     const player = await getGatherPlayerSafe(clientUId);
-    await events.addEvent('playerKicked', {
+    await events.addEvent('playerRemoved', {
       clientUId,
       reason,
       nick: player?.nick || clientUId,

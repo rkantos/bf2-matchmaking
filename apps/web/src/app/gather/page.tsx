@@ -9,6 +9,8 @@ import { cookies } from 'next/headers';
 import { verifySingleResult } from '@bf2-matchmaking/supabase';
 import ConnectionsSection from '@/components/gather/ConnectionsSection';
 import SectionFallback from '@/components/commons/SectionFallback';
+import DraftSection from '@/components/gather/DraftSection';
+import AdminSection from '@/components/gather/AdminSection';
 import { GatherStatus } from '@bf2-matchmaking/types/gather';
 
 const GATHER_CONFIG = 20;
@@ -16,6 +18,7 @@ const GATHER_CONFIG = 20;
 const statusBadgeClass: Record<GatherStatus, string> = {
   [GatherStatus.Queueing]: 'badge-info',
   [GatherStatus.Summoning]: 'badge-warning',
+  [GatherStatus.Drafting]: 'badge-accent',
   [GatherStatus.Starting]: 'badge-success',
   [GatherStatus.Aborting]: 'badge-error',
   [GatherStatus.Failed]: 'badge-error',
@@ -31,7 +34,10 @@ export default async function Page(props: Props) {
   const config = await supabase(cookieStore)
     .getMatchConfig(GATHER_CONFIG)
     .then(verifySingleResult);
-  const { state, events, players } = await api.getGather(config.id).then(verify);
+  const gatherResponse = await api.getGather(config.id).then(verify);
+  const { state, events, players, summonTimeout, draftMode, draft } = gatherResponse;
+  const testClients = gatherResponse.testClients ?? { teamspeak: 0, bf2: 0 };
+  const connections = gatherResponse.connections ?? {};
 
   return (
     <main className="main">
@@ -48,7 +54,13 @@ export default async function Page(props: Props) {
         <Suspense fallback={<SectionFallback title="Connections" />}>
           <ConnectionsSection config={config} serverAddress={state.address} players={players} />
         </Suspense>
-        <PlayersSection players={players} />
+        {draft ? (
+          <Suspense fallback={<SectionFallback title="Drafting" />}>
+            <DraftSection config={config} draft={draft} connections={connections} />
+          </Suspense>
+        ) : (
+          <PlayersSection players={players} connections={connections} />
+        )}
         <Suspense fallback={<SectionFallback title="No server selected" />}>
           <ServerSection
             address={state.address}
@@ -57,6 +69,14 @@ export default async function Page(props: Props) {
           />
         </Suspense>
       </div>
+      <Suspense fallback={null}>
+        <AdminSection
+          config={config}
+          summonTimeout={summonTimeout}
+          draftMode={draftMode}
+          testClients={testClients}
+        />
+      </Suspense>
       <EventsSection config={config.id} events={events} />
     </main>
   );

@@ -8,6 +8,7 @@ import { Server, ServerData } from '../types';
 import { serverDataSchema, serverSchema } from '../schemas';
 import { ServerStatus } from '@bf2-matchmaking/types/server';
 import { logErrorMessage } from '@bf2-matchmaking/logging';
+import { getClient } from '../client';
 
 export async function getAllServers() {
   return (
@@ -81,6 +82,33 @@ export async function getServerDataSafe(address: string) {
 
 export async function setServer(address: string, server: Partial<Server>) {
   return hash(`servers:${address}`).set(server);
+}
+
+/** Atomically claim an idle server for one match. Idempotent for that match. */
+export async function reserveServerForMatch(address: string, matchId: string | number) {
+  const client = await getClient();
+  const result = await client.eval(
+    `local status = redis.call('HGET', KEYS[1], 'status')
+     if status == ARGV[3] then
+       if redis.call('HGET', KEYS[1], 'matchId') == ARGV[2] then return 1 end
+       return 0
+     end
+     if status ~= ARGV[4] then return 0 end
+     redis.call('HSET', KEYS[1], 'status', ARGV[3], 'matchId', ARGV[2])
+     redis.call('SREM', KEYS[2], ARGV[1])
+     redis.call('HSET', KEYS[3], ARGV[2], ARGV[1])
+     return 1`,
+    {
+      keys: [`servers:${address}`, `servers:${ServerStatus.IDLE}`, 'servers:active'],
+      arguments: [
+        address,
+        String(matchId),
+        ServerStatus.ACTIVE,
+        ServerStatus.IDLE,
+      ],
+    }
+  );
+  return Number(result) === 1;
 }
 export async function getServer(address: string) {
   const result = await hash<Server>(`servers:${address}`)

@@ -27,10 +27,16 @@ import { logChannelMessage } from './message-utils';
 import { assertString } from '@bf2-matchmaking/utils';
 import { error } from '@bf2-matchmaking/logging/winston';
 
-assertString(process.env.DISCORD_TOKEN, 'process.env.DISCORD_TOKEN not defined');
-const rest = new REST({ version: '10', rejectOnRateLimit: ['/channels'] }).setToken(
-  process.env.DISCORD_TOKEN,
-);
+let rest: REST | null = null;
+
+function discordRest() {
+  if (rest) return rest;
+  assertString(process.env.DISCORD_TOKEN, 'process.env.DISCORD_TOKEN not defined');
+  rest = new REST({ version: '10', rejectOnRateLimit: ['/channels'] }).setToken(
+    process.env.DISCORD_TOKEN,
+  );
+  return rest;
+}
 
 export interface SuccessResponse<T> {
   data: T;
@@ -48,7 +54,7 @@ const postDiscordRoute = async <T>(
   options?: RequestData,
 ): Promise<DiscordRestResponse<T>> => {
   try {
-    const data = (await rest.post(route, options)) as T;
+    const data = (await discordRest().post(route, options)) as T;
     return { data, error: null };
   } catch (e) {
     error(`POST ${route}`, e);
@@ -61,7 +67,7 @@ const putDiscordRoute = async <T>(
   options?: RequestData,
 ): Promise<DiscordRestResponse<T>> => {
   try {
-    const data = (await rest.put(route, options)) as T;
+    const data = (await discordRest().put(route, options)) as T;
     return { data, error: null };
   } catch (e) {
     error(`PUT ${route}`, e);
@@ -74,7 +80,7 @@ const getDiscordRoute = async <T>(
   options?: RequestData,
 ): Promise<DiscordRestResponse<T>> => {
   try {
-    const data = (await rest.get(route, options)) as T;
+    const data = (await discordRest().get(route, options)) as T;
     return { data, error: null };
   } catch (e) {
     error(`GET ${route}`, e);
@@ -87,7 +93,7 @@ const deleteDiscordRoute = async <T>(
   options?: RequestData,
 ): Promise<DiscordRestResponse<T>> => {
   try {
-    const data = (await rest.delete(route, options)) as T;
+    const data = (await discordRest().delete(route, options)) as T;
     return { data, error: null };
   } catch (e) {
     error(`DELETE ${route}`, e);
@@ -100,7 +106,7 @@ const patchDiscordRoute = async <T>(
   options?: RequestData,
 ): Promise<DiscordRestResponse<T>> => {
   try {
-    const data = (await rest.patch(route, options)) as T;
+    const data = (await discordRest().patch(route, options)) as T;
     return { data, error: null };
   } catch (e) {
     error(`PATCH ${route}`, e);

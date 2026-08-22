@@ -1,0 +1,12 @@
+[build]
+builder = "railpack"
+buildCommand = "npm run build -w web"
+watchPatterns = ["/apps/web/**", "/packages/**", "/package.json", "/package-lock.json"]
+providers = ["node"]
+
+[deploy]
+startCommand = "npm run start -w web -- -H 0.0.0.0 -p $PORT"
+healthcheckPath = "/"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

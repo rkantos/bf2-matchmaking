@@ -4,8 +4,10 @@
   "exports": {
     ".": "./src/index.ts",
     "./assert": "./src/assert.ts",
+    "./base-urls": "./src/base-urls.ts",
     "./async": "./src/async-utils.ts",
     "./cache": "./src/cache.ts",
+    "./constants": "./src/constants.ts",
     "./form": "./src/form-data.ts",
     "./map": "./src/map-utils.ts",
     "./url-builder": "./src/url-builder.ts"

@@ -8,6 +8,11 @@ import { GatherEvent } from '@bf2-matchmaking/types/gather';
 
 const MAX_BACKOFF_MS = 30_000;
 const HEARTBEAT_TIMEOUT_MS = 15_000;
+// A /gather server-component refresh also resolves the live BF2 server panels
+// and can take several seconds. Starting another refresh before that one has
+// committed can leave the browser continuously rendering stale requests.
+const STATE_REFRESH_MS = 10_000;
+const MIN_STATE_REFRESH_GAP_MS = 6_000;
 
 interface Props {
   defaultEvents: Array<StreamEventReply>;
@@ -24,8 +29,17 @@ export default function EventList({ defaultEvents, config }: Props) {
     let source: EventSource;
     let heartbeatTimeoutId: number | undefined;
     let reconnectTimeoutId: number | undefined;
+    let stateRefreshId: number | undefined;
     let backoff = 1000;
     let stopped = false;
+    let lastStateRefreshAt = 0;
+
+    function refreshState() {
+      const now = Date.now();
+      if (now - lastStateRefreshAt < MIN_STATE_REFRESH_GAP_MS) return;
+      lastStateRefreshAt = now;
+      router.refresh();
+    }
 
     function connect() {
       source = api.v2.getGatherEventsStream(config, latestEventId.current);
@@ -34,7 +48,7 @@ export default function EventList({ defaultEvents, config }: Props) {
         const newEvent = JSON.parse(event.data);
         latestEventId.current = newEvent.id;
         setEvents((currentEvents) => [newEvent, ...currentEvents]);
-        router.refresh();
+        refreshState();
       });
 
       source.addEventListener('heartbeat', () => {
@@ -65,14 +79,22 @@ export default function EventList({ defaultEvents, config }: Props) {
     }
 
     connect();
+    // SSE is the fast path, but browser/proxy reconnects can miss the precise
+    // render transition even though Redis state has advanced. Periodically
+    // refresh the server component data so queue, summoning and draft state
+    // converge without requiring a manual page reload.
+    stateRefreshId = window.setInterval(() => {
+      if (document.visibilityState === 'visible') refreshState();
+    }, STATE_REFRESH_MS);
 
     return () => {
       stopped = true;
       window.clearTimeout(heartbeatTimeoutId);
       window.clearTimeout(reconnectTimeoutId);
+      window.clearInterval(stateRefreshId);
       source.close();
     };
-  }, [config]);
+  }, [config, router]);
 
   useEffect(() => {
     listRef.current?.scrollTo(0, 0);
@@ -116,10 +138,16 @@ function getText({ message }: GatherEvent): string {
       return `${message.payload.nick} left.`;
     case 'playersSummoned':
       return `Summoning ${message.payload.clientUIds.length} players to ${message.payload.address}`;
-    case 'playerKicked':
-      return `${message.payload.nick} was kicked: ${message.payload.reason}`;
+    case 'playerRemoved':
+      return `${message.payload.nick} was removed from the queue: ${message.payload.reason}`;
     case 'summonComplete':
       return `Summon complete for ${message.payload.clientUIds.length} players.`;
+    case 'draftStarted':
+      return `Captain draft started for match ${message.payload.matchId}.`;
+    case 'draftUpdated':
+      return message.payload.complete
+        ? `Draft complete for match ${message.payload.matchId}.`
+        : `Draft pick ${message.payload.pickIndex} recorded for match ${message.payload.matchId}.`;
     case 'playerMoved':
       return `${message.payload.nick} moved to ${message.payload.toChannel}.`;
     case 'gatherStarted':

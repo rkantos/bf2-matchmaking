@@ -12,6 +12,7 @@ import { parseError } from '@bf2-matchmaking/utils';
 import { ServerApi } from '@bf2-matchmaking/services/server/Server';
 import { Job } from '@bf2-matchmaking/scheduler';
 import { matchService } from '../lib/match';
+import { topic } from '@bf2-matchmaking/redis/topic';
 
 async function updateActiveServers() {
   const servers = await getActiveMatchServers().then(Object.entries<string>);
@@ -43,6 +44,7 @@ async function updateLiveMatch(address: string, matchId: string, live: LiveInfo)
       await matchService.finishMatch(matchId);
       await removeLiveMatch(matchId);
       await ServerApi.reset(address);
+      await topic('gather:match-teardown').publish({ matchId: Number(matchId) });
 
       const server = await ServerApi.getData(address);
       if (Number(match.roundsPlayed) > 0 && isStartedMatch(cachedMatch)) {

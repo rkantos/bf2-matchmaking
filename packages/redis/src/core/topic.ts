@@ -6,7 +6,11 @@ export function topic(channel: string) {
 
   const subscribe = async <T>(callback: (message: T) => void): Promise<void> => {
     const client = await handleClientConnection(subscribeClient);
-    return client.SUBSCRIBE<true>(channel, (buffer) => callback(unpack(buffer)));
+    return client.SUBSCRIBE<true>(
+      channel,
+      (buffer) => callback(unpack(buffer)),
+      true
+    );
   };
 
   const unsubscribe = async (): Promise<void> => {

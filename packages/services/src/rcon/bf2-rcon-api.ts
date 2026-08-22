@@ -1,4 +1,6 @@
 import { mapListPlayers, mapMapList, mapServerInfo } from './mapper';
+import { getFakePlayers, withFakePlayerCount } from './fake-players';
+import { warn } from '@bf2-matchmaking/logging';
 import { getSocket, send } from './socket-manager';
 import { toFetchError } from '@bf2-matchmaking/utils';
 import { PlayerListItem, ServerInfo, RconResult } from '@bf2-matchmaking/types/rcon';
@@ -33,17 +35,42 @@ export async function getPlayerList(
   address: string
 ): Promise<RconResult<PlayerListItem[]>> {
   const reply = await sendMessage(address, 'bf2cc pl');
+
+  // Resolved up front so the fake rows can also stand in for a failed, empty or
+  // unparseable reply. Notably, `bf2cc pl` sends no response at all when nobody
+  // is connected, so the command times out - which is why createLiveInfo skips
+  // it entirely when connectedPlayers is '0'. Without this the fakes would be
+  // unreachable on an otherwise empty server.
+  const fakes = await getFakePlayers(address);
+
   if (reply.error) {
-    return reply;
+    if (!fakes.length) {
+      return reply;
+    }
+    warn(
+      'getPlayerList',
+      `${address}: substituting ${fakes.length} fake player(s) for failed rcon call (${reply.error.message})`
+    );
+    return { ...reply, error: null, data: fakes };
   }
+
   if (!reply.data) {
-    return { ...reply, data: null, error: { message: 'Empty player list response' } };
+    return fakes.length
+      ? { ...reply, data: fakes }
+      : { ...reply, data: null, error: { message: 'Empty player list response' } };
   }
   const data = mapListPlayers(reply.data);
   if (!data) {
-    return { ...reply, data: null, error: { message: 'Failed to parse player list' } };
+    return fakes.length
+      ? { ...reply, data: fakes }
+      : { ...reply, data: null, error: { message: 'Failed to parse player list' } };
   }
-  return { ...reply, data };
+  return {
+    ...reply,
+    data: data.concat(
+      fakes.map((_, i) => ({ ...fakes[i], index: String(data.length + i) }))
+    ),
+  };
 }
 
 export async function getServerInfo(address: string): Promise<RconResult<ServerInfo>> {
@@ -58,7 +85,7 @@ export async function getServerInfo(address: string): Promise<RconResult<ServerI
   if (!data) {
     return { ...reply, data: null, error: { message: 'Failed to parse server info' } };
   }
-  return { ...reply, data };
+  return { ...reply, data: await withFakePlayerCount(address, data) };
 }
 
 export async function switchPlayers(address: string, players: Array<string>) {

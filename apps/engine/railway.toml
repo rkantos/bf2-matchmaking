@@ -1,12 +1,12 @@
 [build]
 builder = "railpack"
 buildCommand = "npm run build -w engine"
-watchPatterns = ["apps/engine", "packages"]
+watchPatterns = ["/apps/engine/**", "/packages/**", "/package.json", "/package-lock.json"]
 providers = ["node"]
 
 [deploy]
 startCommand = "NPM_CONFIG_LOGLEVEL=verbose npm run start -w engine"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
-restartPolicyType = "on_failure"
+restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5

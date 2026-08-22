@@ -8,15 +8,15 @@ import {
   LogContext,
 } from '@bf2-matchmaking/types';
 import { error, info, warn } from './winston';
-import { assertString } from '@bf2-matchmaking/utils';
 
-assertString(process.env.LOGTAIL_SOURCE, 'LOGTAIL_SOURCE not defined in environment');
-assertString(process.env.LOGTAIL_HOST, 'LOGTAIL_HOST not defined in environment');
-const logger = new Logtail(process.env.LOGTAIL_SOURCE, {
-  contextObjectCircularRefWarn: false,
-  endpoint: `https://${process.env.LOGTAIL_HOST}`,
-});
-export const flush = () => logger.flush();
+const logger =
+  process.env.LOGTAIL_SOURCE && process.env.LOGTAIL_HOST
+    ? new Logtail(process.env.LOGTAIL_SOURCE, {
+        contextObjectCircularRefWarn: false,
+        endpoint: `https://${process.env.LOGTAIL_HOST}`,
+      })
+    : null;
+export const flush = () => logger?.flush() ?? Promise.resolve();
 
 export const logEditChannelMessage = (
   channelId: string,
@@ -24,6 +24,7 @@ export const logEditChannelMessage = (
   content: string | null = 'no content',
   embed?: unknown
 ) => {
+  if (!logger) return info('log', `Channel ${channelId} edited message ${content}`);
   logger
     .info(`Channel ${channelId} edited message ${content}`, {
       content,
@@ -40,6 +41,12 @@ export const logChangeLiveState = (
   nextState: LiveServerState,
   liveInfo: LiveInfo
 ) => {
+  if (!logger) {
+    return info(
+      'log',
+      `Match ${matchId}: Live state changed from "${prevState}" to "${nextState}"`
+    );
+  }
   logger
     .info(`Match ${matchId}: Live state changed from "${prevState}" to "${nextState}"`, {
       liveInfo: JSON.stringify(liveInfo),
@@ -54,6 +61,7 @@ export const logAddMatchRound = (
   match: MatchesJoined,
   liveInfo: LiveInfo
 ) => {
+  if (!logger) return info('log', `Adding Round ${round.id} to Match ${match.id}`);
   logger
     .info(`Adding Round ${round.id} to Match ${match.id}`, {
       round: JSON.stringify(round),
@@ -66,6 +74,7 @@ export const logAddMatchRound = (
 };
 
 export const logSupabaseError = (message: string, err: PostgrestError) => {
+  if (!logger) return error(message, err);
   logger
     .error(message, { ...err })
     .then((log) => error('logtail', log.message))
@@ -83,6 +92,7 @@ export const logErrorMessage = (msg: string, err: unknown, context?: LogContext)
     e = JSON.stringify(err);
   }
 
+  if (!logger) return error(msg, err);
   logger
     .error(msg, { error: e, json: JSON.stringify(err), ...context })
     .then((log) => info('logtail', `${log.message}: ${e}`))
@@ -90,6 +100,7 @@ export const logErrorMessage = (msg: string, err: unknown, context?: LogContext)
     .finally(flush);
 };
 export const logMessage = (msg: string, context?: LogContext) => {
+  if (!logger) return info('log', msg);
   logger
     .info(msg, context)
     .then((log) => info('logtail', log.message))
@@ -98,6 +109,7 @@ export const logMessage = (msg: string, context?: LogContext) => {
 };
 
 export const logWarnMessage = (msg: string, context?: LogContext) => {
+  if (!logger) return warn('log', msg);
   logger
     .warn(msg, context)
     .then((log) => warn('logtail', log.message))
