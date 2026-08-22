@@ -5,7 +5,8 @@
     "./admin": "./src/admin-client.ts",
     "./admin-identity": "./src/admin-identity.ts",
     "./api": "./src/teamspeak-api.ts",
-    "./gather": "./src/teamspeak-gather.ts"
+    "./gather": "./src/teamspeak-gather.ts",
+    "./voice": "./src/voice.ts"
   },
   "version": "1.0.0",
   "scripts": {
@@ -16,6 +17,7 @@
     "@bf2-matchmaking/redis": "*",
     "@bf2-matchmaking/utils": "*",
     "@honeybbq/teamspeak-client": "^0.2.3",
+    "opusscript": "^0.1.1",
     "ts3-nodejs-library": "^3.5.1"
   },
   "devDependencies": {

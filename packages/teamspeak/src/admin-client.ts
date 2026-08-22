@@ -74,6 +74,21 @@ async function createClient(): Promise<Client | null> {
       'TeamSpeakAdminClient',
       `Connected as ${ADMIN_NICKNAME} (uid ${identity.uid}, clid ${ts.clientID()})`
     );
+
+    // Sit in the queue channel so spoken announcements reach the players
+    // waiting there - voice only carries within a channel. Harmless to the
+    // queue itself: acceptance is keyed on a players row with a teamspeak_id,
+    // which this identity deliberately does not have.
+    try {
+      await clientMove(ts, ts.clientID(), BigInt(QUEUE_CHANNEL));
+    } catch (e) {
+      warn(
+        'TeamSpeakAdminClient',
+        `Could not join queue channel ${QUEUE_CHANNEL}: ${
+          e instanceof Error ? e.message : String(e)
+        }`
+      );
+    }
     return ts;
   } catch (e) {
     error('TeamSpeakAdminClient', e);

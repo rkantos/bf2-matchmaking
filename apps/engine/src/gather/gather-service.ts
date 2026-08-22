@@ -20,6 +20,7 @@ import {
 import {
   assertObj,
   assertString,
+  environmentFlag,
   SUMMON_POLL_INTERVAL_SECONDS,
 } from '@bf2-matchmaking/utils';
 import { wait } from '@bf2-matchmaking/utils/async';
@@ -29,6 +30,7 @@ import {
   PlayerLeftListener,
   PlayersSummonedListener,
   TeamSpeakGather,
+  formatSummonTimeout,
 } from '@bf2-matchmaking/teamspeak/gather';
 import { syncConfig } from '@bf2-matchmaking/services/config';
 import {
@@ -46,6 +48,7 @@ import { topic } from '@bf2-matchmaking/redis/topic';
 import { GatherDraftState } from '@bf2-matchmaking/types/gather';
 import { MANAGED_CHANNEL_ROOT } from '@bf2-matchmaking/teamspeak';
 import { resultsChannelName } from '@bf2-matchmaking/teamspeak/admin';
+import { speak } from '@bf2-matchmaking/teamspeak/voice';
 import {
   client as createSupabaseApi,
   createServiceClient,
@@ -349,11 +352,38 @@ async function getConnectedClientUIds(
  * timeout branch, so without re-invoking it the gather could never fail either,
  * and would sit in Summoning indefinitely.
  */
+/**
+ * Say the summon out loud in the queue channel.
+ *
+ * The address is spelled without its domain suffix and with the dots spoken as
+ * "dot", because a synthetic voice reads "skasberlin.bf2.top" as one unbroken
+ * word otherwise.
+ */
+async function announceSummon(server: string, gather: TeamSpeakGather) {
+  if (!environmentFlag('ENABLE_GATHER_VOICE')) {
+    return;
+  }
+  try {
+    const timeout = formatSummonTimeout(await gather.getSummonTimeoutMs());
+    const spoken = server.replace(/\./g, ' dot ');
+    await speak(
+      `The queue is now summoning. Please join the BF2 server ${spoken}. ` +
+        `You have ${timeout}.`
+    );
+  } catch (e) {
+    warn('announceSummon', `Failed to announce summon: ${parseError(e)}`);
+  }
+}
+
 const handlePlayersSummoned: PlayersSummonedListener = async (
   server,
   clientUIds,
   gather
 ) => {
+  // Said, not sent: the players are sitting in a voice channel and the summon is
+  // the one moment they have somewhere to be. Deliberately not awaited - the
+  // line takes seconds to speak and verification should start immediately.
+  void announceSummon(server, gather);
   try {
     while (true) {
       // Stop if something else moved the gather on (reset, abort, next queue).
