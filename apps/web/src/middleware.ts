@@ -35,7 +35,13 @@ export async function middleware(request: NextRequest) {
   if (hostname === GATHER_HOST && pathname === '/') {
     const destination = request.nextUrl.clone();
     destination.pathname = '/gather';
-    const rewriteResponse = NextResponse.rewrite(destination);
+    // Hand the request on as well as the cookies. updateSession() may have just
+    // refreshed the session, which rotates the refresh token: the replacement
+    // is recorded on `request` for whatever renders next, and on the response
+    // for the browser. Rewriting without the request renders the page from the
+    // pre-refresh cookies, whose refresh token supabase has already retired, so
+    // every render reports no session and signing in appears to do nothing.
+    const rewriteResponse = NextResponse.rewrite(destination, { request });
 
     sessionResponse.cookies
       .getAll()
