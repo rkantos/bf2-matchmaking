@@ -13,7 +13,7 @@ import DraftSection from '@/components/gather/DraftSection';
 import AdminSection from '@/components/gather/AdminSection';
 import { GatherStatus } from '@bf2-matchmaking/types/gather';
 
-const GATHER_CONFIG = 20;
+const GATHER_CONFIG = Number(process.env.GATHER_CONFIG_ID || 20);
 
 const statusBadgeClass: Record<GatherStatus, string> = {
   [GatherStatus.Queueing]: 'badge-info',

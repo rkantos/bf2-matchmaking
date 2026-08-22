@@ -25,6 +25,7 @@ const IDENTITY_FIELD = 'identity';
  * stalls with no error. 16 clears that with headroom and costs milliseconds.
  */
 const SECURITY_LEVEL = 16;
+const SEEDED_IDENTITY = process.env.TEAMSPEAK_ADMIN_IDENTITY;
 
 export const ADMIN_NICKNAME = process.env.TEAMSPEAK_ADMIN_NICKNAME || 'bf2.gg-admin';
 
@@ -64,6 +65,17 @@ export async function getOrCreateAdminIdentity(): Promise<AdminIdentity> {
     const upgraded = identity.toString();
     await store().setEntries([[IDENTITY_FIELD, upgraded]]);
     return describe(upgraded);
+  }
+
+  if (SEEDED_IDENTITY) {
+    const seeded = describe(SEEDED_IDENTITY);
+    const identity = identityFromString(seeded.serialized);
+    if (identity.securityLevel() < SECURITY_LEVEL) {
+      await identity.upgradeToLevel(SECURITY_LEVEL);
+    }
+    const serialized = identity.toString();
+    await store().setEntries([[IDENTITY_FIELD, serialized]]);
+    return describe(serialized);
   }
 
   const serialized = generateIdentity(SECURITY_LEVEL).toString();

@@ -49,6 +49,7 @@ Do not copy the production `REDIS_URL` or `API_KEY`.
 - `API_BASE_URL=https://<staging-api-domain>`
 - `NEXT_PUBLIC_WEB_BASE_URL=https://<staging-web-domain>`
 - `WEB_BASE_URL=https://<staging-web-domain>`
+- `GATHER_CONFIG_ID=<staging match config id>`
 
 Add `https://<staging-web-domain>/auth/callback` to the Supabase authentication
 redirect allowlist.
@@ -66,6 +67,10 @@ redirect allowlist.
 - `TEAMSPEAK_HOST`
 - `TEAMSPEAK_VOICE_PORT`
 - `TEAMSPEAK_SERVER_PASSWORD`
+- `TEAMSPEAK_MANAGED_CHANNEL_ROOT=42495` (BF2 Beta)
+- `TEAMSPEAK_QUEUE_CHANNEL=<dedicated staging queue channel id>`
+- `TEAMSPEAK_ADMIN_IDENTITY` (serialized identity from the existing test Redis)
+- `TEAMSPEAK_TEST_IDENTITIES_JSON` (Test0-Test15 player-id to serialized identity map)
 - `BF2_TEST_SERVER_PASSWORD=2026`
 - `BF2_TEST_SPAWN_STAGGER_MS=70` (optional)
 - `TEAMSPEAK_TEST_SPAWN_STAGGER_MS=2000` (optional; lower only after checking
@@ -89,6 +94,8 @@ In that case use Railway's Pro static outbound IP feature.
 - `TEAMSPEAK_QUERY_USERNAME`
 - `TEAMSPEAK_QUERY_NICKNAME=bf2.gg-staging`
 - `TEAMSPEAK_PASSWORD` (ServerQuery password, not the voice join password)
+- `TEAMSPEAK_MANAGED_CHANNEL_ROOT=42495` (BF2 Beta)
+- `TEAMSPEAK_QUEUE_CHANNEL=<dedicated staging queue channel id>`
 
 With `ENABLE_ENGINE_JOBS=false`, the engine does not require `DISCORD_TOKEN`
 and does not start Discord listeners or production scheduler jobs.

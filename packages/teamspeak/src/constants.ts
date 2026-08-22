@@ -1,7 +1,8 @@
-export const LOBBY_CHANNEL = '20342';
+export const LOBBY_CHANNEL = process.env.TEAMSPEAK_LOBBY_CHANNEL || '20342';
 /** Root of the only channel tree the matchmaking bot may manage. */
-export const MANAGED_CHANNEL_ROOT = '42495'; // BF2 Beta
-export const QUEUE_CHANNEL = '42497';
+export const MANAGED_CHANNEL_ROOT =
+  process.env.TEAMSPEAK_MANAGED_CHANNEL_ROOT || '42495'; // BF2 Beta
+export const QUEUE_CHANNEL = process.env.TEAMSPEAK_QUEUE_CHANNEL || '42497';
 /** Match channels are created directly below BF2 Beta. */
 export const BOT_CHANNEL = MANAGED_CHANNEL_ROOT;
 

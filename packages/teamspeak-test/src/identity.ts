@@ -31,6 +31,7 @@ const IDENTITY_KEY = 'gather:test:identities';
  * to clear 16, so the headroom above 15 is free.
  */
 const SECURITY_LEVEL = 16;
+const SEEDED_IDENTITIES = parseSeededIdentities();
 
 export interface TestIdentity {
   /** players.id of the Test row this identity is bound to. */
@@ -42,6 +43,22 @@ export interface TestIdentity {
 }
 
 const identityStore = () => hash<Record<string, string>>(IDENTITY_KEY);
+
+function parseSeededIdentities(): Record<string, string> {
+  const value = process.env.TEAMSPEAK_TEST_IDENTITIES_JSON;
+  if (!value) return {};
+
+  const parsed: unknown = JSON.parse(value);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('TEAMSPEAK_TEST_IDENTITIES_JSON must be a JSON object');
+  }
+
+  return Object.fromEntries(
+    Object.entries(parsed).filter(
+      (entry): entry is [string, string] => typeof entry[1] === 'string'
+    )
+  );
+}
 
 function toTestIdentity(playerId: string, serialized: string): TestIdentity {
   const identity = identityFromString(serialized);
@@ -111,8 +128,9 @@ export async function getOrCreateIdentities(
   const created: Record<string, string> = {};
 
   const identities = playerIds.map((playerId) => {
-    const existing = stored?.[playerId];
+    const existing = stored?.[playerId] || SEEDED_IDENTITIES[playerId];
     if (existing) {
+      if (!stored?.[playerId]) created[playerId] = existing;
       return toTestIdentity(playerId, existing);
     }
     const identity = createIdentity(playerId);
