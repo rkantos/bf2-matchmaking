@@ -76,6 +76,23 @@ export function sumRating(acc: number, player: RatedMatchPlayer) {
   return acc + player.rating;
 }
 
+/**
+ * Which config's ratings a draft should read.
+ *
+ * A new queue has no ratings of its own, so withRating() falls back to 1500 for
+ * everyone and both draft modes lose the thing they balance on. Pointing it at
+ * an established config played in the same format gives real history from the
+ * queue's first match.
+ *
+ * Reads only. Results are written against the match's own config
+ * (updatePlayerRatings is called with match.config.id), so a borrowed ladder is
+ * never written back into.
+ */
+export function ratingsConfigId(configId: number) {
+  const configured = Number(process.env.RATINGS_CONFIG_ID);
+  return Number.isInteger(configured) && configured > 0 ? configured : configId;
+}
+
 export const withRating =
   (ratings: Array<PlayerRatingsRow>) =>
   (mp: MatchPlayersInsert): RatedMatchPlayer => ({

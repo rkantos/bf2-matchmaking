@@ -16,6 +16,7 @@ import {
 import { info, logErrorMessage } from '@bf2-matchmaking/logging';
 import { client, createServiceClient } from '@bf2-matchmaking/supabase';
 import { createMatchApi } from './match/match-api';
+import { ratingsConfigId } from './player-service';
 import { topic } from '@bf2-matchmaking/redis/topic';
 
 // Constructed here rather than injected so both the engine (which starts
@@ -47,7 +48,7 @@ async function toDraftPlayers(
 ): Promise<Array<GatherDraftPlayer>> {
   const { data: ratings } = await client().getPlayerRatingsByIdList(
     players.map((p) => p.id),
-    configId
+    ratingsConfigId(configId)
   );
 
   return players.map((p) => ({

@@ -8,7 +8,7 @@ import {
 import { compareRating, shuffleArray } from '@bf2-matchmaking/utils';
 import { logErrorMessage, logMessage } from '@bf2-matchmaking/logging';
 import { client, verifyResult } from '@bf2-matchmaking/supabase';
-import { sumRating, withRating } from './player-service';
+import { ratingsConfigId, sumRating, withRating } from './player-service';
 
 export async function buildDraftWithConfig(
   players: Array<MatchPlayersInsert>,
@@ -18,7 +18,7 @@ export async function buildDraftWithConfig(
     const ratings = await client()
       .getPlayerRatingsByIdList(
         players.map((p) => p.player_id),
-        config.id
+        ratingsConfigId(config.id)
       )
       .then(verifyResult);
 
