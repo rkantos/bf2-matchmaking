@@ -12,7 +12,15 @@ interface Props {
   players: Array<GatherPlayer>;
 }
 export default async function ConnectionsSection({ config, serverAddress, players }: Props) {
-  const player = await session.getSessionPlayer();
+  const player = await session.getSessionPlayerSafe();
+  if (!player) {
+    return (
+      <section className="section">
+        <h2>Connections</h2>
+        <p>Sign in to view your Discord, TeamSpeak and BF2 connections.</p>
+      </section>
+    );
+  }
   const guildMember = config.guild
     ? await getGuildMember(config.guild, player.id).then(({ data }) => data)
     : null;
