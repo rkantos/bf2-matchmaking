@@ -530,6 +530,19 @@ export class TeamSpeakGather extends EventEmitter {
       await this.makeChannelTemporary(cid);
     }
     this.emit('gatherStarted', matchId, team1, team2, this);
+    return [channel1Id, channel2Id] as const;
+  }
+
+  /**
+   * Post a message into a channel rather than to one client.
+   *
+   * Used to tell both teams something about the match they are now in, which a
+   * private message to each player would only repeat eight times.
+   */
+  async messageChannel(cid: string, text: string) {
+    const channel = await this.ts.getChannelById(cid);
+    assertObj(channel, `Channel ${cid} not found`);
+    await channel.message(text);
   }
 
   /**

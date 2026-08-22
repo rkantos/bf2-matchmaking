@@ -382,6 +382,45 @@ const handlePlayersSummoned: PlayersSummonedListener = async (
     logErrorMessage(`Gather ${gather.config.id}: Failed to summon players`, e);
   }
 };
+/**
+ * Tell both match channels how the ELO split came out.
+ *
+ * Only the team totals: the point is to show the sides were balanced, and
+ * publishing what each player is rated invites an argument rather than a match.
+ *
+ * Best effort. The teams are already decided and the players already moved by
+ * the time this runs, so a TeamSpeak hiccup must not stop the match starting.
+ */
+async function postTeamRatings(
+  gather: TeamSpeakGather,
+  match: MatchesJoined,
+  channels: ReadonlyArray<string>
+) {
+  try {
+    const total = (team: number) =>
+      match.teams
+        .filter((matchPlayer) => matchPlayer.team === team)
+        .reduce((sum, matchPlayer) => sum + (matchPlayer.rating ?? 0), 0);
+    const size = match.config.size / 2;
+    const [team1, team2] = [total(1), total(2)];
+    const average = (rating: number) => Math.round(rating / size);
+
+    const message =
+      `[b]Match ${match.id}[/b] teams picked by ELO - ` +
+      `Team 1: ${team1} (avg ${average(team1)}) | ` +
+      `Team 2: ${team2} (avg ${average(team2)})`;
+
+    for (const cid of channels) {
+      await gather.messageChannel(cid, message);
+    }
+  } catch (e) {
+    warn(
+      'postTeamRatings',
+      `Match ${match.id}: could not post team ratings: ${parseError(e)}`
+    );
+  }
+}
+
 const handleSummonComplete = async (
   clientUIds: Array<string>,
   gather: TeamSpeakGather
@@ -408,7 +447,8 @@ const handleSummonComplete = async (
     // initiateMatchChannels emits gatherStarted, whose listener immediately
     // advances the state to the next queue. Preserve this match's server first.
     const address = await gather.state.getSafe('address');
-    await gather.initiateMatchChannels(match.id, team1, team2);
+    const channels = await gather.initiateMatchChannels(match.id, team1, team2);
+    await postTeamRatings(gather, match, channels);
 
     // Everyone summoned is confirmed on the server and teams are already
     // decided, so the match is live. Drafting is skipped deliberately: it means
