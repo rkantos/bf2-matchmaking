@@ -278,6 +278,7 @@ async function initDraftCompleteListener(configId: number, tsGather: TeamSpeakGa
       // Moving players out of the queue normally looks like a departure. Mark
       // this legitimate transition so draft-abandonment handling ignores it.
       await tsGather.state.set({ status: GatherStatus.Starting });
+      await announceTeamMove();
       await tsGather.initiateMatchChannels(
         draft.matchId,
         draft.team1.map(teamspeakId),
@@ -396,20 +397,48 @@ async function prepareAdminClient() {
  * "dot", because a synthetic voice reads "skasberlin.bf2.top" as one unbroken
  * word otherwise.
  */
-async function announceSummon(server: string, gather: TeamSpeakGather) {
+/**
+ * Longest a spoken line may hold up whatever it is announcing.
+ *
+ * Announcements that must be heard before something happens are awaited, so a
+ * renderer that hangs would otherwise stall a match indefinitely.
+ */
+const ANNOUNCE_TIMEOUT_MS = 15_000;
+
+async function announce(context: string, text: string) {
   if (!environmentFlag('ENABLE_GATHER_VOICE')) {
     return;
   }
-  try {
-    const timeout = formatSummonTimeout(await gather.getSummonTimeoutMs());
-    const spoken = server.replace(/\./g, ' dot ');
-    await speak(
-      `The queue is now summoning. Please join the BF2 server ${spoken}. ` +
-        `You have ${timeout}.`
-    );
-  } catch (e) {
-    warn('announceSummon', `Failed to announce summon: ${parseError(e)}`);
-  }
+  // Caught on the promise itself rather than around the race. If the timeout
+  // wins and speaking fails afterwards, a rejection with nothing attached to it
+  // is an unhandled rejection, which node exits on - the exact way an optional
+  // announcement took this engine down once already.
+  const spoken = speak(text).catch((e) => {
+    warn(context, `Failed to announce: ${parseError(e)}`);
+    return false;
+  });
+  await Promise.race([spoken, wait(ANNOUNCE_TIMEOUT_MS)]);
+}
+
+async function announceSummon(server: string, gather: TeamSpeakGather) {
+  const timeout = formatSummonTimeout(await gather.getSummonTimeoutMs());
+  const spoken = server.replace(/\./g, ' dot ');
+  await announce(
+    'announceSummon',
+    `The queue is now summoning. Please join the BF2 server ${spoken}. ` +
+      `You have ${timeout}.`
+  );
+}
+
+/**
+ * Say that the teams are about to be split up.
+ *
+ * Said before the move rather than after, and awaited: the admin client sits in
+ * the queue channel and voice carries only within a channel, so once the
+ * players are in their team channels this line would reach nobody.
+ */
+async function announceTeamMove() {
+  await announce('announceTeamMove', 'Now moving teams to their channels.');
 }
 
 const handlePlayersSummoned: PlayersSummonedListener = async (
@@ -514,6 +543,7 @@ const handleSummonComplete = async (
     // initiateMatchChannels emits gatherStarted, whose listener immediately
     // advances the state to the next queue. Preserve this match's server first.
     const address = await gather.state.getSafe('address');
+    await announceTeamMove();
     const channels = await gather.initiateMatchChannels(match.id, team1, team2);
     await postTeamRatings(gather, match, channels);
 
