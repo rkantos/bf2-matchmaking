@@ -31,9 +31,20 @@ interface GatherView {
   connections: Record<string, { teamspeak?: boolean; bf2?: boolean }>;
 }
 
+/**
+ * Server emoji from the gather guild. A bot may use emoji from any guild it is
+ * in, so these render wherever it posts - but they are ids, and recreating an
+ * emoji changes them, hence the overrides.
+ */
+const TS_EMOJI = process.env.GATHER_QUEUE_TS_EMOJI || '<:ts3:1421538257602216047>';
+const BF2_EMOJI = process.env.GATHER_QUEUE_BF2_EMOJI || '<:bf2:1421538248882131044>';
+const ABSENT_EMOJI = '▫️';
+
 function icons(connection: { teamspeak?: boolean; bf2?: boolean } | undefined) {
-  // Paired with the legend in the footer: filled means connected.
-  return `${connection?.teamspeak ? '🎧' : '▫️'} ${connection?.bf2 ? '🎮' : '▫️'}`;
+  // Paired with the legend in the footer: the icon shows only once connected.
+  return `${connection?.teamspeak ? TS_EMOJI : ABSENT_EMOJI} ${
+    connection?.bf2 ? BF2_EMOJI : ABSENT_EMOJI
+  }`;
 }
 
 function buildEmbed(view: GatherView, size: number) {
@@ -48,7 +59,9 @@ function buildEmbed(view: GatherView, size: number) {
     title: `Gather queue ${view.players.length}/${size}`,
     description: lines.length ? lines.join('\n') : '_Queue is empty_',
     color: view.players.length >= size ? 0x57f287 : 0x5865f2,
-    footer: { text: '🎧 TeamSpeak · 🎮 BF2 server · ▫️ not connected' },
+    // Footers are plain text, so the legend names the columns rather than
+    // repeating the emoji, which would not render there.
+    footer: { text: 'TeamSpeak · BF2 server · ▫️ not connected' },
   };
 }
 
