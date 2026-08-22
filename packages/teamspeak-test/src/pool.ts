@@ -6,7 +6,11 @@ import {
 import { error, info, warn } from '@bf2-matchmaking/logging/winston';
 import { MANAGED_CHANNEL_ROOT, QUEUE_CHANNEL } from '@bf2-matchmaking/teamspeak';
 import { adminMoveClients } from '@bf2-matchmaking/teamspeak/admin';
-import { ensureSecurityLevel, getStoredIdentity } from './identity';
+import {
+  ensureSecurityLevel,
+  getStoredIdentity,
+  SEEDED_IDENTITY_COUNT,
+} from './identity';
 import { reconcileBf2ClientOrder } from '@bf2-matchmaking/teamspeak-test/bf2-pool';
 import {
   CONNECT_TIMEOUT_MS,
@@ -170,7 +174,10 @@ async function connectClient(spec: TestClientSpec): Promise<PooledClient> {
   const stored = await getStoredIdentity(spec.playerId);
   if (!stored) {
     throw new Error(
-      `No stored identity for player ${spec.playerId}. Run tools/seed-test-ts-identities.ts first.`
+      `No stored identity for player ${spec.playerId}: absent from redis and from ` +
+        `TEAMSPEAK_TEST_IDENTITIES_JSON (${SEEDED_IDENTITY_COUNT} entries). Seed this ` +
+        `redis with tools/seed-test-ts-identities.ts, or carry the existing identities ` +
+        `in through TEAMSPEAK_TEST_IDENTITIES_JSON.`
     );
   }
   const identity = await ensureSecurityLevel(stored);

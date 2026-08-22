@@ -44,6 +44,12 @@ export interface TestIdentity {
 
 const identityStore = () => hash<Record<string, string>>(IDENTITY_KEY);
 
+/**
+ * How many identities the environment supplied. Reported when a lookup fails,
+ * to separate "the variable is not set" from "it is set but lacks this player".
+ */
+export const SEEDED_IDENTITY_COUNT = Object.keys(SEEDED_IDENTITIES).length;
+
 function parseSeededIdentities(): Record<string, string> {
   const value = process.env.TEAMSPEAK_TEST_IDENTITIES_JSON;
   if (!value) return {};
@@ -109,11 +115,31 @@ export async function getStoredIdentities(): Promise<Array<TestIdentity>> {
   );
 }
 
+/**
+ * Look up a single identity: redis first, falling back to the seeded env map,
+ * which is persisted on first use.
+ *
+ * The fallback is what makes a fresh deployment usable. Its redis starts empty
+ * while players.teamspeak_id still holds the UIDs of the identities seeded into
+ * the shared database, and those identities cannot be regenerated without
+ * orphaning the rows - so the keypairs have to be carried in rather than
+ * recreated. Mirrors getOrCreateAdminIdentity().
+ */
 export async function getStoredIdentity(
   playerId: string
 ): Promise<TestIdentity | null> {
   const serialized = await identityStore().get(playerId);
-  return serialized ? toTestIdentity(playerId, serialized) : null;
+  if (serialized) {
+    return toTestIdentity(playerId, serialized);
+  }
+
+  const seeded = SEEDED_IDENTITIES[playerId];
+  if (!seeded) {
+    return null;
+  }
+
+  await identityStore().setEntries([[playerId, seeded]]);
+  return toTestIdentity(playerId, seeded);
 }
 
 /**
