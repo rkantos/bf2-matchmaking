@@ -164,6 +164,16 @@ async function initMatchTeardownListener(configId: number, tsGather: TeamSpeakGa
         const match = await matchApi.get(matchId);
         if (!match || match.config.id !== configId) return;
 
+        // A draft outlives its match when applying it fails part way through,
+        // and the gather page renders whichever draft is stored regardless of
+        // status - so a dead match leaves the drafting interface up over a
+        // gather that has already moved on to the next queue.
+        const draft = await gather.getDraft(configId).get();
+        if (draft?.matchId === matchId) {
+          await clearDraft(configId);
+          info('initMatchTeardownListener', `Match ${matchId}: cleared its draft`);
+        }
+
         const destination =
           (await resultsChannel(match, tsGather)) ?? MANAGED_CHANNEL_ROOT;
 
