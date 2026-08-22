@@ -1,7 +1,7 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { error, info } from '@bf2-matchmaking/logging/winston';
+import { error, info, warn } from '@bf2-matchmaking/logging/winston';
 import { testCdKeyForPlayer } from './cdkey';
 
 export interface Bf2TestClientSpec {
@@ -24,11 +24,51 @@ let resizeQueue: Promise<unknown> = Promise.resolve();
 let desiredClientCount = 0;
 let latestRoster: Array<Bf2TestClientSpec> = [];
 let latestAddress = '';
-const CONNECT_TIMEOUT_MS = 20_000;
 const AUTO_STAGGER_CEILING_MS = Math.max(
   20,
   Number(process.env.BF2_TEST_SPAWN_STAGGER_MS) || 70
 );
+
+/**
+ * Join reply timeout passed to bf2headless.js, which otherwise defaults to one
+ * second.
+ *
+ * On timeout the script does not report a timeout: it retries twice, then falls
+ * back to an alternate protocol build (par1=0x10/par2=0xf005) that our servers
+ * refuse with "client version is newer than server". A late reply therefore
+ * surfaces as a version mismatch that is not one. A second is enough on a LAN,
+ * but not from a datacenter where the round trip competes with every other
+ * client joining at the same time.
+ */
+const JOIN_TIMEOUT_MS = Math.max(
+  1_000,
+  Number(process.env.BF2_TEST_JOIN_TIMEOUT_MS) || 3_000
+);
+
+/**
+ * Attempts per client before the resize gives up.
+ *
+ * Every failure seen so far came down to one dropped UDP packet - a GameSpy
+ * query with no reply (hardcoded to a one second timeout inside the script, so
+ * no flag widens it), a join reply arriving late, or the server dropping the
+ * session mid-handshake. A fresh child recovers from all three, and without a
+ * retry a single lost packet tears down every client that already connected.
+ */
+const CONNECT_ATTEMPTS = Math.max(
+  1,
+  Number(process.env.BF2_TEST_CONNECT_ATTEMPTS) || 2
+);
+const RETRY_BACKOFF_MS = 500;
+
+/**
+ * Whole-attempt budget: the GameSpy query, both protocol builds retrying their
+ * join twice at JOIN_TIMEOUT_MS each, and then the post-join handshake.
+ *
+ * Derived rather than fixed so that raising the join timeout cannot starve the
+ * handshake it exists to protect - at the previous flat 20s, a join timeout of
+ * 3s would leave the handshake about four seconds.
+ */
+const CONNECT_TIMEOUT_MS = Math.max(20_000, JOIN_TIMEOUT_MS * 4 + 15_000);
 
 const wait = (ms: number) => new Promise((resolveWait) => setTimeout(resolveWait, ms));
 
@@ -111,6 +151,7 @@ async function connectClient(
   // in the initial join packet. Override for a different testing deployment.
   const password = process.env.BF2_TEST_SERVER_PASSWORD || '2026';
   args.push('--password', password);
+  args.push('--timeout', String(JOIN_TIMEOUT_MS));
   if (target.port) args.push('--port', String(target.port));
   args.push(target.host);
 
@@ -181,6 +222,36 @@ async function connectClient(
   }
 }
 
+/**
+ * Connect one client, retrying a lost handshake with a fresh child process.
+ *
+ * connectClient() has already terminated the failed child by the time it
+ * rejects, so each attempt starts from a clean process and a new UDP socket.
+ */
+async function connectClientWithRetry(
+  spec: Bf2TestClientSpec,
+  address: string,
+  onJoinAccepted: () => void
+) {
+  let lastCause: unknown;
+  for (let attempt = 1; attempt <= CONNECT_ATTEMPTS; attempt++) {
+    try {
+      return await connectClient(spec, address, onJoinAccepted);
+    } catch (cause) {
+      lastCause = cause;
+      if (attempt === CONNECT_ATTEMPTS) break;
+      warn(
+        'Bf2TestClientPool',
+        `${spec.nick} attempt ${attempt}/${CONNECT_ATTEMPTS} failed, retrying: ${
+          cause instanceof Error ? cause.message : String(cause)
+        }`
+      );
+      await wait(RETRY_BACKOFF_MS);
+    }
+  }
+  throw lastCause;
+}
+
 function waitForExit(child: ChildProcessWithoutNullStreams, timeoutMs: number) {
   if (child.exitCode !== null) return Promise.resolve(true);
   return new Promise<boolean>((resolveExit) => {
@@ -244,7 +315,7 @@ export async function setBf2ClientCount(
         const accepted = new Promise<void>((resolveAccepted) => {
           signalAccepted = resolveAccepted;
         });
-        const connection = connectClient(spec, address, signalAccepted).then(
+        const connection = connectClientWithRetry(spec, address, signalAccepted).then(
           (entry): PromiseSettledResult<PooledBf2Client> => {
             pool.set(spec.playerId, entry);
             info('Bf2TestClientPool', `Connected ${entry.nick} (${pool.size}/${target})`);
