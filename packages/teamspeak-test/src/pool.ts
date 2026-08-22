@@ -298,19 +298,24 @@ export function queuedSize() {
  * and overlapping spawns would race on the same identity.
  */
 /** Attempts per client before a resize gives up on it. */
-const CONNECT_ATTEMPTS = 3;
-/** Grows per attempt, to give anti-flood points time to decay. */
-const RETRY_BACKOFF_MS = 3000;
+const CONNECT_ATTEMPTS = 2;
+/**
+ * Quiet time after a dropped handshake.
+ *
+ * The point is silence, not speed. Anti-flood clears once the host stops
+ * connecting for long enough, so retrying quickly only re-arms it - which is
+ * exactly what a three second backoff did: a client that had connected after
+ * one long wait instead failed forever.
+ */
+const RETRY_BACKOFF_MS = 15_000;
 
 /**
- * Connect one client, retrying a dropped handshake.
+ * Connect one client, retrying a dropped handshake once the server has had
+ * some quiet.
  *
- * Anti-flood drops the connection rather than refusing it, so the failure looks
- * like a timeout and the next attempt usually succeeds immediately - the server
- * only needed a moment for its points to decay. Retrying here makes that
- * recovery part of the resize instead of leaving it to a disconnect handler
- * that may or may not fire, and each attempt builds a fresh client, so nothing
- * from the dropped one is reused.
+ * Retrying here makes that recovery part of the resize rather than leaving it
+ * to a disconnect handler that fires unreliably, and each attempt builds a
+ * fresh client, so nothing from the dropped one is reused.
  */
 async function connectWithRetry(spec: TestClientSpec) {
   let lastError: unknown;
