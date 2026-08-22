@@ -347,10 +347,8 @@ export class TeamSpeakGather extends EventEmitter {
   async rejectPlayer(clientUId: string, reason: 'tsid' | 'keyhash') {
     const message =
       reason === 'tsid' ? getRegisterTsIdMessage(clientUId) : getRegisterKeyhashMessage();
-    const poke =
-      reason === 'tsid' ? getRegisterTsIdPoke(clientUId) : getRegisterKeyhashPoke();
 
-    await this.messageClient(clientUId, message, poke);
+    await this.messageClient(clientUId, message);
     this.emit('playerRejected', clientUId, reason, this);
   }
   async #summonPlayers() {
@@ -616,10 +614,18 @@ export class TeamSpeakGather extends EventEmitter {
     await this.movePlayer(MANAGED_CHANNEL_ROOT, clientUId);
     this.emit('playerRemoved', clientUId, reason, this);
   }
+  /**
+   * Send a client a chat message.
+   *
+   * Chat only, deliberately. Poking interrupts whatever the player is doing
+   * with a modal they have to dismiss, which for routine queue notices is worse
+   * than the notice is worth - and a poke is capped at 100 characters, so a
+   * register link built on a longer host overflowed it and threw "invalid
+   * parameter size", which was enough to abort gather startup.
+   */
   async messageClient(
     client: string | TeamSpeakClient | undefined,
-    message: string,
-    poke?: string
+    message: string
   ) {
     const resolvedClient =
       typeof client === 'string' ? await this.ts.getClientByUid(client) : client;
@@ -627,7 +633,6 @@ export class TeamSpeakGather extends EventEmitter {
       resolvedClient,
       `Client ${resolvedClient}: Failed to send message, client not found in teamspeak client list`
     );
-    await resolvedClient.poke(poke ?? message);
     await resolvedClient.message(message);
   }
 }
@@ -638,16 +643,10 @@ function getRegisterTsIdMessage(id: string) {
     .teamspeakPage(id)} and rejoin channel.`;
 }
 
-function getRegisterTsIdPoke(id: string) {
-  return `Register Teamspeak Id at ${api.web().teamspeakPage(id)}`;
-}
 function getRegisterKeyhashMessage() {
   return `You must link your BF2 keyhash to your Discord User before queuing. Register Discord Id at ${api
     .web()
     .teamspeakPage()} and rejoin channel.`;
-}
-function getRegisterKeyhashPoke() {
-  return `Register keyhash at ${api.web().teamspeakPage()}`;
 }
 function getSummonMessage(address: string) {
   return `Join ${address} within 2 minutes or be removed from the gather.`;
