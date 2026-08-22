@@ -1,7 +1,7 @@
 [build]
 builder = "railpack"
 buildCommand = "npm run build -w api"
-watchPatterns = ["/apps/api/**", "/packages/**", "/bf2headless.js", "/package.json", "/package-lock.json"]
+watchPatterns = ["apps/api/**", "packages/**", "bf2headless.js", "package.json", "package-lock.json"]
 providers = ["node"]
 
 [deploy]

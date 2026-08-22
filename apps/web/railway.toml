@@ -1,7 +1,7 @@
 [build]
 builder = "railpack"
 buildCommand = "npm run build -w web"
-watchPatterns = ["/apps/web/**", "/packages/**", "/package.json", "/package-lock.json"]
+watchPatterns = ["apps/web/**", "packages/**", "package.json", "package-lock.json"]
 providers = ["node"]
 
 [deploy]
