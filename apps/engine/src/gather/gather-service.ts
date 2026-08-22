@@ -47,8 +47,8 @@ import { stream } from '@bf2-matchmaking/redis/stream';
 import { topic } from '@bf2-matchmaking/redis/topic';
 import { GatherDraftState } from '@bf2-matchmaking/types/gather';
 import { MANAGED_CHANNEL_ROOT } from '@bf2-matchmaking/teamspeak';
-import { resultsChannelName } from '@bf2-matchmaking/teamspeak/admin';
-import { speak } from '@bf2-matchmaking/teamspeak/voice';
+import { getAdminClient, resultsChannelName } from '@bf2-matchmaking/teamspeak/admin';
+import { isSpeechAvailable, speak } from '@bf2-matchmaking/teamspeak/voice';
 import {
   client as createSupabaseApi,
   createServiceClient,
@@ -87,6 +87,7 @@ export async function initGather(configId: number) {
       });
     startGatherServerPolling();
     startQueueMessage(configId, config.size);
+    void prepareVoice();
 
     // initQueue resets the state to Queueing. Preserve an in-progress (or
     // completed-but-not-yet-applied) captain draft across engine restarts so
@@ -352,6 +353,34 @@ async function getConnectedClientUIds(
  * timeout branch, so without re-invoking it the gather could never fail either,
  * and would sit in Summoning indefinitely.
  */
+/**
+ * Bring the voice path up at boot rather than on the first summon.
+ *
+ * Both halves are otherwise lazy: espeak is probed inside the first speak()
+ * call, and the admin client connects on first use. That means a missing
+ * package or a failed connection stays invisible until the moment it is needed,
+ * and the client is absent from the channel it is meant to sit in until
+ * something happens to want it.
+ */
+async function prepareVoice() {
+  if (!environmentFlag('ENABLE_GATHER_VOICE')) {
+    return;
+  }
+  try {
+    const speech = await isSpeechAvailable();
+    // Connecting is what moves the client into the queue channel.
+    const client = await getAdminClient();
+    info(
+      'prepareVoice',
+      `Voice announcements ${
+        speech && client ? 'ready' : 'unavailable'
+      } (espeak-ng: ${speech ? 'yes' : 'no'}, admin client: ${client ? 'yes' : 'no'})`
+    );
+  } catch (e) {
+    warn('prepareVoice', `Could not prepare voice: ${parseError(e)}`);
+  }
+}
+
 /**
  * Say the summon out loud in the queue channel.
  *
