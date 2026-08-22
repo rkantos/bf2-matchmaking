@@ -148,6 +148,26 @@ export async function closeMatch(matchId: number) {
 export async function deleteMatch({ matchId }: ActionInput): Promise<ActionResult> {
   try {
     const deletedMatch = await matchApi.remove(Number(matchId), MatchStatus.Deleted);
+
+    // Deleting ends a match exactly as closing does, so it owes the same
+    // teardown: release the server reservation and return gather players to the
+    // lobby channel. Without it a deleted gather match keeps its server
+    // reserved, and the next gather cannot start on that server.
+    //
+    // Routed through the api rather than done here because the api owns the
+    // server registry and the redis the gather topic is published on - which is
+    // why closeMatch() calls this same endpoint instead of doing the work
+    // locally.
+    const teardown = await internalApi.live().postMatchTeardown(Number(matchId));
+    if (teardown.error) {
+      // The match is already deleted at this point. Reporting a failed delete
+      // would be wrong, so record the teardown failure and let the delete stand.
+      logErrorMessage(
+        `Match ${matchId}: deleted, but teardown failed`,
+        teardown.error
+      );
+    }
+
     await matches.servers.removeAll();
 
     const guild = deletedMatch.config.guild;
