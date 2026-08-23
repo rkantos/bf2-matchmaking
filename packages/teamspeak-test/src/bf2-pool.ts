@@ -106,7 +106,25 @@ function earlyExitMessage(spec: Bf2TestClientSpec, stdout: string, stderr: strin
       current && maximum ? ` (${current}/${maximum})` : ''
     }`;
   }
-  const detail = (stderr || stdout).trim().slice(-1000);
+  // The tail of the output is usually protocol noise - "stream=2, ACK=2420"
+  // says nothing about why the join failed, while the line that does say
+  // ("Parsed join reply: result=3 (REJECT), error=0x00000018") is further up
+  // and gets cut. Pull out the lines that carry a reason, and fall back to the
+  // tail only when none of them appear.
+  const meaningful = `${stdout}\n${stderr}`
+    .split(/\r?\n/)
+    .filter((line) =>
+      /\[ERROR\]|\[WARN\]|REJECT|error=0x|rejected|refused|timed out|no reply|full/i.test(
+        line
+      )
+    )
+    .map((line) => line.replace(/^\[[^\]]*\]\s*/, '').trim())
+    .filter(Boolean);
+
+  const detail = meaningful.length
+    ? meaningful.slice(-3).join(' | ')
+    : (stderr || stdout).trim().slice(-300);
+
   return `${spec.nick} exited before completing its BF2 handshake${
     detail ? `: ${detail}` : ''
   }`;
